@@ -51,7 +51,7 @@ export function AddExpenseModal({ members, defaultDate, onAdd, onClose }: Props)
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">日付</label>
+            <label className="block text-sm font-medium text-gray-600 mb-1">日付1</label>
             <input
               type="date"
               value={date}
