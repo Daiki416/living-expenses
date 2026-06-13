@@ -57,7 +57,7 @@ export function AddExpenseModal({ members, defaultDate, onAdd, onClose }: Props)
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
-              className="w-full min-w-0 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
           </div>
 
