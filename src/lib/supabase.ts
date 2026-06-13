@@ -17,3 +17,9 @@ export type Expense = {
   amount: number
   created_at: string
 }
+
+export type Member = {
+  id: string
+  name: string
+  created_at: string
+}

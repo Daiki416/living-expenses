@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Expense } from '../lib/supabase'
 
 type Props = {
-  members: [string, string]
+  members: string[]
   defaultDate: string
   onAdd: (input: Omit<Expense, 'id' | 'created_at'>) => Promise<void>
   onClose: () => void
@@ -10,11 +10,15 @@ type Props = {
 
 export function AddExpenseModal({ members, defaultDate, onAdd, onClose }: Props) {
   const [date, setDate] = useState(defaultDate)
-  const [paidBy, setPaidBy] = useState(members[0])
+  const [paidBy, setPaidBy] = useState(members[0] ?? '')
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!members.includes(paidBy)) setPaidBy(members[0] ?? '')
+  }, [members])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

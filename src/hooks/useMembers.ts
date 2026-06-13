@@ -1,29 +1,37 @@
-import { useState } from 'react'
-
-const STORAGE_KEY = 'living-expenses-members'
-
-type Members = [string, string]
-
-function loadMembers(): Members {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length === 2) return parsed as Members
-    }
-  } catch {
-    // ignore
-  }
-  return ['メンバー1', 'メンバー2']
-}
+import { useEffect, useState } from 'react'
+import { supabase, type Member } from '../lib/supabase'
 
 export function useMembers() {
-  const [members, setMembersState] = useState<Members>(loadMembers)
+  const [members, setMembers] = useState<Member[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [refetchKey, setRefetchKey] = useState(0)
 
-  function setMembers(next: Members) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    setMembersState(next)
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      setLoading(true)
+      setError(null)
+      const { data, error } = await supabase.from('members').select('*').order('created_at')
+      if (cancelled) return
+      if (error) setError(error.message)
+      else setMembers(data ?? [])
+      setLoading(false)
+    })()
+    return () => { cancelled = true }
+  }, [refetchKey])
+
+  async function addMember(name: string) {
+    const { error } = await supabase.from('members').insert({ name })
+    if (error) throw new Error(error.message)
+    setRefetchKey(k => k + 1)
   }
 
-  return { members, setMembers }
+  async function deleteMember(id: string) {
+    const { error } = await supabase.from('members').delete().eq('id', id)
+    if (error) throw new Error(error.message)
+    setRefetchKey(k => k + 1)
+  }
+
+  return { members, loading, error, addMember, deleteMember }
 }

@@ -18,8 +18,9 @@ export default function App() {
   const [showAdd, setShowAdd] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
 
-  const { members, setMembers } = useMembers()
+  const { members, loading: membersLoading, error: membersError, addMember, deleteMember } = useMembers()
   const { expenses, loading, error, addExpense, deleteExpense } = useExpenses(year, month)
+  const memberNames = members.map((m) => m.name)
 
   function prevMonth() {
     if (month === 1) { setYear(y => y - 1); setMonth(12) }
@@ -40,12 +41,17 @@ export default function App() {
           <h1 className="text-xl font-bold text-gray-800">立て替え管理</h1>
           <button
             onClick={() => setShowSettings(true)}
-            className="text-gray-400 hover:text-gray-600 transition text-xl"
+            disabled={membersLoading}
+            className="text-gray-400 hover:text-gray-600 disabled:opacity-40 transition text-xl"
             title="設定"
           >
             ⚙
           </button>
         </div>
+
+        {membersError && (
+          <p className="text-red-400 text-xs text-center mb-2">{membersError}</p>
+        )}
 
         {/* Month nav */}
         <div className="flex items-center justify-between bg-white rounded-xl shadow-sm px-5 py-3 mb-4">
@@ -67,7 +73,7 @@ export default function App() {
         </div>
 
         {/* Summary */}
-        <ExpenseSummary expenses={expenses} members={members} />
+        <ExpenseSummary expenses={expenses} members={memberNames} />
 
         {/* Add button */}
         <div className="flex justify-end mt-5 mb-2">
@@ -97,7 +103,7 @@ export default function App() {
 
       {showAdd && (
         <AddExpenseModal
-          members={members}
+          members={memberNames}
           defaultDate={todayYYYYMMDD()}
           onAdd={addExpense}
           onClose={() => setShowAdd(false)}
@@ -107,7 +113,8 @@ export default function App() {
       {showSettings && (
         <SettingsModal
           members={members}
-          onSave={setMembers}
+          onAdd={addMember}
+          onDelete={deleteMember}
           onClose={() => setShowSettings(false)}
         />
       )}

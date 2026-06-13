@@ -1,64 +1,97 @@
 import { useState } from 'react'
+import type { Member } from '../lib/supabase'
 
 type Props = {
-  members: [string, string]
-  onSave: (members: [string, string]) => void
+  members: Member[]
+  onAdd: (name: string) => Promise<void>
+  onDelete: (id: string) => Promise<void>
   onClose: () => void
 }
 
-export function SettingsModal({ members, onSave, onClose }: Props) {
-  const [m1, setM1] = useState(members[0])
-  const [m2, setM2] = useState(members[1])
+export function SettingsModal({ members, onAdd, onDelete, onClose }: Props) {
+  const [newName, setNewName] = useState('')
+  const [adding, setAdding] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  function handleSave() {
-    const n1 = m1.trim() || 'メンバー1'
-    const n2 = m2.trim() || 'メンバー2'
-    onSave([n1, n2])
-    onClose()
+  async function handleAdd() {
+    const name = newName.trim()
+    if (!name) return
+    setAdding(true)
+    setError(null)
+    try {
+      await onAdd(name)
+      setNewName('')
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  async function handleDelete(id: string, name: string) {
+    if (!window.confirm(`「${name}」を削除しますか？\nこのメンバーの支出記録は残ります。`)) return
+    setDeletingId(id)
+    setError(null)
+    try {
+      await onDelete(id)
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
-        <h2 className="text-lg font-semibold text-gray-800 mb-5">メンバー名の設定</h2>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">メンバー1</label>
-            <input
-              type="text"
-              value={m1}
-              onChange={(e) => setM1(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              placeholder="メンバー1"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">メンバー2</label>
-            <input
-              type="text"
-              value={m2}
-              onChange={(e) => setM2(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              placeholder="メンバー2"
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-3 mt-6">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-lg font-semibold text-gray-800">メンバー管理</h2>
           <button
             onClick={onClose}
-            className="flex-1 border border-gray-300 text-gray-600 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition"
+            className="text-gray-400 hover:text-gray-600 transition text-xl leading-none"
           >
-            キャンセル
-          </button>
-          <button
-            onClick={handleSave}
-            className="flex-1 bg-indigo-500 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-600 transition"
-          >
-            保存
+            ×
           </button>
         </div>
+
+        <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden mb-4">
+          {members.map((m) => (
+            <div key={m.id} className="flex items-center justify-between px-3 py-2">
+              <span className="text-sm text-gray-700">{m.name}</span>
+              <button
+                onClick={() => handleDelete(m.id, m.name)}
+                disabled={deletingId === m.id}
+                className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition"
+              >
+                {deletingId === m.id ? '削除中…' : '削除'}
+              </button>
+            </div>
+          ))}
+          {members.length === 0 && (
+            <div className="px-3 py-3 text-sm text-gray-400 text-center">メンバーがいません</div>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
+            placeholder="名前を入力"
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          />
+          <button
+            onClick={handleAdd}
+            disabled={adding || !newName.trim()}
+            className="bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition"
+          >
+            {adding ? '追加中…' : '追加'}
+          </button>
+        </div>
+
+        {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
       </div>
     </div>
   )

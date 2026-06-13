@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Expense } from '../lib/supabase'
 
 type Props = {
@@ -11,6 +12,8 @@ function formatDate(dateStr: string): string {
 }
 
 export function ExpenseList({ expenses, onDelete }: Props) {
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
   if (expenses.length === 0) {
     return (
       <div className="text-center text-gray-400 py-12 text-sm">
@@ -43,10 +46,11 @@ export function ExpenseList({ expenses, onDelete }: Props) {
               <td className="py-3 text-right">
                 <button
                   onClick={async () => {
+                    setDeleteError(null)
                     try {
                       await onDelete(exp.id)
                     } catch (err) {
-                      window.alert(`削除に失敗しました: ${(err as Error).message}`)
+                      setDeleteError((err as Error).message)
                     }
                   }}
                   className="text-gray-300 hover:text-red-400 transition text-base leading-none"
@@ -59,6 +63,7 @@ export function ExpenseList({ expenses, onDelete }: Props) {
           ))}
         </tbody>
       </table>
+      {deleteError && <p className="text-red-500 text-sm mt-2">{deleteError}</p>}
     </div>
   )
 }
