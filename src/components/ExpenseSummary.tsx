@@ -7,7 +7,11 @@ type Props = {
 
 export function ExpenseSummary({ expenses, members }: Props) {
   const totals: Record<string, number> = Object.fromEntries(members.map(m => [m, 0]))
-  expenses.forEach(e => { if (e.paid_by in totals) totals[e.paid_by] += e.amount })
+  let other = 0
+  expenses.forEach(e => {
+    if (e.paid_by in totals) totals[e.paid_by] += e.amount
+    else other += e.amount
+  })
 
   return (
     <div className="grid grid-cols-2 gap-4 mt-6">
@@ -19,6 +23,14 @@ export function ExpenseSummary({ expenses, members }: Props) {
           </div>
         </div>
       ))}
+      {other > 0 && (
+        <div className="bg-gray-50 rounded-xl p-4 text-center">
+          <div className="text-sm text-gray-500 font-medium mb-1">その他</div>
+          <div className="text-2xl font-semibold text-gray-700">
+            ¥{other.toLocaleString()}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

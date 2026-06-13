@@ -7,12 +7,12 @@ export function useExpenses(year: number, month: number) {
   const [error, setError] = useState<string | null>(null)
   const [refetchKey, setRefetchKey] = useState(0)
 
-  const from = `${year}-${String(month).padStart(2, '0')}-01`
-  const nextMonth = month === 12 ? 1 : month + 1
-  const nextYear = month === 12 ? year + 1 : year
-  const to = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`
-
   useEffect(() => {
+    const from = `${year}-${String(month).padStart(2, '0')}-01`
+    const nextMonth = month === 12 ? 1 : month + 1
+    const nextYear = month === 12 ? year + 1 : year
+    const to = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`
+
     let cancelled = false
     ;(async () => {
       setLoading(true)
@@ -32,7 +32,7 @@ export function useExpenses(year: number, month: number) {
       setLoading(false)
     })()
     return () => { cancelled = true }
-  }, [from, to, refetchKey])
+  }, [year, month, refetchKey])
 
   async function addExpense(input: Omit<Expense, 'id' | 'created_at'>) {
     const { error } = await supabase.from('expenses').insert(input)

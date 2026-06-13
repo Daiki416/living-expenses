@@ -8,7 +8,7 @@ type Props = {
 
 function formatDate(dateStr: string): string {
   const [, m, d] = dateStr.split('-')
-  return `${parseInt(m)}月${parseInt(d)}日`
+  return `${parseInt(m, 10)}月${parseInt(d, 10)}日`
 }
 
 export function ExpenseList({ expenses, onDelete }: Props) {
@@ -28,7 +28,6 @@ export function ExpenseList({ expenses, onDelete }: Props) {
         <thead>
           <tr className="border-b border-gray-200 text-gray-500 text-left">
             <th className="pb-2 pr-4 font-medium w-24">日付</th>
-            <th className="pb-2 pr-4 font-medium w-24">支払者</th>
             <th className="pb-2 pr-4 font-medium">内容</th>
             <th className="pb-2 pr-4 font-medium text-right w-28">金額</th>
             <th className="pb-2 w-12"></th>
@@ -38,8 +37,10 @@ export function ExpenseList({ expenses, onDelete }: Props) {
           {expenses.map((exp) => (
             <tr key={exp.id} className="border-b border-gray-100 hover:bg-gray-50">
               <td className="py-3 pr-4 text-gray-500">{formatDate(exp.date)}</td>
-              <td className="py-3 pr-4 font-medium text-gray-700">{exp.paid_by}</td>
-              <td className="py-3 pr-4 text-gray-700">{exp.description}</td>
+              <td className="py-3 pr-4">
+                <div className="text-gray-700 text-sm">{exp.description}</div>
+                <div className="text-xs text-gray-400 mt-0.5">{exp.paid_by}</div>
+              </td>
               <td className="py-3 pr-4 text-right font-medium text-gray-800">
                 ¥{exp.amount.toLocaleString()}
               </td>

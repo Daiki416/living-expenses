@@ -18,12 +18,12 @@ export function AddExpenseModal({ members, defaultDate, onAdd, onClose }: Props)
 
   useEffect(() => {
     if (!members.includes(paidBy)) setPaidBy(members[0] ?? '')
-  }, [members])
+  }, [members, paidBy])
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const parsed = parseInt(amount, 10)
-    if (!date || !description.trim() || isNaN(parsed) || parsed <= 0) {
+    const parsed = Number(amount)
+    if (!date || !paidBy || !description.trim() || !Number.isInteger(parsed) || parsed <= 0) {
       setError('すべての項目を正しく入力してください')
       return
     }
@@ -40,7 +40,7 @@ export function AddExpenseModal({ members, defaultDate, onAdd, onClose }: Props)
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4 overflow-hidden">
         <h2 className="text-lg font-semibold text-gray-800 mb-5">立て替え追加</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -51,7 +51,7 @@ export function AddExpenseModal({ members, defaultDate, onAdd, onClose }: Props)
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full min-w-0 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
           </div>
 
