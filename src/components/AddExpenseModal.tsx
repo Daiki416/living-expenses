@@ -20,13 +20,19 @@ export function AddExpenseModal({ members, defaultDate, onAdd, onClose }: Props)
     if (!members.includes(paidBy)) setPaidBy(members[0] ?? '')
   }, [members, paidBy])
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose])
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const parsed = Number(amount)
-    if (!date || !paidBy || !description.trim() || !Number.isInteger(parsed) || parsed <= 0) {
-      setError('すべての項目を正しく入力してください')
-      return
-    }
+    if (!date) { setError('日付を入力してください'); return }
+    if (!paidBy) { setError('支払者を選択してください'); return }
+    if (!description.trim()) { setError('内容を入力してください'); return }
+    if (!Number.isInteger(parsed) || parsed <= 0) { setError('金額は1以上の整数で入力してください'); return }
     setSubmitting(true)
     setError(null)
     try {
@@ -39,8 +45,8 @@ export function AddExpenseModal({ members, defaultDate, onAdd, onClose }: Props)
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4 overflow-hidden">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-semibold text-gray-800 mb-5">立て替え追加</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -51,7 +57,7 @@ export function AddExpenseModal({ members, defaultDate, onAdd, onClose }: Props)
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
-              className="w-full min-w-0 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full min-w-0 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
           </div>
 
@@ -82,7 +88,7 @@ export function AddExpenseModal({ members, defaultDate, onAdd, onClose }: Props)
               onChange={(e) => setDescription(e.target.value)}
               placeholder="例：スーパー"
               required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
           </div>
 
@@ -96,7 +102,7 @@ export function AddExpenseModal({ members, defaultDate, onAdd, onClose }: Props)
               min={1}
               step={1}
               required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
           </div>
 

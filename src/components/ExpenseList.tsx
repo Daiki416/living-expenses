@@ -12,6 +12,7 @@ function formatDate(dateStr: string): string {
 }
 
 export function ExpenseList({ expenses, onDelete }: Props) {
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
   if (expenses.length === 0) {
@@ -48,13 +49,17 @@ export function ExpenseList({ expenses, onDelete }: Props) {
                 <button
                   onClick={async () => {
                     setDeleteError(null)
+                    setDeletingId(exp.id)
                     try {
                       await onDelete(exp.id)
                     } catch (err) {
                       setDeleteError((err as Error).message)
+                    } finally {
+                      setDeletingId(null)
                     }
                   }}
-                  className="text-gray-300 hover:text-red-400 transition text-base leading-none"
+                  disabled={deletingId === exp.id}
+                  className="text-gray-300 hover:text-red-400 disabled:opacity-40 transition text-base leading-none"
                   title="削除"
                 >
                   ×
