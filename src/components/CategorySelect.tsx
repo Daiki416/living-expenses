@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef } from 'react'
 import type { Category } from '../lib/supabase'
 
 type Props = {
@@ -10,7 +11,23 @@ type Props = {
 
 export function CategorySelect({ categories, parentCategoryId, childCategoryId, onParentChange, onChildChange }: Props) {
   const parentCategories = categories.filter(c => c.parent_id === null)
-  const childCategories = categories.filter(c => c.parent_id === parentCategoryId)
+  const childCategories = useMemo(
+    () => categories.filter(c => c.parent_id === parentCategoryId),
+    [categories, parentCategoryId]
+  )
+
+  // 親カテゴリーが変わったとき、childCategoryId が新しい子リストにない場合のみ最初の子を自動選択する。
+  // prevParentId で変化を検知することで、初期マウント時（EditExpenseModal で親カテゴリーIDで
+  // 保存済みのケース）をスキップし既存データを上書きしない。
+  // childCategoryId が引き続き新しい親の子リストに存在する場合はそのまま維持する。
+  const prevParentId = useRef(parentCategoryId)
+  useEffect(() => {
+    if (prevParentId.current === parentCategoryId) return
+    prevParentId.current = parentCategoryId
+    if (childCategories.length > 0 && !childCategories.some(c => c.id === childCategoryId)) {
+      onChildChange(childCategories[0].id)
+    }
+  }, [parentCategoryId, childCategories, childCategoryId, onChildChange])
 
   function handleParentChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const newParentId = e.target.value
