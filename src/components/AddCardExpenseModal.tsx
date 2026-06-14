@@ -1,28 +1,22 @@
-import { useEffect, useState } from 'react'
-import type { Expense, Category } from '../lib/supabase'
+import { useState } from 'react'
+import type { CardExpense, Category } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
 
 type Props = {
-  members: string[]
   categories: Category[]
   defaultDate: string
-  onAdd: (input: Omit<Expense, 'id' | 'created_at'>) => Promise<void>
+  onAdd: (input: Omit<CardExpense, 'id' | 'created_at'>) => Promise<void>
   onClose: () => void
 }
 
-export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClose }: Props) {
+export function AddCardExpenseModal({ categories, defaultDate, onAdd, onClose }: Props) {
   const [date, setDate] = useState(defaultDate)
-  const [paidBy, setPaidBy] = useState(members[0] ?? '')
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!members.includes(paidBy)) setPaidBy(members[0] ?? '')
-  }, [members, paidBy])
 
   useEscapeKey(onClose)
 
@@ -30,13 +24,12 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
     e.preventDefault()
     const parsed = Number(amount)
     if (!date) { setError('日付を入力してください'); return }
-    if (!paidBy) { setError('支払者を選択してください'); return }
     if (!description.trim()) { setError('内容を入力してください'); return }
     if (!Number.isInteger(parsed) || parsed <= 0) { setError('金額は1以上の整数で入力してください'); return }
     setSubmitting(true)
     setError(null)
     try {
-      await onAdd({ date, paid_by: paidBy, description: description.trim(), amount: parsed, category_id: categoryId || null })
+      await onAdd({ date, description: description.trim(), amount: parsed, category_id: categoryId || null })
       onClose()
     } catch (err) {
       setError((err as Error).message)
@@ -46,7 +39,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
 
   return (
     <ModalShell onClose={onClose} className="overflow-hidden">
-      <h2 className="text-lg font-semibold text-gray-800 mb-5">立て替え追加</h2>
+      <h2 className="text-lg font-semibold text-gray-800 mb-5">クレカ明細追加</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -59,25 +52,6 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
               required
               className="w-full min-w-0 appearance-none border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">支払者</label>
-          <div className="flex gap-4">
-            {members.map((m) => (
-              <label key={m} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="paidBy"
-                  value={m}
-                  checked={paidBy === m}
-                  onChange={() => setPaidBy(m)}
-                  className="accent-indigo-500"
-                />
-                <span className="text-sm text-gray-700">{m}</span>
-              </label>
-            ))}
           </div>
         </div>
 

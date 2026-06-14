@@ -15,11 +15,27 @@ export type Expense = {
   paid_by: string
   description: string
   amount: number
+  category_id: string | null
   created_at: string
 }
 
 export type Member = {
   id: string
   name: string
+  created_at: string
+}
+
+export type Category = {
+  id: string
+  name: string
+  created_at: string
+}
+
+export type CardExpense = {
+  id: string
+  date: string
+  description: string
+  amount: number
+  category_id: string | null
   created_at: string
 }

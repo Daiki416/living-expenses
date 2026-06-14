@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { supabase, type Member } from '../lib/supabase'
+import { supabase, type Category } from '../lib/supabase'
 
-export function useMembers() {
-  const [members, setMembers] = useState<Member[]>([])
+export function useCategories() {
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refetchKey, setRefetchKey] = useState(0)
@@ -12,29 +12,29 @@ export function useMembers() {
     ;(async () => {
       setLoading(true)
       setError(null)
-      const { data, error } = await supabase.from('members').select('*').order('created_at')
+      const { data, error } = await supabase.from('categories').select('*').order('created_at')
       if (cancelled) return
       if (error) {
         setError(error.message)
       } else {
-        setMembers(data ?? [])
+        setCategories(data ?? [])
       }
       setLoading(false)
     })()
     return () => { cancelled = true }
   }, [refetchKey])
 
-  async function addMember(name: string) {
-    const { error } = await supabase.from('members').insert({ name })
+  async function addCategory(name: string) {
+    const { error } = await supabase.from('categories').insert({ name })
     if (error) throw new Error(error.message)
     setRefetchKey(k => k + 1)
   }
 
-  async function deleteMember(id: string) {
-    const { error } = await supabase.from('members').delete().eq('id', id)
+  async function deleteCategory(id: string) {
+    const { error } = await supabase.from('categories').delete().eq('id', id)
     if (error) throw new Error(error.message)
     setRefetchKey(k => k + 1)
   }
 
-  return { members, loading, error, addMember, deleteMember }
+  return { categories, loading, error, addCategory, deleteCategory }
 }

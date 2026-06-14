@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { supabase, type Expense } from '../lib/supabase'
+import { supabase, type CardExpense } from '../lib/supabase'
 
-export function useExpenses(year: number, month: number) {
-  const [expenses, setExpenses] = useState<Expense[]>([])
+export function useCardExpenses(year: number, month: number) {
+  const [cardExpenses, setCardExpenses] = useState<CardExpense[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refetchKey, setRefetchKey] = useState(0)
@@ -18,7 +18,7 @@ export function useExpenses(year: number, month: number) {
       setLoading(true)
       setError(null)
       const { data, error } = await supabase
-        .from('expenses')
+        .from('card_expenses')
         .select('*')
         .gte('date', from)
         .lt('date', to)
@@ -26,30 +26,30 @@ export function useExpenses(year: number, month: number) {
       if (error) {
         setError(error.message)
       } else {
-        setExpenses(data ?? [])
+        setCardExpenses(data ?? [])
       }
       setLoading(false)
     })()
     return () => { cancelled = true }
   }, [year, month, refetchKey])
 
-  async function addExpense(input: Omit<Expense, 'id' | 'created_at'>) {
-    const { error } = await supabase.from('expenses').insert(input)
+  async function addCardExpense(input: Omit<CardExpense, 'id' | 'created_at'>) {
+    const { error } = await supabase.from('card_expenses').insert(input)
     if (error) throw new Error(error.message)
     setRefetchKey(k => k + 1)
   }
 
-  async function updateExpense(id: string, input: Omit<Expense, 'id' | 'created_at'>) {
-    const { error } = await supabase.from('expenses').update(input).eq('id', id)
+  async function updateCardExpense(id: string, input: Omit<CardExpense, 'id' | 'created_at'>) {
+    const { error } = await supabase.from('card_expenses').update(input).eq('id', id)
     if (error) throw new Error(error.message)
     setRefetchKey(k => k + 1)
   }
 
-  async function deleteExpense(id: string) {
-    const { error } = await supabase.from('expenses').delete().eq('id', id)
+  async function deleteCardExpense(id: string) {
+    const { error } = await supabase.from('card_expenses').delete().eq('id', id)
     if (error) throw new Error(error.message)
     setRefetchKey(k => k + 1)
   }
 
-  return { expenses, loading, error, addExpense, updateExpense, deleteExpense }
+  return { cardExpenses, loading, error, addCardExpense, updateCardExpense, deleteCardExpense }
 }

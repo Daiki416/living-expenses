@@ -1,30 +1,31 @@
 import { useState } from 'react'
-import type { Expense, Category } from '../lib/supabase'
+import type { CardExpense, Category } from '../lib/supabase'
 import { formatDate } from '../lib/format'
 
 type Props = {
-  expenses: Expense[]
+  cardExpenses: CardExpense[]
   categories: Category[]
-  onEdit: (expense: Expense) => void
+  onEdit: (cardExpense: CardExpense) => void
   onDelete: (id: string) => Promise<void>
 }
 
-export function ExpenseList({ expenses, categories, onEdit, onDelete }: Props) {
-  const categoryName = (id: string | null) =>
-    id ? (categories.find(c => c.id === id)?.name ?? null) : null
+export function CardExpenseList({ cardExpenses, categories, onEdit, onDelete }: Props) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [sortAsc, setSortAsc] = useState(false)
 
-  if (expenses.length === 0) {
+  if (cardExpenses.length === 0) {
     return (
-      <div className="text-center text-gray-400 py-12 text-sm">
-        この月の立て替えはありません
+      <div className="text-center text-gray-400 py-8 text-sm">
+        この月のクレカ明細はありません
       </div>
     )
   }
 
-  const sorted = [...expenses].sort((a, b) =>
+  const categoryName = (id: string | null) =>
+    id ? (categories.find(c => c.id === id)?.name ?? null) : null
+
+  const sorted = [...cardExpenses].sort((a, b) =>
     sortAsc ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date)
   )
 
@@ -58,10 +59,9 @@ export function ExpenseList({ expenses, categories, onEdit, onDelete }: Props) {
                 <td className="py-3 pr-3 text-gray-500 whitespace-nowrap">{formatDate(exp.date)}</td>
                 <td className="py-3 pr-3 w-full">
                   <div className="text-gray-700 text-sm">{exp.description}</div>
-                  <div className="flex justify-between items-center text-xs text-gray-400 mt-0.5">
-                    <span>{exp.paid_by}</span>
-                    {catName && <span>{catName}</span>}
-                  </div>
+                  {catName && (
+                    <div className="text-xs text-gray-400 mt-0.5 text-right">{catName}</div>
+                  )}
                 </td>
                 <td className="py-3 pr-3 text-right font-medium text-gray-800 whitespace-nowrap">
                   ¥{exp.amount.toLocaleString()}

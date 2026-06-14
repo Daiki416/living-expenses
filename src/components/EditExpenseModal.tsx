@@ -4,19 +4,19 @@ import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
 
 type Props = {
+  expense: Expense
   members: string[]
   categories: Category[]
-  defaultDate: string
-  onAdd: (input: Omit<Expense, 'id' | 'created_at'>) => Promise<void>
+  onUpdate: (id: string, input: Omit<Expense, 'id' | 'created_at'>) => Promise<void>
   onClose: () => void
 }
 
-export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClose }: Props) {
-  const [date, setDate] = useState(defaultDate)
-  const [paidBy, setPaidBy] = useState(members[0] ?? '')
-  const [description, setDescription] = useState('')
-  const [amount, setAmount] = useState('')
-  const [categoryId, setCategoryId] = useState('')
+export function EditExpenseModal({ expense, members, categories, onUpdate, onClose }: Props) {
+  const [date, setDate] = useState(expense.date)
+  const [paidBy, setPaidBy] = useState(expense.paid_by)
+  const [description, setDescription] = useState(expense.description)
+  const [amount, setAmount] = useState(String(expense.amount))
+  const [categoryId, setCategoryId] = useState(expense.category_id ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -36,7 +36,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
     setSubmitting(true)
     setError(null)
     try {
-      await onAdd({ date, paid_by: paidBy, description: description.trim(), amount: parsed, category_id: categoryId || null })
+      await onUpdate(expense.id, { date, paid_by: paidBy, description: description.trim(), amount: parsed, category_id: categoryId || null })
       onClose()
     } catch (err) {
       setError((err as Error).message)
@@ -46,7 +46,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
 
   return (
     <ModalShell onClose={onClose} className="overflow-hidden">
-      <h2 className="text-lg font-semibold text-gray-800 mb-5">立て替え追加</h2>
+      <h2 className="text-lg font-semibold text-gray-800 mb-5">立替を編集</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -87,7 +87,6 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="例：スーパー"
             required
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
@@ -99,7 +98,6 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder="3200"
             min={1}
             step={1}
             required
@@ -136,7 +134,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
             disabled={submitting}
             className="flex-1 bg-indigo-500 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-60 transition"
           >
-            {submitting ? '追加中…' : '追加'}
+            {submitting ? '更新中…' : '更新'}
           </button>
         </div>
       </form>

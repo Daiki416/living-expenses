@@ -1,28 +1,22 @@
-import { useEffect, useState } from 'react'
-import type { Expense, Category } from '../lib/supabase'
+import { useState } from 'react'
+import type { CardExpense, Category } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
 
 type Props = {
-  members: string[]
+  cardExpense: CardExpense
   categories: Category[]
-  defaultDate: string
-  onAdd: (input: Omit<Expense, 'id' | 'created_at'>) => Promise<void>
+  onUpdate: (id: string, input: Omit<CardExpense, 'id' | 'created_at'>) => Promise<void>
   onClose: () => void
 }
 
-export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClose }: Props) {
-  const [date, setDate] = useState(defaultDate)
-  const [paidBy, setPaidBy] = useState(members[0] ?? '')
-  const [description, setDescription] = useState('')
-  const [amount, setAmount] = useState('')
-  const [categoryId, setCategoryId] = useState('')
+export function EditCardExpenseModal({ cardExpense, categories, onUpdate, onClose }: Props) {
+  const [date, setDate] = useState(cardExpense.date)
+  const [description, setDescription] = useState(cardExpense.description)
+  const [amount, setAmount] = useState(String(cardExpense.amount))
+  const [categoryId, setCategoryId] = useState(cardExpense.category_id ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!members.includes(paidBy)) setPaidBy(members[0] ?? '')
-  }, [members, paidBy])
 
   useEscapeKey(onClose)
 
@@ -30,13 +24,12 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
     e.preventDefault()
     const parsed = Number(amount)
     if (!date) { setError('日付を入力してください'); return }
-    if (!paidBy) { setError('支払者を選択してください'); return }
     if (!description.trim()) { setError('内容を入力してください'); return }
     if (!Number.isInteger(parsed) || parsed <= 0) { setError('金額は1以上の整数で入力してください'); return }
     setSubmitting(true)
     setError(null)
     try {
-      await onAdd({ date, paid_by: paidBy, description: description.trim(), amount: parsed, category_id: categoryId || null })
+      await onUpdate(cardExpense.id, { date, description: description.trim(), amount: parsed, category_id: categoryId || null })
       onClose()
     } catch (err) {
       setError((err as Error).message)
@@ -46,7 +39,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
 
   return (
     <ModalShell onClose={onClose} className="overflow-hidden">
-      <h2 className="text-lg font-semibold text-gray-800 mb-5">立て替え追加</h2>
+      <h2 className="text-lg font-semibold text-gray-800 mb-5">クレカ明細を編集</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -63,31 +56,11 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">支払者</label>
-          <div className="flex gap-4">
-            {members.map((m) => (
-              <label key={m} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="paidBy"
-                  value={m}
-                  checked={paidBy === m}
-                  onChange={() => setPaidBy(m)}
-                  className="accent-indigo-500"
-                />
-                <span className="text-sm text-gray-700">{m}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">内容</label>
           <input
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="例：スーパー"
             required
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
@@ -99,7 +72,6 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder="3200"
             min={1}
             step={1}
             required
@@ -136,7 +108,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
             disabled={submitting}
             className="flex-1 bg-indigo-500 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-60 transition"
           >
-            {submitting ? '追加中…' : '追加'}
+            {submitting ? '更新中…' : '更新'}
           </button>
         </div>
       </form>
