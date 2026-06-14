@@ -1,7 +1,11 @@
+export type ReceiptItem = {
+  description: string
+  amount: number
+}
+
 export type ReceiptData = {
   date: string | null
-  amount: number | null
-  description: string | null
+  items: ReceiptItem[]
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -33,7 +37,7 @@ export async function extractReceiptData(imageFile: File): Promise<ReceiptData> 
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 256,
+      max_tokens: 1024,
       messages: [
         {
           role: 'user',
@@ -41,7 +45,7 @@ export async function extractReceiptData(imageFile: File): Promise<ReceiptData> 
             { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
             {
               type: 'text',
-              text: 'このレシート画像から情報を抽出し、以下のJSON形式のみで返してください。\n{"date":"YYYY-MM-DD形式の購入日（不明な場合はnull）","amount":合計金額の整数（円、不明な場合はnull）,"description":"店舗名（不明な場合はnull）"}',
+              text: 'このレシート画像から全ての商品・品目を抽出し、以下のJSON形式のみで返してください。\n{"date":"YYYY-MM-DD形式の購入日（不明な場合はnull）","items":[{"description":"商品名","amount":税込金額の整数}]}\n小計・合計・税額・値引きなどの集計行は items に含めないでください。JSONのみ返してください。',
             },
           ],
         },
@@ -63,8 +67,11 @@ export async function extractReceiptData(imageFile: File): Promise<ReceiptData> 
     const data = JSON.parse(match[0])
     return {
       date: typeof data.date === 'string' ? data.date : null,
-      amount: typeof data.amount === 'number' ? Math.round(data.amount) : null,
-      description: typeof data.description === 'string' ? data.description : null,
+      items: Array.isArray(data.items)
+        ? data.items
+            .filter((i: unknown) => typeof (i as { description?: unknown }).description === 'string' && typeof (i as { amount?: unknown }).amount === 'number')
+            .map((i: { description: string; amount: number }) => ({ description: i.description, amount: Math.round(i.amount) }))
+        : [],
     }
   } catch {
     throw new Error('レシートのデータを解析できませんでした')
