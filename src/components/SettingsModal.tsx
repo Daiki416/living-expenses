@@ -91,109 +91,119 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
   }
 
   return (
-    <ModalShell onClose={onClose}>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-800">設定</h2>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition text-xl leading-none">×</button>
-      </div>
-
-      {/* タブ */}
-      <div className="flex border-b border-gray-200 mb-4">
-        <button
-          onClick={() => setTab('members')}
-          className={`flex-1 py-2 text-sm font-medium transition ${tab === 'members' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          メンバー
-        </button>
-        <button
-          onClick={() => setTab('categories')}
-          className={`flex-1 py-2 text-sm font-medium transition ${tab === 'categories' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          カテゴリー
-        </button>
+    <ModalShell onClose={onClose} className="max-h-[90dvh] flex flex-col">
+      {/* ヘッダー・タブ：常に表示 */}
+      <div className="shrink-0">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-800">設定</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition text-xl leading-none">×</button>
+        </div>
+        <div className="flex border-b border-gray-200 mb-4">
+          <button
+            onClick={() => setTab('members')}
+            className={`flex-1 py-2 text-sm font-medium transition ${tab === 'members' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            メンバー
+          </button>
+          <button
+            onClick={() => setTab('categories')}
+            className={`flex-1 py-2 text-sm font-medium transition ${tab === 'categories' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            カテゴリー
+          </button>
+        </div>
       </div>
 
       {tab === 'members' && (
-        <>
-          <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden mb-3">
-            {members.map((m) => (
-              <div key={m.id} className="flex items-center justify-between px-3 py-2">
-                <span className="text-sm text-gray-700">{m.name}</span>
-                <button
-                  onClick={() => handleDeleteMember(m.id, m.name)}
-                  disabled={deletingMemberId === m.id}
-                  className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition"
-                >
-                  {deletingMemberId === m.id ? '削除中…' : '削除'}
-                </button>
-              </div>
-            ))}
-            {members.length === 0 && (
-              <div className="px-3 py-3 text-sm text-gray-400 text-center">メンバーがいません</div>
-            )}
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* リスト：スクロール */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden mb-3">
+              {members.map((m) => (
+                <div key={m.id} className="flex items-center justify-between px-3 py-2">
+                  <span className="text-sm text-gray-700">{m.name}</span>
+                  <button
+                    onClick={() => handleDeleteMember(m.id, m.name)}
+                    disabled={deletingMemberId === m.id}
+                    className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition"
+                  >
+                    {deletingMemberId === m.id ? '削除中…' : '削除'}
+                  </button>
+                </div>
+              ))}
+              {members.length === 0 && (
+                <div className="px-3 py-3 text-sm text-gray-400 text-center">メンバーがいません</div>
+              )}
+            </div>
           </div>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newMemberName}
-              onChange={(e) => setNewMemberName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleAddMember() }}
-              placeholder="名前を入力"
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            />
-            <button
-              onClick={handleAddMember}
-              disabled={addingMember || !newMemberName.trim()}
-              className="bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition"
-            >
-              {addingMember ? '追加中…' : '追加'}
-            </button>
+          {/* 追加フォーム：常に表示 */}
+          <div className="shrink-0 pt-1">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newMemberName}
+                onChange={(e) => setNewMemberName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAddMember() }}
+                placeholder="名前を入力"
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              />
+              <button
+                onClick={handleAddMember}
+                disabled={addingMember || !newMemberName.trim()}
+                className="bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition"
+              >
+                {addingMember ? '追加中…' : '追加'}
+              </button>
+            </div>
+            {memberError && <p className="text-red-500 text-xs mt-2">{memberError}</p>}
           </div>
-          {memberError && <p className="text-red-500 text-xs mt-2">{memberError}</p>}
-        </>
+        </div>
       )}
 
       {tab === 'categories' && (
-        <>
-          <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden mb-3">
-            {parentCategories.length === 0 && (
-              <div className="px-3 py-3 text-sm text-gray-400 text-center">カテゴリーがありません</div>
-            )}
-            {parentCategories.map((parent) => {
-              const children = categories.filter(c => c.parent_id === parent.id)
-              return (
-                <div key={parent.id}>
-                  <div className="flex items-center justify-between px-3 py-2">
-                    <span className="text-sm font-medium text-gray-700">{parent.name}</span>
-                    <button
-                      onClick={() => handleDeleteCategory(parent.id, parent.name)}
-                      disabled={deletingCategoryId === parent.id}
-                      className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition"
-                    >
-                      {deletingCategoryId === parent.id ? '削除中…' : '削除'}
-                    </button>
-                  </div>
-                  {children.map((child) => (
-                    <div key={child.id} className="flex items-center justify-between pl-7 pr-3 py-1.5 bg-gray-50 border-t border-gray-100">
-                      <div className="flex items-center gap-1">
-                        <span className="text-gray-400 text-xs">└</span>
-                        <span className="text-sm text-gray-600">{child.name}</span>
-                      </div>
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* リスト：スクロール */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden mb-3">
+              {parentCategories.length === 0 && (
+                <div className="px-3 py-3 text-sm text-gray-400 text-center">カテゴリーがありません</div>
+              )}
+              {parentCategories.map((parent) => {
+                const children = categories.filter(c => c.parent_id === parent.id)
+                return (
+                  <div key={parent.id}>
+                    <div className="flex items-center justify-between px-3 py-2">
+                      <span className="text-sm font-medium text-gray-700">{parent.name}</span>
                       <button
-                        onClick={() => handleDeleteCategory(child.id, child.name)}
-                        disabled={deletingCategoryId === child.id}
+                        onClick={() => handleDeleteCategory(parent.id, parent.name)}
+                        disabled={deletingCategoryId === parent.id}
                         className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition"
                       >
-                        {deletingCategoryId === child.id ? '削除中…' : '削除'}
+                        {deletingCategoryId === parent.id ? '削除中…' : '削除'}
                       </button>
                     </div>
-                  ))}
-                </div>
-              )
-            })}
+                    {children.map((child) => (
+                      <div key={child.id} className="flex items-center justify-between pl-7 pr-3 py-1.5 bg-gray-50 border-t border-gray-100">
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-400 text-xs">└</span>
+                          <span className="text-sm text-gray-600">{child.name}</span>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteCategory(child.id, child.name)}
+                          disabled={deletingCategoryId === child.id}
+                          className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition"
+                        >
+                          {deletingCategoryId === child.id ? '削除中…' : '削除'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })}
+            </div>
           </div>
-
-          <div className="space-y-2">
+          {/* 追加フォーム：常に表示 */}
+          <div className="shrink-0 pt-1 space-y-2">
             <div className="flex gap-2">
               <input
                 type="text"
@@ -211,38 +221,38 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                 {addingParent ? '追加中…' : '追加'}
               </button>
             </div>
-            <div className="space-y-2">
-              <select
-                value={newChildParentId}
-                onChange={(e) => setNewChildParentId(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+            {parentCategories.length > 0 && (<>
+            <select
+              value={newChildParentId}
+              onChange={(e) => setNewChildParentId(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+            >
+              <option value="">大分類を選択</option>
+              {parentCategories.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newChildName}
+                onChange={(e) => setNewChildName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAddCategory(newChildName.trim(), newChildParentId, () => setNewChildName(''), setAddingChild) }}
+                placeholder="小分類名"
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              />
+              <button
+                onClick={() => handleAddCategory(newChildName.trim(), newChildParentId, () => setNewChildName(''), setAddingChild)}
+                disabled={addingChild || !newChildName.trim() || !newChildParentId}
+                className="bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition whitespace-nowrap"
               >
-                <option value="">大分類を選択</option>
-                {parentCategories.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newChildName}
-                  onChange={(e) => setNewChildName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleAddCategory(newChildName.trim(), newChildParentId, () => setNewChildName(''), setAddingChild) }}
-                  placeholder="小分類名"
-                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                />
-                <button
-                  onClick={() => handleAddCategory(newChildName.trim(), newChildParentId, () => setNewChildName(''), setAddingChild)}
-                  disabled={addingChild || !newChildName.trim() || !newChildParentId}
-                  className="bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition whitespace-nowrap"
-                >
-                  {addingChild ? '追加中…' : '追加'}
-                </button>
-              </div>
+                {addingChild ? '追加中…' : '追加'}
+              </button>
             </div>
+            </>)}
+            {categoryError && <p className="text-red-500 text-xs mt-2">{categoryError}</p>}
           </div>
-          {categoryError && <p className="text-red-500 text-xs mt-2">{categoryError}</p>}
-        </>
+        </div>
       )}
     </ModalShell>
   )
