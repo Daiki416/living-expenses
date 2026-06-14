@@ -27,6 +27,8 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [scanResult, setScanResult] = useState<ScanResult | null>(null)
+  const [scanParentCategoryId, setScanParentCategoryId] = useState('')
+  const [scanChildCategoryId, setScanChildCategoryId] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -65,9 +67,10 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
     if (!paidBy) { setError('支払者を選択してください'); return }
     setSubmitting(true)
     setError(null)
+    const effectiveCategoryId = scanChildCategoryId || scanParentCategoryId || null
     try {
       for (const item of selected) {
-        await onAdd({ date: scanResult.date, paid_by: paidBy, description: item.description.trim(), amount: item.amount, category_id: null })
+        await onAdd({ date: scanResult.date, paid_by: paidBy, description: item.description.trim(), amount: item.amount, category_id: effectiveCategoryId })
       }
       onClose()
     } catch (err) {
@@ -76,21 +79,46 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
     }
   }
 
+  function validateForm(): { parsed: number } | null {
+    const parsed = Number(amount)
+    if (!date) { setError('日付を入力してください'); return null }
+    if (!paidBy) { setError('支払者を選択してください'); return null }
+    if (!description.trim()) { setError('内容を入力してください'); return null }
+    if (!Number.isInteger(parsed) || parsed <= 0) { setError('金額は1以上の整数で入力してください'); return null }
+    return { parsed }
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const parsed = Number(amount)
-    if (!date) { setError('日付を入力してください'); return }
-    if (!paidBy) { setError('支払者を選択してください'); return }
-    if (!description.trim()) { setError('内容を入力してください'); return }
-    if (!Number.isInteger(parsed) || parsed <= 0) { setError('金額は1以上の整数で入力してください'); return }
+    const valid = validateForm()
+    if (!valid) return
     const effectiveCategoryId = childCategoryId || parentCategoryId || null
     setSubmitting(true)
     setError(null)
     try {
-      await onAdd({ date, paid_by: paidBy, description: description.trim(), amount: parsed, category_id: effectiveCategoryId })
+      await onAdd({ date, paid_by: paidBy, description: description.trim(), amount: valid.parsed, category_id: effectiveCategoryId })
       onClose()
     } catch (err) {
       setError((err as Error).message)
+      setSubmitting(false)
+    }
+  }
+
+  async function handleSubmitAndContinue() {
+    const valid = validateForm()
+    if (!valid) return
+    const effectiveCategoryId = childCategoryId || parentCategoryId || null
+    setSubmitting(true)
+    setError(null)
+    try {
+      await onAdd({ date, paid_by: paidBy, description: description.trim(), amount: valid.parsed, category_id: effectiveCategoryId })
+      setDescription('')
+      setAmount('')
+      setParentCategoryId('')
+      setChildCategoryId('')
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
       setSubmitting(false)
     }
   }
@@ -133,6 +161,17 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
                 </label>
               ))}
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">カテゴリー</label>
+            <CategorySelect
+              categories={categories}
+              parentCategoryId={scanParentCategoryId}
+              childCategoryId={scanChildCategoryId}
+              onParentChange={(parentId, firstChildId) => { setScanParentCategoryId(parentId); setScanChildCategoryId(firstChildId) }}
+              onChildChange={setScanChildCategoryId}
+            />
           </div>
 
           <div>
@@ -257,7 +296,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
-          <div className="flex gap-3 pt-1">
+          <div className="flex gap-2 pt-1">
             <button
               type="button"
               onClick={onClose}
@@ -270,7 +309,15 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
               disabled={submitting}
               className="flex-1 bg-indigo-500 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-60 transition"
             >
-              {submitting ? '追加中…' : '追加'}
+              追加
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmitAndContinue}
+              disabled={submitting}
+              className="flex-1 bg-indigo-100 text-indigo-700 rounded-lg py-2 text-sm font-medium hover:bg-indigo-200 disabled:opacity-60 transition"
+            >
+              続けて追加
             </button>
           </div>
         </form>
