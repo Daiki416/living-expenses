@@ -48,7 +48,7 @@ export async function extractReceiptData(imageFile: File): Promise<ReceiptData> 
             { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
             {
               type: 'text',
-              text: 'このレシート画像から全ての商品・品目を抽出し、以下のJSON形式のみで返してください。\n{"date":"YYYY-MM-DD形式の購入日（不明な場合はnull）","items":[{"description":"商品名","amount":税込金額の整数}]}\n小計・合計・税額・値引きなどの集計行は items に含めないでください。JSONのみ返してください。',
+              text: 'このレシート画像から全ての商品・品目を抽出し、以下のJSON形式のみで返してください。\n{"date":"YYYY-MM-DD形式の購入日（不明な場合はnull）","items":[{"description":"商品名","amount":税込金額の整数}]}\n【金額について】各商品の税込み金額を返してください。レシートに軽減税率マーク（※や★など）がある場合はそれに従い、ない場合は食品・飲料は8%、それ以外は10%を加算して税込み額を計算してください。アルコール飲料は10%です。\n小計・合計・税額・値引きなどの集計行は items に含めないでください。JSONのみ返してください。',
             },
           ],
         },
