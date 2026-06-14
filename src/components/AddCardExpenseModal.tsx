@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { CardExpense, Category } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
 import { CategorySelect } from './CategorySelect'
+import { extractReceiptData } from '../lib/ocr'
 
 type Props = {
   categories: Category[]
@@ -18,9 +19,29 @@ export function AddCardExpenseModal({ categories, defaultDate, onAdd, onClose }:
   const [parentCategoryId, setParentCategoryId] = useState('')
   const [childCategoryId, setChildCategoryId] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [scanning, setScanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEscapeKey(onClose)
+
+  async function handleScanReceipt(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setScanning(true)
+    setError(null)
+    try {
+      const data = await extractReceiptData(file)
+      if (data.date) setDate(data.date)
+      if (data.description) setDescription(data.description)
+      if (data.amount !== null) setAmount(String(data.amount))
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setScanning(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -43,6 +64,16 @@ export function AddCardExpenseModal({ categories, defaultDate, onAdd, onClose }:
   return (
     <ModalShell onClose={onClose} className="overflow-hidden">
       <h2 className="text-lg font-semibold text-gray-800 mb-5">クレカ明細追加</h2>
+
+      <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleScanReceipt} />
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={scanning}
+        className="w-full mb-4 border border-dashed border-indigo-300 text-indigo-500 rounded-lg py-2 text-sm font-medium hover:bg-indigo-50 disabled:opacity-50 transition"
+      >
+        {scanning ? '読み込み中…' : 'レシートを読み込む'}
+      </button>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

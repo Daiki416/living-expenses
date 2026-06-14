@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Expense, Category } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
 import { CategorySelect } from './CategorySelect'
+import { extractReceiptData } from '../lib/ocr'
 
 type Props = {
   members: string[]
@@ -20,13 +21,33 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
   const [parentCategoryId, setParentCategoryId] = useState('')
   const [childCategoryId, setChildCategoryId] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [scanning, setScanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!members.includes(paidBy)) setPaidBy(members[0] ?? '')
   }, [members])
 
   useEscapeKey(onClose)
+
+  async function handleScanReceipt(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setScanning(true)
+    setError(null)
+    try {
+      const data = await extractReceiptData(file)
+      if (data.date) setDate(data.date)
+      if (data.description) setDescription(data.description)
+      if (data.amount !== null) setAmount(String(data.amount))
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setScanning(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -50,6 +71,16 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
   return (
     <ModalShell onClose={onClose} className="overflow-hidden">
       <h2 className="text-lg font-semibold text-gray-800 mb-5">立て替え追加</h2>
+
+      <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleScanReceipt} />
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={scanning}
+        className="w-full mb-4 border border-dashed border-indigo-300 text-indigo-500 rounded-lg py-2 text-sm font-medium hover:bg-indigo-50 disabled:opacity-50 transition"
+      >
+        {scanning ? '読み込み中…' : 'レシートを読み込む'}
+      </button>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
