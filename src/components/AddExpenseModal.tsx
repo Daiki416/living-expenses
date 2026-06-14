@@ -3,7 +3,7 @@ import type { Expense, Category } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
 import { CategorySelect } from './CategorySelect'
-import { extractReceiptData, applyTax, type ScanItem, type ScanResult, type TaxRate } from '../lib/ocr'
+import { extractReceiptData, applyTax, toTaxRate, type ScanItem, type ScanResult, type TaxRate } from '../lib/ocr'
 
 type Props = {
   members: string[]
@@ -26,7 +26,6 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
   const [scanResult, setScanResult] = useState<ScanResult | null>(null)
   const [scanParentCategoryId, setScanParentCategoryId] = useState('')
   const [scanChildCategoryId, setScanChildCategoryId] = useState('')
-  const [scanTaxRate, setScanTaxRate] = useState<TaxRate>(8)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEscapeKey(onClose)
@@ -41,7 +40,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
       const data = await extractReceiptData(file)
       setScanResult({
         date: data.date ?? date,
-        items: data.items.map(item => ({ ...item, selected: true })),
+        items: data.items.map(item => ({ ...item, selected: true, taxRate: 8 as TaxRate })),
       })
     } catch (err) {
       setError((err as Error).message)
@@ -56,7 +55,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
 
   async function handleAddFromReceipt() {
     if (!scanResult) return
-    const selected = scanResult.items.filter(i => i.selected && i.description.trim() && i.amount > 0)
+    const selected = scanResult.items.filter(i => i.selected && i.description.trim() && Number.isInteger(i.amount) && i.amount > 0)
     if (selected.length === 0) { setError('追加する項目を選択してください'); return }
     if (!paidBy) { setError('支払者を選択してください'); return }
     setSubmitting(true)
@@ -64,7 +63,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
     const effectiveCategoryId = scanChildCategoryId || scanParentCategoryId || null
     try {
       for (const item of selected) {
-        await onAdd({ date: scanResult.date, paid_by: paidBy, description: item.description.trim(), amount: applyTax(item.amount, scanTaxRate), category_id: effectiveCategoryId })
+        await onAdd({ date: scanResult.date, paid_by: paidBy, description: item.description.trim(), amount: applyTax(item.amount, item.taxRate), category_id: effectiveCategoryId })
       }
       onClose()
     } catch (err) {
@@ -160,18 +159,6 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-2">消費税</label>
-            <div className="flex gap-4">
-              {([8, 10, 0] as TaxRate[]).map((rate) => (
-                <label key={rate} className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="scanTaxRate" value={rate} checked={scanTaxRate === rate} onChange={() => setScanTaxRate(rate)} className="accent-indigo-500" />
-                  <span className="text-sm text-gray-700">{rate === 0 ? 'なし（税込）' : `${rate}%`}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">カテゴリー</label>
             <CategorySelect
               categories={categories}
@@ -204,8 +191,17 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
                     value={item.amount}
                     onChange={(e) => updateScanItem(i, { amount: Number(e.target.value) })}
                     min={1}
-                    className="w-24 shrink-0 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="w-20 shrink-0 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                   />
+                  <select
+                    value={item.taxRate}
+                    onChange={(e) => updateScanItem(i, { taxRate: toTaxRate(Number(e.target.value)) })}
+                    className="w-20 shrink-0 border border-gray-300 rounded-lg px-1 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  >
+                    <option value={8}>8%</option>
+                    <option value={10}>10%</option>
+                    <option value={0}>税込</option>
+                  </select>
                 </div>
               ))}
             </div>
@@ -227,7 +223,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
               disabled={submitting}
               className="flex-1 bg-indigo-500 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-60 transition"
             >
-              {submitting ? '追加中…' : `${scanResult.items.filter(i => i.selected).length}件を追加`}
+              {submitting ? '追加中…' : `${scanResult.items.filter(i => i.selected && i.description.trim() && Number.isInteger(i.amount) && i.amount > 0).length}件を追加`}
             </button>
           </div>
         </div>

@@ -1,21 +1,26 @@
-export type ScanItem = { description: string; amount: number; selected: boolean }
+export type TaxRate = 8 | 10 | 0
+
+export type ScanItem = { description: string; amount: number; selected: boolean; taxRate: TaxRate }
 export type ScanResult = { date: string; items: ScanItem[] }
 
-export type ReceiptItem = {
+type ReceiptItem = {
   description: string
   amount: number
 }
 
-export type ReceiptData = {
+type ReceiptData = {
   date: string | null
   items: ReceiptItem[]
 }
 
-export type TaxRate = 8 | 10 | 0
-
 export function applyTax(amount: number, taxRate: TaxRate): number {
   if (taxRate === 0) return amount
   return Math.floor(amount * (1 + taxRate / 100))
+}
+
+export function toTaxRate(v: number): TaxRate {
+  if (v === 8 || v === 10 || v === 0) return v
+  return 8
 }
 
 function fileToBase64(file: File): Promise<string> {
