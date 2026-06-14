@@ -11,6 +11,13 @@ export type ReceiptData = {
   items: ReceiptItem[]
 }
 
+export type TaxRate = 8 | 10 | 0
+
+export function applyTax(amount: number, taxRate: TaxRate): number {
+  if (taxRate === 0) return amount
+  return Math.floor(amount * (1 + taxRate / 100))
+}
+
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -48,7 +55,7 @@ export async function extractReceiptData(imageFile: File): Promise<ReceiptData> 
             { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
             {
               type: 'text',
-              text: 'このレシート画像から全ての商品・品目を抽出し、以下のJSON形式のみで返してください。\n{"date":"YYYY-MM-DD形式の購入日（不明な場合はnull）","tax_type":"外税 or 内税 or null","items":[{"description":"商品名","amount":商品行に印字された金額の整数,"tax_rate":適用税率の数値 or null}]}\n【tax_typeの判断】集計欄に「外〇%」があれば"外税"、「内〇%」「税込」があれば"内税"、判断できなければnull。\n【外税レシートのtax_rate判断手順】\n1. 集計欄の「外〇% 税対象 ¥XXX」の行から、このレシートで使われている税率区分（例: 外8%, 外10%）と各区分の対象合計金額を把握する\n2. 各商品行のマーカー（軽*、軽など軽減税率を示す記号）の有無を確認する\n3. 軽減税率マーカーがある商品 → 集計欄の最も低い税率を tax_rate に入れる\n4. マーカーがない商品 → 集計欄の最も高い税率を tax_rate に入れる\n5. 税率区分が1種類しかない場合は全商品にその税率を適用する\n【内税・判断不能の場合】tax_rateはnull\namountは必ず印字された金額をそのまま入れてください。税計算はしないでください。\n小計・合計・税額・値引きなどの集計行はitemsに含めないでください。JSONのみ返してください。',
+              text: 'このレシート画像から全ての商品・品目を抽出し、以下のJSON形式のみで返してください。\n{"date":"YYYY-MM-DD形式の購入日（不明な場合はnull）","items":[{"description":"商品名","amount":商品行に印字されている金額の整数}]}\n各商品のamountは印字された数字をそのままコピーしてください。税計算は不要です。\n小計・合計・税額・値引き等の集計行はitemsに含めないでください。JSONのみ返してください。',
             },
           ],
         },
@@ -68,19 +75,12 @@ export async function extractReceiptData(imageFile: File): Promise<ReceiptData> 
     const match = text.match(/\{[\s\S]*\}/)
     if (!match) throw new Error('JSON not found')
     const data = JSON.parse(match[0])
-    const isPreTax = data.tax_type === '外税'
     return {
       date: typeof data.date === 'string' ? data.date : null,
       items: Array.isArray(data.items)
         ? data.items
             .filter((i: unknown) => typeof (i as { description?: unknown }).description === 'string' && typeof (i as { amount?: unknown }).amount === 'number')
-            .map((i: { description: string; amount: number; tax_rate: number | null }) => {
-              const base = Math.round(i.amount)
-              const amount = isPreTax && typeof i.tax_rate === 'number'
-                ? Math.floor(base * (1 + i.tax_rate / 100))
-                : base
-              return { description: i.description, amount }
-            })
+            .map((i: { description: string; amount: number }) => ({ description: i.description, amount: Math.round(i.amount) }))
         : [],
     }
   } catch {

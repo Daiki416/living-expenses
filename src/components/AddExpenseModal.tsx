@@ -3,7 +3,7 @@ import type { Expense, Category } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
 import { CategorySelect } from './CategorySelect'
-import { extractReceiptData, type ScanItem, type ScanResult } from '../lib/ocr'
+import { extractReceiptData, applyTax, type ScanItem, type ScanResult, type TaxRate } from '../lib/ocr'
 
 type Props = {
   members: string[]
@@ -26,6 +26,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
   const [scanResult, setScanResult] = useState<ScanResult | null>(null)
   const [scanParentCategoryId, setScanParentCategoryId] = useState('')
   const [scanChildCategoryId, setScanChildCategoryId] = useState('')
+  const [scanTaxRate, setScanTaxRate] = useState<TaxRate>(8)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEscapeKey(onClose)
@@ -63,7 +64,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
     const effectiveCategoryId = scanChildCategoryId || scanParentCategoryId || null
     try {
       for (const item of selected) {
-        await onAdd({ date: scanResult.date, paid_by: paidBy, description: item.description.trim(), amount: item.amount, category_id: effectiveCategoryId })
+        await onAdd({ date: scanResult.date, paid_by: paidBy, description: item.description.trim(), amount: applyTax(item.amount, scanTaxRate), category_id: effectiveCategoryId })
       }
       onClose()
     } catch (err) {
@@ -153,6 +154,18 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
                 <label key={m} className="flex items-center gap-2 cursor-pointer">
                   <input type="radio" name="paidBy" value={m} checked={paidBy === m} onChange={() => setPaidBy(m)} className="accent-indigo-500" />
                   <span className="text-sm text-gray-700">{m}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-2">消費税</label>
+            <div className="flex gap-4">
+              {([8, 10, 0] as TaxRate[]).map((rate) => (
+                <label key={rate} className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="scanTaxRate" value={rate} checked={scanTaxRate === rate} onChange={() => setScanTaxRate(rate)} className="accent-indigo-500" />
+                  <span className="text-sm text-gray-700">{rate === 0 ? 'なし（税込）' : `${rate}%`}</span>
                 </label>
               ))}
             </div>
