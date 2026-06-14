@@ -1,23 +1,12 @@
 import { useState } from 'react'
 import type { Expense, Category } from '../lib/supabase'
-import { formatDate } from '../lib/format'
+import { formatDate, resolveCategoryLabel } from '../lib/format'
 
 type Props = {
   expenses: Expense[]
   categories: Category[]
   onEdit: (expense: Expense) => void
   onDelete: (id: string) => Promise<void>
-}
-
-function resolveCategoryLabel(categoryId: string | null, categories: Category[]): string {
-  if (!categoryId) return ''
-  const cat = categories.find(c => c.id === categoryId)
-  if (!cat) return ''
-  if (cat.parent_id) {
-    const parent = categories.find(c => c.id === cat.parent_id)
-    return parent ? `${parent.name} > ${cat.name}` : cat.name
-  }
-  return cat.name
 }
 
 export function ExpenseList({ expenses, categories, onEdit, onDelete }: Props) {

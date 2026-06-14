@@ -5,6 +5,17 @@ export function formatDate(dateStr: string): string {
   return `${parseInt(m, 10)}/${parseInt(d, 10)}`
 }
 
+export function resolveCategoryLabel(categoryId: string | null, categories: Category[]): string {
+  if (!categoryId) return ''
+  const cat = categories.find(c => c.id === categoryId)
+  if (!cat) return ''
+  if (cat.parent_id) {
+    const parent = categories.find(c => c.id === cat.parent_id)
+    return parent ? `${parent.name} > ${cat.name}` : cat.name
+  }
+  return cat.name
+}
+
 export function resolveInitialCategoryIds(categories: Category[], categoryId: string | null): { parentId: string; childId: string } {
   if (!categoryId) return { parentId: '', childId: '' }
   const cat = categories.find(c => c.id === categoryId)

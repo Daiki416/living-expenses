@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { CardExpense, Category } from '../lib/supabase'
-import { formatDate } from '../lib/format'
+import { formatDate, resolveCategoryLabel } from '../lib/format'
 
 type Props = {
   cardExpenses: CardExpense[]
@@ -22,17 +22,7 @@ export function CardExpenseList({ cardExpenses, categories, onEdit, onDelete }: 
     )
   }
 
-  function resolveCategoryLabel(categoryId: string | null): string {
-    if (!categoryId) return ''
-    const cat = categories.find(c => c.id === categoryId)
-    if (!cat) return ''
-    if (cat.parent_id) {
-      const parent = categories.find(c => c.id === cat.parent_id)
-      return parent ? `${parent.name} > ${cat.name}` : cat.name
-    }
-    return cat.name
-  }
-  const categoryName = (id: string | null) => resolveCategoryLabel(id) || null
+  const categoryName = (id: string | null) => resolveCategoryLabel(id, categories) || null
 
   const sorted = [...cardExpenses].sort((a, b) =>
     sortAsc ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date)

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { Expense, Category } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
@@ -24,10 +24,6 @@ export function EditExpenseModal({ expense, members, categories, onUpdate, onClo
   const [childCategoryId, setChildCategoryId] = useState(childId)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!members.includes(paidBy)) setPaidBy(members[0] ?? '')
-  }, [members])
 
   useEscapeKey(onClose)
 

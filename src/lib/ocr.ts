@@ -1,3 +1,6 @@
+export type ScanItem = { description: string; amount: number; selected: boolean }
+export type ScanResult = { date: string; items: ScanItem[] }
+
 export type ReceiptItem = {
   description: string
   amount: number

@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import type { Expense, Category } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
 import { CategorySelect } from './CategorySelect'
-import { extractReceiptData } from '../lib/ocr'
+import { extractReceiptData, type ScanItem, type ScanResult } from '../lib/ocr'
 
 type Props = {
   members: string[]
@@ -12,9 +12,6 @@ type Props = {
   onAdd: (input: Omit<Expense, 'id' | 'created_at'>) => Promise<void>
   onClose: () => void
 }
-
-type ScanItem = { description: string; amount: number; selected: boolean }
-type ScanResult = { date: string; items: ScanItem[] }
 
 export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClose }: Props) {
   const [date, setDate] = useState(defaultDate)
@@ -30,10 +27,6 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
   const [scanParentCategoryId, setScanParentCategoryId] = useState('')
   const [scanChildCategoryId, setScanChildCategoryId] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (!members.includes(paidBy)) setPaidBy(members[0] ?? '')
-  }, [members])
 
   useEscapeKey(onClose)
 
@@ -107,17 +100,19 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
   async function handleSubmitAndContinue() {
     const valid = validateForm()
     if (!valid) return
+    const savedDescription = description.trim()
+    const savedAmount = valid.parsed
     const effectiveCategoryId = childCategoryId || parentCategoryId || null
-    setSubmitting(true)
     setError(null)
+    setSubmitting(true)
+    setDescription('')
+    setAmount('')
     try {
-      await onAdd({ date, paid_by: paidBy, description: description.trim(), amount: valid.parsed, category_id: effectiveCategoryId })
-      setDescription('')
-      setAmount('')
-      setParentCategoryId('')
-      setChildCategoryId('')
+      await onAdd({ date, paid_by: paidBy, description: savedDescription, amount: savedAmount, category_id: effectiveCategoryId })
     } catch (err) {
       setError((err as Error).message)
+      setDescription(savedDescription)
+      setAmount(String(savedAmount))
     } finally {
       setSubmitting(false)
     }
