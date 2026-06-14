@@ -200,7 +200,7 @@ export default function App() {
           categories={categories}
           onAddMember={addMember}
           onDeleteMember={deleteMember}
-          onAddCategory={addCategory}
+          onAddCategory={(name, parentId) => addCategory(name, parentId)}
           onDeleteCategory={deleteCategory}
           onClose={() => setShowSettings(false)}
         />

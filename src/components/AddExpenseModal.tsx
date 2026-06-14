@@ -16,9 +16,13 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
   const [paidBy, setPaidBy] = useState(members[0] ?? '')
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
-  const [categoryId, setCategoryId] = useState('')
+  const [parentCategoryId, setParentCategoryId] = useState('')
+  const [childCategoryId, setChildCategoryId] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const parentCategories = categories.filter(c => c.parent_id === null)
+  const childCategories = categories.filter(c => c.parent_id === parentCategoryId)
 
   useEffect(() => {
     if (!members.includes(paidBy)) setPaidBy(members[0] ?? '')
@@ -33,10 +37,11 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
     if (!paidBy) { setError('支払者を選択してください'); return }
     if (!description.trim()) { setError('内容を入力してください'); return }
     if (!Number.isInteger(parsed) || parsed <= 0) { setError('金額は1以上の整数で入力してください'); return }
+    const effectiveCategoryId = childCategoryId || parentCategoryId || null
     setSubmitting(true)
     setError(null)
     try {
-      await onAdd({ date, paid_by: paidBy, description: description.trim(), amount: parsed, category_id: categoryId || null })
+      await onAdd({ date, paid_by: paidBy, description: description.trim(), amount: parsed, category_id: effectiveCategoryId })
       onClose()
     } catch (err) {
       setError((err as Error).message)
@@ -110,15 +115,27 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">カテゴリー</label>
           <select
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
+            value={parentCategoryId}
+            onChange={(e) => { setParentCategoryId(e.target.value); setChildCategoryId('') }}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
           >
             <option value="">未分類</option>
-            {categories.map(c => (
+            {parentCategories.map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
+          {childCategories.length > 0 && (
+            <select
+              value={childCategoryId}
+              onChange={(e) => setChildCategoryId(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white mt-2"
+            >
+              <option value="">{parentCategories.find(c => c.id === parentCategoryId)?.name}（全般）</option>
+              {childCategories.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}

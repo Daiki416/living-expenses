@@ -9,9 +9,19 @@ type Props = {
   onDelete: (id: string) => Promise<void>
 }
 
+function resolveCategoryLabel(categoryId: string | null, categories: Category[]): string {
+  if (!categoryId) return ''
+  const cat = categories.find(c => c.id === categoryId)
+  if (!cat) return ''
+  if (cat.parent_id) {
+    const parent = categories.find(c => c.id === cat.parent_id)
+    return parent ? `${parent.name} > ${cat.name}` : cat.name
+  }
+  return cat.name
+}
+
 export function ExpenseList({ expenses, categories, onEdit, onDelete }: Props) {
-  const categoryName = (id: string | null) =>
-    id ? (categories.find(c => c.id === id)?.name ?? null) : null
+  const categoryName = (id: string | null) => resolveCategoryLabel(id, categories) || null
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [sortAsc, setSortAsc] = useState(false)

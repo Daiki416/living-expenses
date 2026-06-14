@@ -24,8 +24,8 @@ export function useCategories() {
     return () => { cancelled = true }
   }, [refetchKey])
 
-  async function addCategory(name: string) {
-    const { error } = await supabase.from('categories').insert({ name })
+  async function addCategory(name: string, parentId?: string | null) {
+    const { error } = await supabase.from('categories').insert({ name, parent_id: parentId ?? null })
     if (error) throw new Error(error.message)
     setRefetchKey(k => k + 1)
   }
