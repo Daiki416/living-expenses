@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Expense, CardExpense, Category } from '../lib/supabase'
 
 type Props = {
@@ -15,6 +16,9 @@ function getEffectiveParentId(categoryId: string | null, categories: Category[])
 }
 
 export function CategorySummary({ expenses, cardExpenses, categories, loading }: Props) {
+  const [view, setView] = useState<'table' | 'chart'>('table')
+  const [chartMode, setChartMode] = useState<'parent' | 'child'>('parent')
+
   const expenseTotal = expenses.reduce((s, e) => s + e.amount, 0)
   const cardTotal = cardExpenses.reduce((s, e) => s + e.amount, 0)
   const grandTotal = expenseTotal + cardTotal
@@ -43,41 +47,157 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
     return parentTotals[b] - parentTotals[a]
   })
 
+  const CHART_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6']
+  const cx = 100
+  const cy = 100
+  const r = 80
+
   return (
     <div className="bg-white rounded-xl shadow-sm px-5 py-4 mt-4">
-      <h2 className="text-sm font-medium text-gray-500 mb-3">カテゴリー別合計</h2>
-      <div className="space-y-1">
-        {sortedParentIds.map(parentId => {
-          const parentName = parentId === '__uncategorized__'
-            ? '未分類'
-            : (parentCategories.find(c => c.id === parentId)?.name ?? '未分類')
-          const children = categories.filter(c => c.parent_id === parentId)
-          const directAmount = parentTotals[parentId] - Object.entries(childTotals)
-            .filter(([childId]) => categories.find(c => c.id === childId)?.parent_id === parentId)
-            .reduce((s, [, v]) => s + v, 0)
-
-          return (
-            <div key={parentId}>
-              <div className="flex items-center justify-between text-sm py-1">
-                <span className="font-medium text-gray-700">{parentName}</span>
-                <span className="font-medium text-gray-800">¥{parentTotals[parentId].toLocaleString()}</span>
-              </div>
-              {children.filter(c => childTotals[c.id]).map(child => (
-                <div key={child.id} className="flex items-center justify-between text-sm pl-4 py-0.5">
-                  <span className="text-gray-500">{child.name}</span>
-                  <span className="text-gray-600">¥{childTotals[child.id].toLocaleString()}</span>
-                </div>
-              ))}
-              {directAmount > 0 && children.some(c => childTotals[c.id]) && (
-                <div className="flex items-center justify-between text-sm pl-4 py-0.5">
-                  <span className="text-gray-500">{parentName}（全般）</span>
-                  <span className="text-gray-600">¥{directAmount.toLocaleString()}</span>
-                </div>
-              )}
-            </div>
-          )
-        })}
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-medium text-gray-500">カテゴリー別合計</h2>
+        <button
+          className="text-xs text-gray-500 border border-gray-200 rounded px-2 py-1"
+          onClick={() => setView(v => v === 'table' ? 'chart' : 'table')}
+        >
+          {view === 'table' ? 'グラフ' : '表'}
+        </button>
       </div>
+      {view === 'table' && (
+        <div className="space-y-1">
+          {sortedParentIds.map(parentId => {
+            const parentName = parentId === '__uncategorized__'
+              ? '未分類'
+              : (parentCategories.find(c => c.id === parentId)?.name ?? '未分類')
+            const children = categories.filter(c => c.parent_id === parentId)
+            const directAmount = parentTotals[parentId] - Object.entries(childTotals)
+              .filter(([childId]) => categories.find(c => c.id === childId)?.parent_id === parentId)
+              .reduce((s, [, v]) => s + v, 0)
+
+            return (
+              <div key={parentId}>
+                <div className="flex items-center justify-between text-sm py-1">
+                  <span className="font-medium text-gray-700">{parentName}</span>
+                  <span className="font-medium text-gray-800">¥{parentTotals[parentId].toLocaleString()}</span>
+                </div>
+                {children.filter(c => childTotals[c.id]).map(child => (
+                  <div key={child.id} className="flex items-center justify-between text-sm pl-4 py-0.5">
+                    <span className="text-gray-500">{child.name}</span>
+                    <span className="text-gray-600">¥{childTotals[child.id].toLocaleString()}</span>
+                  </div>
+                ))}
+                {directAmount > 0 && children.some(c => childTotals[c.id]) && (
+                  <div className="flex items-center justify-between text-sm pl-4 py-0.5">
+                    <span className="text-gray-500">{parentName}（全般）</span>
+                    <span className="text-gray-600">¥{directAmount.toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+      {view === 'chart' && (
+        <div>
+          <div className="flex gap-1 mb-3">
+            <button
+              className={`text-xs px-3 py-1 rounded border ${chartMode === 'parent' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'text-gray-500 border-gray-200'}`}
+              onClick={() => setChartMode('parent')}
+            >
+              大分類
+            </button>
+            <button
+              className={`text-xs px-3 py-1 rounded border ${chartMode === 'child' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'text-gray-500 border-gray-200'}`}
+              onClick={() => setChartMode('child')}
+            >
+              小分類
+            </button>
+          </div>
+          {(() => {
+            const childEntries: { id: string; name: string; amount: number }[] = []
+            for (const parentId of sortedParentIds) {
+              const parentName = parentId === '__uncategorized__'
+                ? '未分類'
+                : (parentCategories.find(c => c.id === parentId)?.name ?? '未分類')
+              const children = categories.filter(c => c.parent_id === parentId)
+              const activeChildren = children.filter(c => childTotals[c.id])
+              if (activeChildren.length > 0) {
+                for (const child of activeChildren) {
+                  childEntries.push({ id: child.id, name: child.name, amount: childTotals[child.id] })
+                }
+                const childSum = activeChildren.reduce((s, c) => s + childTotals[c.id], 0)
+                const direct = parentTotals[parentId] - childSum
+                if (direct > 0) {
+                  childEntries.push({ id: `${parentId}__direct`, name: `${parentName}（全般）`, amount: direct })
+                }
+              } else {
+                childEntries.push({ id: parentId, name: parentName, amount: parentTotals[parentId] })
+              }
+            }
+            childEntries.sort((a, b) => b.amount - a.amount)
+
+            const entries = chartMode === 'parent'
+              ? sortedParentIds.map(parentId => ({
+                  id: parentId,
+                  name: parentId === '__uncategorized__'
+                    ? '未分類'
+                    : (parentCategories.find(c => c.id === parentId)?.name ?? '未分類'),
+                  amount: parentTotals[parentId],
+                }))
+              : childEntries
+
+            return (
+              <>
+                {entries.length === 1 ? (
+                  <svg viewBox="0 0 200 200" width="100%" height="auto">
+                    <circle cx={cx} cy={cy} r={r} fill={CHART_COLORS[0]} />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 200 200" width="100%" height="auto">
+                    {(() => {
+                      let cumAngle = -Math.PI / 2
+                      return entries.map((entry, index) => {
+                        const sliceAngle = (entry.amount / grandTotal) * 2 * Math.PI
+                        const startAngle = cumAngle
+                        const endAngle = cumAngle + sliceAngle
+                        cumAngle = endAngle
+
+                        const x1 = cx + r * Math.cos(startAngle)
+                        const y1 = cy + r * Math.sin(startAngle)
+                        const x2 = cx + r * Math.cos(endAngle)
+                        const y2 = cy + r * Math.sin(endAngle)
+                        const largeArcFlag = endAngle - startAngle > Math.PI ? 1 : 0
+                        const color = CHART_COLORS[index % CHART_COLORS.length]
+
+                        return (
+                          <path
+                            key={entry.id}
+                            d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                            fill={color}
+                          />
+                        )
+                      })
+                    })()}
+                  </svg>
+                )}
+                <div className="mt-3 space-y-1">
+                  {entries.map((entry, index) => {
+                    const color = CHART_COLORS[index % CHART_COLORS.length]
+                    const pct = ((entry.amount / grandTotal) * 100).toFixed(1)
+                    return (
+                      <div key={entry.id} className="flex items-center gap-2 text-sm">
+                        <span className="inline-block rounded-sm flex-shrink-0" style={{ width: 12, height: 12, backgroundColor: color }} />
+                        <span className="text-gray-700">{entry.name}</span>
+                        <span className="text-gray-400 ml-auto">¥{entry.amount.toLocaleString()} ({pct}%)</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )
+          })()}
+        </div>
+      )}
       <div className="border-t border-gray-100 mt-3 pt-3 flex items-center justify-between">
         <span className="text-sm font-semibold text-gray-700">合計</span>
         <div className="text-right">
