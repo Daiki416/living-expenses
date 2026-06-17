@@ -1,9 +1,11 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import type { CardExpense, Category } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
+import { useReceiptScan } from '../hooks/useReceiptScan'
 import { ModalShell } from './ModalShell'
 import { CategorySelect } from './CategorySelect'
-import { extractReceiptData, applyTax, toTaxRate, type ScanItem, type ScanResult, type TaxRate } from '../lib/ocr'
+import { ScanItemRow } from './ScanItemRow'
+import { parsePositiveInt, FORM_ERROR_MESSAGES } from '../lib/validation'
 
 type Props = {
   categories: Category[]
@@ -19,62 +21,23 @@ export function AddCardExpenseModal({ categories, defaultDate, onAdd, onClose }:
   const [parentCategoryId, setParentCategoryId] = useState('')
   const [childCategoryId, setChildCategoryId] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [scanning, setScanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [scanResult, setScanResult] = useState<ScanResult | null>(null)
-  const [scanParentCategoryId, setScanParentCategoryId] = useState('')
-  const [scanChildCategoryId, setScanChildCategoryId] = useState('')
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEscapeKey(onClose)
 
-  async function handleScanReceipt(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    e.target.value = ''
-    setScanning(true)
-    setError(null)
-    try {
-      const data = await extractReceiptData(file)
-      setScanResult({
-        date: data.date ?? date,
-        items: data.items.map(item => ({ ...item, selected: true, taxRate: 8 as TaxRate })),
-      })
-    } catch (err) {
-      setError((err as Error).message)
-    } finally {
-      setScanning(false)
-    }
-  }
+  const scan = useReceiptScan({
+    defaultDate,
+    onAdd: ({ date, description, amount, categoryId }) =>
+      onAdd({ date, description, amount, category_id: categoryId }),
+    onClose,
+  })
 
-  function updateScanItem(index: number, patch: Partial<ScanItem>) {
-    setScanResult(prev => prev ? { ...prev, items: prev.items.map((item, i) => i === index ? { ...item, ...patch } : item) } : null)
-  }
-
-  async function handleAddFromReceipt() {
-    if (!scanResult) return
-    const selected = scanResult.items.filter(i => i.selected && i.description.trim() && Number.isInteger(i.amount) && i.amount > 0)
-    if (selected.length === 0) { setError('追加する項目を選択してください'); return }
-    setSubmitting(true)
-    setError(null)
-    const effectiveCategoryId = scanChildCategoryId || scanParentCategoryId || null
-    try {
-      for (const item of selected) {
-        await onAdd({ date: scanResult.date, description: item.description.trim(), amount: applyTax(item.amount, item.taxRate), category_id: effectiveCategoryId })
-      }
-      onClose()
-    } catch (err) {
-      setError((err as Error).message)
-      setSubmitting(false)
-    }
-  }
-
-  function validateForm(): { parsed: number } | null {
-    const parsed = Number(amount)
-    if (!date) { setError('日付を入力してください'); return null }
-    if (!description.trim()) { setError('内容を入力してください'); return null }
-    if (!Number.isInteger(parsed) || parsed <= 0) { setError('金額は1以上の整数で入力してください'); return null }
-    return { parsed }
+  function validateForm(): { validatedAmount: number } | null {
+    if (!date) { setError(FORM_ERROR_MESSAGES.invalidDate); return null }
+    if (!description.trim()) { setError(FORM_ERROR_MESSAGES.invalidDescription); return null }
+    const result = parsePositiveInt(amount)
+    if (!result) { setError(FORM_ERROR_MESSAGES.invalidAmount); return null }
+    return result
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -85,10 +48,11 @@ export function AddCardExpenseModal({ categories, defaultDate, onAdd, onClose }:
     setSubmitting(true)
     setError(null)
     try {
-      await onAdd({ date, description: description.trim(), amount: valid.parsed, category_id: effectiveCategoryId })
+      await onAdd({ date, description: description.trim(), amount: valid.validatedAmount, category_id: effectiveCategoryId })
       onClose()
     } catch (err) {
       setError((err as Error).message)
+    } finally {
       setSubmitting(false)
     }
   }
@@ -97,7 +61,7 @@ export function AddCardExpenseModal({ categories, defaultDate, onAdd, onClose }:
     const valid = validateForm()
     if (!valid) return
     const savedDescription = description.trim()
-    const savedAmount = valid.parsed
+    const savedAmount = valid.validatedAmount
     const effectiveCategoryId = childCategoryId || parentCategoryId || null
     setError(null)
     setSubmitting(true)
@@ -114,29 +78,40 @@ export function AddCardExpenseModal({ categories, defaultDate, onAdd, onClose }:
     }
   }
 
+  const isDisabled = scan.submitting || submitting
+
+  const addButtonLabel = scan.submitting ? '追加中…' : `${scan.validScanCount}件を追加`
+
   return (
     <ModalShell onClose={onClose} className="overflow-hidden">
       <h2 className="text-lg font-semibold text-gray-800 mb-5">クレカ明細追加</h2>
 
-      <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleScanReceipt} />
+      <input
+        ref={scan.fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={scan.handleScanReceipt}
+      />
       <button
         type="button"
-        onClick={() => fileInputRef.current?.click()}
-        disabled={scanning || submitting}
+        onClick={() => scan.fileInputRef.current?.click()}
+        disabled={scan.scanning || isDisabled}
         className="w-full mb-4 border border-dashed border-indigo-300 text-indigo-500 rounded-lg py-2 text-sm font-medium hover:bg-indigo-50 disabled:opacity-50 transition"
       >
-        {scanning ? '読み込み中…' : 'レシートを読み込む'}
+        {scan.scanning ? '読み込み中…' : 'レシートを読み込む'}
       </button>
 
-      {scanResult ? (
+      {scan.scanResult ? (
         <div className="space-y-3">
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">日付</label>
             <div className="w-full overflow-hidden rounded-lg">
               <input
                 type="date"
-                value={scanResult.date}
-                onChange={(e) => setScanResult(prev => prev ? { ...prev, date: e.target.value } : null)}
+                value={scan.scanResult.date}
+                onChange={(e) => scan.handleScanDateChange(e.target.value)}
                 className="w-full min-w-0 appearance-none border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
               />
             </div>
@@ -146,68 +121,39 @@ export function AddCardExpenseModal({ categories, defaultDate, onAdd, onClose }:
             <label className="block text-sm font-medium text-gray-600 mb-1">カテゴリー</label>
             <CategorySelect
               categories={categories}
-              parentCategoryId={scanParentCategoryId}
-              childCategoryId={scanChildCategoryId}
-              onParentChange={(parentId, firstChildId) => { setScanParentCategoryId(parentId); setScanChildCategoryId(firstChildId) }}
-              onChildChange={setScanChildCategoryId}
+              parentCategoryId={scan.scanParentCategoryId}
+              childCategoryId={scan.scanChildCategoryId}
+              onParentChange={scan.handleScanParentCategoryChange}
+              onChildChange={scan.handleScanChildCategoryChange}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">明細</label>
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {scanResult.items.map((item, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={item.selected}
-                    onChange={(e) => updateScanItem(i, { selected: e.target.checked })}
-                    className="accent-indigo-500 shrink-0"
-                  />
-                  <input
-                    type="text"
-                    value={item.description}
-                    onChange={(e) => updateScanItem(i, { description: e.target.value })}
-                    className="flex-1 min-w-0 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                  />
-                  <input
-                    type="number"
-                    value={item.amount}
-                    onChange={(e) => updateScanItem(i, { amount: Number(e.target.value) })}
-                    min={1}
-                    className="w-20 shrink-0 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                  />
-                  <select
-                    value={item.taxRate}
-                    onChange={(e) => updateScanItem(i, { taxRate: toTaxRate(Number(e.target.value)) })}
-                    className="w-20 shrink-0 border border-gray-300 rounded-lg px-1 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                  >
-                    <option value={8}>8%</option>
-                    <option value={10}>10%</option>
-                    <option value={0}>税込</option>
-                  </select>
-                </div>
+              {scan.scanResult.items.map((item, i) => (
+                <ScanItemRow key={i} item={item} index={i} onUpdate={scan.updateScanItem} />
               ))}
             </div>
           </div>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {scan.error && <p className="text-red-500 text-sm">{scan.error}</p>}
 
           <div className="flex gap-3 pt-1">
             <button
               type="button"
-              onClick={() => { setScanResult(null); setError(null) }}
+              onClick={scan.resetScan}
               className="flex-1 border border-gray-300 text-gray-600 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition"
             >
               戻る
             </button>
             <button
               type="button"
-              onClick={handleAddFromReceipt}
-              disabled={submitting}
+              onClick={scan.handleAddFromReceipt}
+              disabled={scan.submitting}
               className="flex-1 bg-indigo-500 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-60 transition"
             >
-              {submitting ? '追加中…' : `${scanResult.items.filter(i => i.selected && i.description.trim() && Number.isInteger(i.amount) && i.amount > 0).length}件を追加`}
+              {addButtonLabel}
             </button>
           </div>
         </div>

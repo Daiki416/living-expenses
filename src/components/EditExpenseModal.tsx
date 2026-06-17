@@ -4,6 +4,7 @@ import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
 import { CategorySelect } from './CategorySelect'
 import { resolveInitialCategoryIds } from '../lib/format'
+import { parsePositiveInt, FORM_ERROR_MESSAGES } from '../lib/validation'
 
 type Props = {
   expense: Expense
@@ -29,19 +30,20 @@ export function EditExpenseModal({ expense, members, categories, onUpdate, onClo
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const parsed = Number(amount)
-    if (!date) { setError('日付を入力してください'); return }
-    if (!paidBy) { setError('支払者を選択してください'); return }
-    if (!description.trim()) { setError('内容を入力してください'); return }
-    if (!Number.isInteger(parsed) || parsed <= 0) { setError('金額は1以上の整数で入力してください'); return }
+    if (!date) { setError(FORM_ERROR_MESSAGES.invalidDate); return }
+    if (!paidBy) { setError(FORM_ERROR_MESSAGES.invalidPaidBy); return }
+    if (!description.trim()) { setError(FORM_ERROR_MESSAGES.invalidDescription); return }
+    const result = parsePositiveInt(amount)
+    if (!result) { setError(FORM_ERROR_MESSAGES.invalidAmount); return }
     const effectiveCategoryId = childCategoryId || parentCategoryId || null
     setSubmitting(true)
     setError(null)
     try {
-      await onUpdate(expense.id, { date, paid_by: paidBy, description: description.trim(), amount: parsed, category_id: effectiveCategoryId })
+      await onUpdate(expense.id, { date, paid_by: paidBy, description: description.trim(), amount: result.validatedAmount, category_id: effectiveCategoryId })
       onClose()
     } catch (err) {
       setError((err as Error).message)
+    } finally {
       setSubmitting(false)
     }
   }

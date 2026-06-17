@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Member, Category } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
+import { toUserErrorMessage } from '../lib/validation'
 
 type Tab = 'members' | 'categories'
 
@@ -33,7 +34,18 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
 
   useEscapeKey(onClose)
 
-  const parentCategories = categories.filter(c => c.parent_id === null)
+  const { parentCategories, childrenByParentId } = useMemo(() => {
+    const parentCategories = categories.filter(c => c.parent_id === null)
+    const childrenByParentId = new Map<string, Category[]>()
+    for (const c of categories) {
+      if (c.parent_id !== null) {
+        const list = childrenByParentId.get(c.parent_id) ?? []
+        list.push(c)
+        childrenByParentId.set(c.parent_id, list)
+      }
+    }
+    return { parentCategories, childrenByParentId }
+  }, [categories])
 
   async function handleAddMember() {
     const name = newMemberName.trim()
@@ -63,15 +75,20 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
     }
   }
 
-  async function handleAddCategory(name: string, parentId: string | null, onSuccess: () => void, setAdding: (v: boolean) => void) {
-    if (!name) return
+  async function handleAddCategory(
+    name: string,
+    parentId: string | null,
+    onSuccess: () => void,
+    setAdding: (isAdding: boolean) => void
+  ) {
+    if (!name || name.length > 100) return
     setAdding(true)
     setCategoryError(null)
     try {
       await onAddCategory(name, parentId)
       onSuccess()
     } catch (err) {
-      setCategoryError((err as Error).message)
+      setCategoryError(toUserErrorMessage(err))
     } finally {
       setAdding(false)
     }
@@ -143,7 +160,7 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                 type="text"
                 value={newMemberName}
                 onChange={(e) => setNewMemberName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleAddMember() }}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !addingMember && newMemberName.trim()) handleAddMember() }}
                 placeholder="名前を入力"
                 className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
               />
@@ -169,7 +186,7 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                 <div className="px-3 py-3 text-sm text-gray-400 text-center">カテゴリーがありません</div>
               )}
               {parentCategories.map((parent) => {
-                const children = categories.filter(c => c.parent_id === parent.id)
+                const children = childrenByParentId.get(parent.id) ?? []
                 return (
                   <div key={parent.id}>
                     <div className="flex items-center justify-between px-3 py-2">
@@ -209,7 +226,11 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                 type="text"
                 value={newParentName}
                 onChange={(e) => setNewParentName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleAddCategory(newParentName.trim(), null, () => setNewParentName(''), setAddingParent) }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !addingParent && newParentName.trim()) {
+                    handleAddCategory(newParentName.trim(), null, () => setNewParentName(''), setAddingParent)
+                  }
+                }}
                 placeholder="大分類名（例：食費）"
                 className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
               />
@@ -221,35 +242,41 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                 {addingParent ? '追加中…' : '追加'}
               </button>
             </div>
-            {parentCategories.length > 0 && (<>
-            <select
-              value={newChildParentId}
-              onChange={(e) => setNewChildParentId(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-            >
-              <option value="">大分類を選択</option>
-              {parentCategories.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newChildName}
-                onChange={(e) => setNewChildName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleAddCategory(newChildName.trim(), newChildParentId, () => setNewChildName(''), setAddingChild) }}
-                placeholder="小分類名"
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              />
-              <button
-                onClick={() => handleAddCategory(newChildName.trim(), newChildParentId, () => setNewChildName(''), setAddingChild)}
-                disabled={addingChild || !newChildName.trim() || !newChildParentId}
-                className="bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition whitespace-nowrap"
-              >
-                {addingChild ? '追加中…' : '追加'}
-              </button>
-            </div>
-            </>)}
+            {parentCategories.length > 0 && (
+              <>
+                <select
+                  value={newChildParentId}
+                  onChange={(e) => setNewChildParentId(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                >
+                  <option value="">大分類を選択</option>
+                  {parentCategories.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newChildName}
+                    onChange={(e) => setNewChildName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !addingChild && newChildName.trim() && newChildParentId) {
+                        handleAddCategory(newChildName.trim(), newChildParentId, () => setNewChildName(''), setAddingChild)
+                      }
+                    }}
+                    placeholder="小分類名"
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  />
+                  <button
+                    onClick={() => handleAddCategory(newChildName.trim(), newChildParentId, () => setNewChildName(''), setAddingChild)}
+                    disabled={addingChild || !newChildName.trim() || !newChildParentId}
+                    className="bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition whitespace-nowrap"
+                  >
+                    {addingChild ? '追加中…' : '追加'}
+                  </button>
+                </div>
+              </>
+            )}
             {categoryError && <p className="text-red-500 text-xs mt-2">{categoryError}</p>}
           </div>
         </div>

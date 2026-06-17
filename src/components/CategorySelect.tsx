@@ -10,7 +10,10 @@ type Props = {
 }
 
 export function CategorySelect({ categories, parentCategoryId, childCategoryId, onParentChange, onChildChange }: Props) {
-  const parentCategories = categories.filter(c => c.parent_id === null)
+  const parentCategories = useMemo(
+    () => categories.filter(c => c.parent_id === null),
+    [categories]
+  )
   const childCategories = useMemo(
     () => categories.filter(c => c.parent_id === parentCategoryId),
     [categories, parentCategoryId]
@@ -20,6 +23,7 @@ export function CategorySelect({ categories, parentCategoryId, childCategoryId, 
   // prevParentId で変化を検知することで、初期マウント時（EditExpenseModal で親カテゴリーIDで
   // 保存済みのケース）をスキップし既存データを上書きしない。
   // childCategoryId が引き続き新しい親の子リストに存在する場合はそのまま維持する。
+  // onChildChange は安定した参照でない場合があるため依存配列から除外する。
   const prevParentId = useRef(parentCategoryId)
   useEffect(() => {
     if (prevParentId.current === parentCategoryId) return
@@ -27,7 +31,7 @@ export function CategorySelect({ categories, parentCategoryId, childCategoryId, 
     if (childCategories.length > 0 && !childCategories.some(c => c.id === childCategoryId)) {
       onChildChange(childCategories[0].id)
     }
-  }, [parentCategoryId, childCategories, childCategoryId, onChildChange])
+  }, [parentCategoryId, childCategories, childCategoryId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleParentChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const newParentId = e.target.value
