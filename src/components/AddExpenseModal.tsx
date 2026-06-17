@@ -93,6 +93,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
         ref={scan.fileInputRef}
         type="file"
         accept="image/*"
+        capture="environment"
         className="hidden"
         onChange={scan.handleScanReceipt}
       />
