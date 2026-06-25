@@ -3,15 +3,18 @@ import { useExpenses } from './hooks/useExpenses'
 import { useMembers } from './hooks/useMembers'
 import { useCategories } from './hooks/useCategories'
 import { useCardExpenses } from './hooks/useCardExpenses'
+import { useAuth } from './hooks/useAuth'
 import { AddExpenseModal } from './components/AddExpenseModal'
 import { AddCardExpenseModal } from './components/AddCardExpenseModal'
 import { EditExpenseModal } from './components/EditExpenseModal'
 import { EditCardExpenseModal } from './components/EditCardExpenseModal'
 import { SettingsModal } from './components/SettingsModal'
+import { LoginScreen } from './components/LoginScreen'
 import { ExpenseList } from './components/ExpenseList'
 import { CardExpenseList } from './components/CardExpenseList'
 import { CategorySummary } from './components/CategorySummary'
 import type { Expense, CardExpense } from './lib/supabase'
+import { supabase } from './lib/supabase'
 
 function todayYYYYMMDD() {
   const d = new Date()
@@ -19,6 +22,24 @@ function todayYYYYMMDD() {
 }
 
 export default function App() {
+  const { session, initializing } = useAuth()
+
+  if (initializing) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-400 text-sm">読み込み中…</p>
+      </div>
+    )
+  }
+
+  if (session === null) {
+    return <LoginScreen />
+  }
+
+  return <AppMain />
+}
+
+function AppMain() {
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
@@ -58,14 +79,23 @@ export default function App() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold text-gray-800">家計管理</h1>
-          <button
-            onClick={() => setShowSettings(true)}
-            disabled={membersLoading}
-            className="text-gray-400 hover:text-gray-600 disabled:opacity-40 transition text-xl"
-            title="設定"
-          >
-            ⚙
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowSettings(true)}
+              disabled={membersLoading}
+              className="text-gray-400 hover:text-gray-600 disabled:opacity-40 transition text-xl"
+              title="設定"
+            >
+              ⚙
+            </button>
+            <button
+              onClick={() => supabase.auth.signOut()}
+              className="text-xs text-gray-400 hover:text-gray-600 transition px-2 py-1 rounded border border-gray-200 hover:border-gray-300"
+              title="ログアウト"
+            >
+              ログアウト
+            </button>
+          </div>
         </div>
 
         {membersError && (

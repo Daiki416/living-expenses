@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import type { Member, Category } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
 import { toUserErrorMessage } from '../lib/validation'
 
-type Tab = 'members' | 'categories'
+type Tab = 'members' | 'categories' | 'password'
 
 type Props = {
   members: Member[]
@@ -31,6 +32,12 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
   const [addingChild, setAddingChild] = useState(false)
   const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null)
   const [categoryError, setCategoryError] = useState<string | null>(null)
+
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordChanging, setPasswordChanging] = useState(false)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [passwordSuccess, setPasswordSuccess] = useState(false)
 
   useEscapeKey(onClose)
 
@@ -94,6 +101,32 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
     }
   }
 
+  async function handleChangePassword() {
+    if (newPassword.length < 6) {
+      setPasswordError('6文字以上で入力してください')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('パスワードが一致しません')
+      return
+    }
+    setPasswordChanging(true)
+    setPasswordError(null)
+    setPasswordSuccess(false)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) {
+        setPasswordError(error.message)
+      } else {
+        setNewPassword('')
+        setConfirmPassword('')
+        setPasswordSuccess(true)
+      }
+    } finally {
+      setPasswordChanging(false)
+    }
+  }
+
   async function handleDeleteCategory(id: string, name: string) {
     if (!window.confirm(`「${name}」を削除しますか？\nこのカテゴリーの支出は「未分類」になります。`)) return
     setDeletingCategoryId(id)
@@ -127,6 +160,12 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
             className={`flex-1 py-2 text-sm font-medium transition ${tab === 'categories' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
           >
             カテゴリー
+          </button>
+          <button
+            onClick={() => setTab('password')}
+            className={`flex-1 py-2 text-sm font-medium transition ${tab === 'password' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            パスワード
           </button>
         </div>
       </div>
@@ -278,6 +317,36 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
               </>
             )}
             {categoryError && <p className="text-red-500 text-xs mt-2">{categoryError}</p>}
+          </div>
+        </div>
+      )}
+
+      {tab === 'password' && (
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="shrink-0 space-y-3">
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="新しいパスワード"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="新しいパスワード（確認）"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+            <button
+              onClick={handleChangePassword}
+              disabled={passwordChanging || !newPassword.trim()}
+              className="w-full bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition"
+            >
+              {passwordChanging ? '変更中…' : '変更する'}
+            </button>
+            {passwordError && <p className="text-red-500 text-xs mt-2">{passwordError}</p>}
+            {passwordSuccess && <p className="text-green-600 text-xs mt-2">パスワードを変更しました</p>}
           </div>
         </div>
       )}
