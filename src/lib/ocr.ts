@@ -1,3 +1,5 @@
+import { supabase } from './supabase'
+
 export type TaxRate = 8 | 10 | 0
 
 export type ScanItem = { description: string; amount: number; selected: boolean; taxRate: TaxRate }
@@ -14,10 +16,6 @@ type ReceiptData = {
 }
 
 export const DEFAULT_SCAN_TAX_RATE: TaxRate = 8
-
-const OCR_MODEL = 'claude-haiku-4-5-20251001'
-const OCR_MAX_TOKENS = 1024
-const ANTHROPIC_API_VERSION = '2023-06-01'
 
 const ALLOWED_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const
 type AllowedMediaType = typeof ALLOWED_MEDIA_TYPES[number]
@@ -74,59 +72,18 @@ export function isReceiptItem(item: unknown): item is ReceiptItem {
 }
 
 export async function extractReceiptData(imageFile: File): Promise<ReceiptData> {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-  if (!apiKey) throw new Error('VITE_ANTHROPIC_API_KEY が設定されていません')
-
   const base64 = await fileToBase64(imageFile)
   const mediaType = toMediaType(imageFile.type)
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': ANTHROPIC_API_VERSION,
-      'anthropic-dangerous-direct-browser-access': 'true',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: OCR_MODEL,
-      max_tokens: OCR_MAX_TOKENS,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-            {
-              type: 'text',
-              text: 'このレシート画像から全ての商品・品目を抽出し、以下のJSON形式のみで返してください。\n{"date":"YYYY-MM-DD形式の購入日（不明な場合はnull）","items":[{"description":"商品名","amount":商品行に印字されている金額の整数}]}\n各商品のamountは印字された数字をそのままコピーしてください。税計算は不要です。\n小計・合計・税額・値引き等の集計行はitemsに含めないでください。JSONのみ返してください。',
-            },
-          ],
-        },
-      ],
-    }),
+  const { data, error } = await supabase.functions.invoke('ocr', {
+    body: { base64, mediaType },
   })
 
-  if (!res.ok) {
-    const body = await res.text()
-    if (import.meta.env.DEV) {
-      console.error('OCR API エラーレスポンス:', body)
-    }
-    throw new Error(`OCR API エラー: ${res.status}`)
-  }
+  if (error) throw new Error(error.message ?? 'OCR Edge Function の呼び出しに失敗しました')
 
-  const json = await res.json()
-  const text: string = json.content?.[0]?.text ?? ''
-
-  try {
-    const match = text.match(/\{[\s\S]*\}/)
-    if (!match) throw new Error('JSON not found')
-    const data = JSON.parse(match[0])
-    const receiptItems: ReceiptItem[] = Array.isArray(data.items) ? data.items.filter(isReceiptItem) : []
-    return {
-      date: typeof data.date === 'string' ? data.date : null,
-      items: receiptItems.map((item) => ({ description: item.description, amount: Math.round(item.amount) })),
-    }
-  } catch {
-    throw new Error('レシートのデータを解析できませんでした')
+  const receiptItems: ReceiptItem[] = Array.isArray(data.items) ? data.items.filter(isReceiptItem) : []
+  return {
+    date: typeof data.date === 'string' ? data.date : null,
+    items: receiptItems.map((item: ReceiptItem) => ({ description: item.description, amount: Math.round(item.amount) })),
   }
 }
