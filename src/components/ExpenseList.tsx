@@ -29,9 +29,10 @@ export function ExpenseList({ expenses, categories, onEdit, onDelete }: Props) {
 
   return (
     <div className="overflow-x-auto">
+      <div className="max-h-96 overflow-y-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-200 text-gray-500 text-left">
+          <tr className="sticky top-0 bg-white z-10 border-b border-gray-200 text-gray-500 text-left">
             <th className="pb-2 pr-3 font-medium whitespace-nowrap">
               <button
                 onClick={() => setSortAsc(v => !v)}
@@ -90,6 +91,7 @@ export function ExpenseList({ expenses, categories, onEdit, onDelete }: Props) {
           })}
         </tbody>
       </table>
+      </div>
       {deleteError && <p className="text-red-500 text-sm mt-2">{deleteError}</p>}
     </div>
   )
