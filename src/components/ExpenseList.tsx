@@ -1,32 +1,22 @@
 import { useState } from 'react'
-import type { Expense, Category } from '../lib/supabase'
+import type { Expense, Category, ExpenseReceiptWithExpenses } from '../lib/supabase'
 import { formatDate, resolveCategoryLabel } from '../lib/format'
 
 type Props = {
-  expenses: Expense[]
+  receipts: ExpenseReceiptWithExpenses[]
   categories: Category[]
   onEdit: (expense: Expense) => void
-  onDelete: (id: string) => Promise<void>
+  onDeleteReceipt: (receiptId: string) => Promise<void>
 }
 
-export function ExpenseList({ expenses, categories, onEdit, onDelete }: Props) {
+export function ExpenseList({ receipts, categories, onEdit, onDeleteReceipt }: Props) {
   const categoryName = (id: string | null) => resolveCategoryLabel(id, categories) || null
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [sortAsc, setSortAsc] = useState(false)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
-  const topLevel = expenses.filter(e => e.parent_id === null)
-  const childrenByParentId = new Map<string, Expense[]>()
-  for (const e of expenses) {
-    if (e.parent_id !== null) {
-      const list = childrenByParentId.get(e.parent_id) ?? []
-      list.push(e)
-      childrenByParentId.set(e.parent_id, list)
-    }
-  }
-
-  if (topLevel.length === 0) {
+  if (receipts.length === 0) {
     return (
       <div className="text-center text-gray-400 py-12 text-sm">
         この月の立て替えはありません
@@ -34,7 +24,7 @@ export function ExpenseList({ expenses, categories, onEdit, onDelete }: Props) {
     )
   }
 
-  const sorted = [...topLevel].sort((a, b) =>
+  const sorted = [...receipts].sort((a, b) =>
     sortAsc ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date)
   )
 
@@ -70,58 +60,53 @@ export function ExpenseList({ expenses, categories, onEdit, onDelete }: Props) {
           </tr>
         </thead>
         <tbody>
-          {sorted.map((exp) => {
-            const catName = categoryName(exp.category_id)
-            const children = childrenByParentId.get(exp.id) ?? []
-            const hasChildren = children.length > 0
-            const isExpanded = expandedIds.has(exp.id)
+          {sorted.map((receipt) => {
+            const total = receipt.expenses.reduce((s, e) => s + e.amount, 0)
+            const paidBy = receipt.expenses[0]?.paid_by ?? ''
+            const isExpanded = expandedIds.has(receipt.id)
 
             return (
               <>
                 <tr
-                  key={exp.id}
-                  className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                  onClick={() => onEdit(exp)}
+                  key={receipt.id}
+                  className="border-b border-gray-100 hover:bg-gray-50"
                 >
                   <td className="py-3 pr-3 text-gray-500 whitespace-nowrap">
                     <span className="inline-flex items-center gap-1">
-                      {hasChildren && (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); toggleExpand(exp.id) }}
-                          className="text-gray-400 hover:text-indigo-500 transition text-xs leading-none"
-                          title={isExpanded ? '閉じる' : '展開'}
-                        >
-                          {isExpanded ? '▼' : '▶'}
-                        </button>
-                      )}
-                      {formatDate(exp.date)}
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(receipt.id)}
+                        className="text-gray-400 hover:text-indigo-500 transition text-xs leading-none"
+                        title={isExpanded ? '閉じる' : '展開'}
+                      >
+                        {isExpanded ? '▼' : '▶'}
+                      </button>
+                      {formatDate(receipt.date)}
                     </span>
                   </td>
                   <td className="py-3 pr-3 w-full">
-                    <div className="text-gray-700 text-sm">{exp.description}</div>
-                    <div className="flex justify-between items-center text-xs text-gray-400 mt-0.5">
-                      <span>{exp.paid_by}</span>
-                      {catName && <span>{catName}</span>}
+                    <div className="text-gray-700 text-sm">{receipt.description}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">
+                      <span>{paidBy}</span>
                     </div>
                   </td>
                   <td className="py-3 pr-3 text-right font-medium text-gray-800 whitespace-nowrap">
-                    ¥{exp.amount.toLocaleString()}
+                    ¥{total.toLocaleString()}
                   </td>
-                  <td className="py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                  <td className="py-3 text-right">
                     <button
                       onClick={async () => {
                         setDeleteError(null)
-                        setDeletingId(exp.id)
+                        setDeletingId(receipt.id)
                         try {
-                          await onDelete(exp.id)
+                          await onDeleteReceipt(receipt.id)
                         } catch (err) {
                           setDeleteError((err as Error).message)
                         } finally {
                           setDeletingId(null)
                         }
                       }}
-                      disabled={deletingId === exp.id}
+                      disabled={deletingId === receipt.id}
                       className="text-gray-300 hover:text-red-400 disabled:opacity-40 transition text-base leading-none"
                       title="削除"
                     >
@@ -129,20 +114,26 @@ export function ExpenseList({ expenses, categories, onEdit, onDelete }: Props) {
                     </button>
                   </td>
                 </tr>
-                {isExpanded && children.map((child) => (
-                  <tr key={child.id} className="bg-gray-50 text-sm">
-                    <td className="py-2 pr-3 text-gray-400 whitespace-nowrap pl-5">
-                      {formatDate(child.date)}
-                    </td>
-                    <td className="py-2 pr-3 w-full text-gray-500 pl-2">
-                      {child.description}
-                    </td>
-                    <td className="py-2 pr-3 text-right text-gray-600 whitespace-nowrap">
-                      ¥{child.amount.toLocaleString()}
-                    </td>
-                    <td className="py-2"></td>
-                  </tr>
-                ))}
+                {isExpanded && receipt.expenses.map((expense) => {
+                  const catName = categoryName(expense.category_id)
+                  return (
+                    <tr
+                      key={expense.id}
+                      className="bg-gray-50 text-sm cursor-pointer"
+                      onClick={() => onEdit(expense)}
+                    >
+                      <td className="py-2 pr-3 text-gray-400 whitespace-nowrap pl-5"></td>
+                      <td className="py-2 pr-3 w-full text-gray-500 pl-2">
+                        <div>{expense.description}</div>
+                        {catName && <div className="text-xs text-gray-400">{catName}</div>}
+                      </td>
+                      <td className="py-2 pr-3 text-right text-gray-600 whitespace-nowrap">
+                        ¥{expense.amount.toLocaleString()}
+                      </td>
+                      <td className="py-2"></td>
+                    </tr>
+                  )
+                })}
               </>
             )
           })}

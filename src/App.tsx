@@ -51,19 +51,16 @@ function AppMain() {
 
   const { members, loading: membersLoading, error: membersError, addMember, deleteMember } = useMembers()
   const { categories, error: categoriesError, addCategory, deleteCategory } = useCategories()
-  const { expenses, loading: expensesLoading, error: expensesError, addExpense, addExpenseGroup, updateExpense, deleteExpense } = useExpenses(year, month)
-  const { cardExpenses, loading: cardLoading, error: cardError, addCardExpense, addCardExpenseGroup, updateCardExpense, deleteCardExpense } = useCardExpenses(year, month)
+  const { receipts, expenses, loading: expensesLoading, error: expensesError, addExpense, addReceiptGroup, updateExpense, deleteReceipt } = useExpenses(year, month)
+  const { cardReceipts, cardExpenses, loading: cardLoading, error: cardError, addCardExpense, addCardReceiptGroup, updateCardExpense, deleteCardReceipt } = useCardExpenses(year, month)
 
   const memberNames = members.map((m) => m.name)
 
-  const topLevelExpenses = expenses.filter(e => e.parent_id === null)
-  const topLevelCardExpenses = cardExpenses.filter(e => e.parent_id === null)
-
-  const expenseTotal = topLevelExpenses.reduce((s, e) => s + e.amount, 0)
+  const expenseTotal = expenses.reduce((s, e) => s + e.amount, 0)
   const memberTotals: Record<string, number> = Object.fromEntries(memberNames.map(n => [n, 0]))
-  topLevelExpenses.forEach(e => { if (e.paid_by in memberTotals) memberTotals[e.paid_by] += e.amount })
+  expenses.forEach(e => { if (e.paid_by in memberTotals) memberTotals[e.paid_by] += e.amount })
 
-  const cardTotal = topLevelCardExpenses.reduce((s, e) => s + e.amount, 0)
+  const cardTotal = cardExpenses.reduce((s, e) => s + e.amount, 0)
 
   function prevMonth() {
     if (month === 1) { setYear(y => y - 1); setMonth(12) }
@@ -153,7 +150,7 @@ function AppMain() {
             ) : expensesError ? (
               <div className="text-center text-red-400 py-8 text-sm">エラー: {expensesError}</div>
             ) : (
-              <ExpenseList expenses={expenses} categories={categories} onEdit={setEditingExpense} onDelete={deleteExpense} />
+              <ExpenseList receipts={receipts} categories={categories} onEdit={setEditingExpense} onDeleteReceipt={deleteReceipt} />
             )}
           </div>
           {expensesLoading || expenseTotal === 0 ? null : (
@@ -179,7 +176,7 @@ function AppMain() {
             ) : cardError ? (
               <div className="text-center text-red-400 py-8 text-sm">エラー: {cardError}</div>
             ) : (
-              <CardExpenseList cardExpenses={cardExpenses} categories={categories} onEdit={setEditingCardExpense} onDelete={deleteCardExpense} />
+              <CardExpenseList receipts={cardReceipts} categories={categories} onEdit={setEditingCardExpense} onDeleteReceipt={deleteCardReceipt} />
             )}
           </div>
           {cardLoading || cardTotal === 0 ? null : (
@@ -196,8 +193,8 @@ function AppMain() {
           defaultDate={todayYYYYMMDD()}
           onAdd={addExpense}
           onAddGroup={(parent, children) =>
-            addExpenseGroup(
-              { date: parent.date, paid_by: parent.paidBy, description: parent.description, amount: parent.amount, category_id: parent.categoryId, parent_id: null },
+            addReceiptGroup(
+              { date: parent.date, description: parent.description },
               children.map(c => ({
                 date: parent.date,
                 paid_by: parent.paidBy,
@@ -217,8 +214,8 @@ function AppMain() {
           defaultDate={todayYYYYMMDD()}
           onAdd={addCardExpense}
           onAddGroup={(parent, children) =>
-            addCardExpenseGroup(
-              { date: parent.date, description: parent.description, amount: parent.amount, category_id: parent.categoryId, parent_id: null },
+            addCardReceiptGroup(
+              { date: parent.date, description: parent.description },
               children.map(c => ({
                 date: parent.date,
                 description: c.description,

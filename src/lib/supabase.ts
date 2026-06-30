@@ -16,7 +16,7 @@ export type Expense = {
   description: string
   amount: number
   category_id: string | null
-  parent_id: string | null
+  receipt_id: string
   created_at: string
 }
 
@@ -39,6 +39,24 @@ export type CardExpense = {
   description: string
   amount: number
   category_id: string | null
-  parent_id: string | null
+  receipt_id: string
   created_at: string
 }
+
+export type ExpenseReceipt = {
+  id: string
+  date: string
+  description: string
+  created_at: string
+}
+
+export type CardExpenseReceipt = {
+  id: string
+  date: string
+  description: string
+  created_at: string
+}
+
+export type ExpenseReceiptWithExpenses = ExpenseReceipt & { expenses: Expense[] }
+
+export type CardExpenseReceiptWithCardExpenses = CardExpenseReceipt & { card_expenses: CardExpense[] }

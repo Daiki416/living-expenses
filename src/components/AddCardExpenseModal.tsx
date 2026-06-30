@@ -10,7 +10,6 @@ import { parsePositiveInt, FORM_ERROR_MESSAGES } from '../lib/validation'
 type OnAddGroupParent = {
   date: string
   description: string
-  amount: number
   categoryId: string | null
 }
 
@@ -23,7 +22,7 @@ type OnAddGroupChild = {
 type Props = {
   categories: Category[]
   defaultDate: string
-  onAdd: (input: Omit<CardExpense, 'id' | 'created_at'>) => Promise<void>
+  onAdd: (input: Omit<CardExpense, 'id' | 'created_at' | 'receipt_id'>) => Promise<void>
   onAddGroup: (parent: OnAddGroupParent, children: OnAddGroupChild[]) => Promise<void>
   onClose: () => void
 }
@@ -61,7 +60,7 @@ export function AddCardExpenseModal({ categories, defaultDate, onAdd, onAddGroup
     setSubmitting(true)
     setError(null)
     try {
-      await onAdd({ date, description: description.trim(), amount: valid.validatedAmount, category_id: effectiveCategoryId, parent_id: null })
+      await onAdd({ date, description: description.trim(), amount: valid.validatedAmount, category_id: effectiveCategoryId })
       onClose()
     } catch (err) {
       setError((err as Error).message)
@@ -81,7 +80,7 @@ export function AddCardExpenseModal({ categories, defaultDate, onAdd, onAddGroup
     setDescription('')
     setAmount('')
     try {
-      await onAdd({ date, description: savedDescription, amount: savedAmount, category_id: effectiveCategoryId, parent_id: null })
+      await onAdd({ date, description: savedDescription, amount: savedAmount, category_id: effectiveCategoryId })
     } catch (err) {
       setError((err as Error).message)
       setDescription(savedDescription)

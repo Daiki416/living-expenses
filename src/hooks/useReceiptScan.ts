@@ -5,7 +5,6 @@ import { sanitizeDate } from '../lib/validation'
 type OnAddGroupParent = {
   date: string
   description: string
-  amount: number
   categoryId: string | null
 }
 
@@ -70,13 +69,9 @@ export function useReceiptScan({ defaultDate, onAddGroup, onClose }: UseReceiptS
     setSubmitting(true)
     setError(null)
     const categoryId = scanChildCategoryId || scanParentCategoryId || null
-    const parentAmount = validItems.reduce(
-      (sum, item) => sum + Math.round(item.amount * (1 + item.taxRate / 100)),
-      0
-    )
     try {
       await onAddGroup(
-        { date: scanResult.date, description: scanStoreName || 'レシート', amount: parentAmount, categoryId },
+        { date: scanResult.date, description: scanStoreName || 'レシート', categoryId },
         validItems.map(item => ({ description: item.description, amount: item.amount, taxRate: item.taxRate }))
       )
       onClose()
