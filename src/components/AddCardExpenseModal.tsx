@@ -106,14 +106,24 @@ export function AddCardExpenseModal({ categories, defaultDate, onAdd, onAddGroup
         className="hidden"
         onChange={scan.handleScanReceipt}
       />
-      <button
-        type="button"
-        onClick={() => scan.fileInputRef.current?.click()}
-        disabled={scan.scanning || isDisabled}
-        className="w-full mb-4 border border-dashed border-indigo-300 text-indigo-500 rounded-lg py-2 text-sm font-medium hover:bg-indigo-50 disabled:opacity-50 transition"
-      >
-        {scan.scanning ? '読み込み中…' : 'レシートを読み込む'}
-      </button>
+      <div className="flex gap-2 mb-4">
+        <button
+          type="button"
+          onClick={() => scan.fileInputRef.current?.click()}
+          disabled={scan.scanning || isDisabled}
+          className="flex-1 border border-dashed border-indigo-300 text-indigo-500 rounded-lg py-2 text-sm font-medium hover:bg-indigo-50 disabled:opacity-50 transition"
+        >
+          {scan.scanning ? '読み込み中…' : 'レシートを読み込む'}
+        </button>
+        <button
+          type="button"
+          onClick={scan.startManualGroup}
+          disabled={scan.scanning || isDisabled}
+          className="flex-1 border border-dashed border-gray-300 text-gray-500 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition"
+        >
+          グループで追加
+        </button>
+      </div>
 
       {scan.scanResult ? (
         <div className="space-y-3">
@@ -158,6 +168,13 @@ export function AddCardExpenseModal({ categories, defaultDate, onAdd, onAddGroup
                 <ScanItemRow key={i} item={item} index={i} onUpdate={scan.updateScanItem} />
               ))}
             </div>
+            <button
+              type="button"
+              onClick={scan.addScanItem}
+              className="w-full mt-2 border border-dashed border-gray-300 text-gray-500 rounded-lg py-1.5 text-sm hover:bg-gray-50 transition"
+            >
+              ＋ 明細を追加
+            </button>
           </div>
 
           {scan.error && <p className="text-red-500 text-sm">{scan.error}</p>}

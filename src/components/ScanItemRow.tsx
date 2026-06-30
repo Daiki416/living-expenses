@@ -9,6 +9,8 @@ type Props = {
 }
 
 export const ScanItemRow = memo(function ScanItemRow({ item, index, onUpdate }: Props) {
+  const amountInvalid = item.selected && (item.amount === null || item.amount <= 0)
+
   return (
     <div className="flex items-center gap-2">
       <input
@@ -25,13 +27,19 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, onUpdate }: 
       />
       <input
         type="number"
-        value={item.amount}
+        value={item.amount ?? ''}
         onChange={(e) => {
-          const parsed = parseInt(e.target.value, 10)
-          onUpdate(index, { amount: isNaN(parsed) ? 0 : parsed })
+          const v = e.target.value
+          const parsed = parseInt(v, 10)
+          onUpdate(index, { amount: v === '' || isNaN(parsed) ? null : parsed })
         }}
         min={1}
-        className="w-20 shrink-0 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        placeholder="金額"
+        className={`w-20 shrink-0 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 ${
+          amountInvalid
+            ? 'border-red-400 focus:ring-red-400'
+            : 'border-gray-300 focus:ring-indigo-400'
+        }`}
       />
       <select
         value={item.taxRate}

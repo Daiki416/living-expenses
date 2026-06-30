@@ -20,6 +20,8 @@ type UseReceiptScanOptions = {
   onClose: () => void
 }
 
+const EMPTY_SCAN_ITEM: ScanItem = { description: '', amount: null, selected: true, taxRate: DEFAULT_SCAN_TAX_RATE }
+
 export function useReceiptScan({ defaultDate, onAddGroup, onClose }: UseReceiptScanOptions) {
   const [scanning, setScanning] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -58,6 +60,20 @@ export function useReceiptScan({ defaultDate, onAddGroup, onClose }: UseReceiptS
     )
   }, [])
 
+  function addScanItem() {
+    setScanResult(prev =>
+      prev ? { ...prev, items: [...prev.items, { ...EMPTY_SCAN_ITEM }] } : null
+    )
+  }
+
+  function startManualGroup() {
+    setScanResult({ date: defaultDate, items: [{ ...EMPTY_SCAN_ITEM }] })
+    setScanStoreName('')
+    setScanParentCategoryId('')
+    setScanChildCategoryId('')
+    setError(null)
+  }
+
   const validItems = useMemo(
     () => (scanResult ? scanResult.items.filter(isValidScanItem) : []),
     [scanResult]
@@ -72,7 +88,8 @@ export function useReceiptScan({ defaultDate, onAddGroup, onClose }: UseReceiptS
     try {
       await onAddGroup(
         { date: scanResult.date, description: scanStoreName || 'レシート', categoryId },
-        validItems.map(item => ({ description: item.description, amount: item.amount, taxRate: item.taxRate }))
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        validItems.map(item => ({ description: item.description, amount: item.amount!, taxRate: item.taxRate }))
       )
       onClose()
     } catch (err) {
@@ -122,6 +139,8 @@ export function useReceiptScan({ defaultDate, onAddGroup, onClose }: UseReceiptS
     handleScanParentCategoryChange,
     handleScanChildCategoryChange,
     updateScanItem,
+    addScanItem,
+    startManualGroup,
     handleAddFromReceipt,
     resetScan,
     validScanCount,

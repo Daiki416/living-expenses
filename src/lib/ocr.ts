@@ -2,7 +2,7 @@ import { supabase } from './supabase'
 
 export type TaxRate = 8 | 10 | 0
 
-export type ScanItem = { description: string; amount: number; selected: boolean; taxRate: TaxRate }
+export type ScanItem = { description: string; amount: number | null; selected: boolean; taxRate: TaxRate }
 export type ScanResult = { date: string; items: ScanItem[] }
 
 type ReceiptItem = {
@@ -39,7 +39,7 @@ export function toTaxRate(rawValue: number): TaxRate {
 }
 
 export function isValidScanItem(item: ScanItem): boolean {
-  return item.selected && item.description.trim() !== '' && Number.isInteger(item.amount) && item.amount > 0
+  return item.selected && item.description.trim() !== '' && item.amount !== null && Number.isInteger(item.amount) && item.amount > 0
 }
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
