@@ -51,8 +51,8 @@ function AppMain() {
 
   const { members, loading: membersLoading, error: membersError, addMember, deleteMember } = useMembers()
   const { categories, error: categoriesError, addCategory, deleteCategory } = useCategories()
-  const { receipts, expenses, loading: expensesLoading, error: expensesError, addExpense, addReceiptGroup, updateExpense, deleteReceipt } = useExpenses(year, month)
-  const { cardReceipts, cardExpenses, loading: cardLoading, error: cardError, addCardExpense, addCardReceiptGroup, updateCardExpense, deleteCardReceipt } = useCardExpenses(year, month)
+  const { receipts, expenses, loading: expensesLoading, error: expensesError, addReceiptGroup, updateExpense, deleteReceipt } = useExpenses(year, month)
+  const { cardReceipts, cardExpenses, loading: cardLoading, error: cardError, addCardReceiptGroup, updateCardExpense, deleteCardReceipt } = useCardExpenses(year, month)
 
   const memberNames = members.map((m) => m.name)
 
@@ -191,7 +191,6 @@ function AppMain() {
           members={memberNames}
           categories={categories}
           defaultDate={todayYYYYMMDD()}
-          onAdd={addExpense}
           onAddGroup={(parent, children) =>
             addReceiptGroup(
               { date: parent.date, description: parent.description },
@@ -212,7 +211,6 @@ function AppMain() {
         <AddCardExpenseModal
           categories={categories}
           defaultDate={todayYYYYMMDD()}
-          onAdd={addCardExpense}
           onAddGroup={(parent, children) =>
             addCardReceiptGroup(
               { date: parent.date, description: parent.description },

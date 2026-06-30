@@ -26,7 +26,7 @@ export function useReceiptScan({ defaultDate, onAddGroup, onClose }: UseReceiptS
   const [scanning, setScanning] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [scanResult, setScanResult] = useState<ScanResult | null>(null)
+  const [scanResult, setScanResult] = useState<ScanResult>({ date: defaultDate, items: [{ ...EMPTY_SCAN_ITEM }] })
   const [scanStoreName, setScanStoreName] = useState('')
   const [scanParentCategoryId, setScanParentCategoryId] = useState('')
   const [scanChildCategoryId, setScanChildCategoryId] = useState('')
@@ -53,34 +53,23 @@ export function useReceiptScan({ defaultDate, onAddGroup, onClose }: UseReceiptS
   }
 
   const updateScanItem = useCallback((index: number, patch: Partial<ScanItem>) => {
-    setScanResult(prev =>
-      prev
-        ? { ...prev, items: prev.items.map((item, i) => (i === index ? { ...item, ...patch } : item)) }
-        : null
-    )
+    setScanResult(prev => ({
+      ...prev,
+      items: prev.items.map((item, i) => (i === index ? { ...item, ...patch } : item)),
+    }))
   }, [])
 
   function addScanItem() {
-    setScanResult(prev =>
-      prev ? { ...prev, items: [...prev.items, { ...EMPTY_SCAN_ITEM }] } : null
-    )
-  }
-
-  function startManualGroup() {
-    setScanResult({ date: defaultDate, items: [{ ...EMPTY_SCAN_ITEM }] })
-    setScanStoreName('')
-    setScanParentCategoryId('')
-    setScanChildCategoryId('')
-    setError(null)
+    setScanResult(prev => ({ ...prev, items: [...prev.items, { ...EMPTY_SCAN_ITEM }] }))
   }
 
   const validItems = useMemo(
-    () => (scanResult ? scanResult.items.filter(isValidScanItem) : []),
+    () => scanResult.items.filter(isValidScanItem),
     [scanResult]
   )
 
   async function handleAddFromReceipt() {
-    if (!scanResult || submitting) return
+    if (submitting) return
     if (validItems.length === 0) { setError('追加する項目を選択してください'); return }
     setSubmitting(true)
     setError(null)
@@ -104,7 +93,7 @@ export function useReceiptScan({ defaultDate, onAddGroup, onClose }: UseReceiptS
   }
 
   function handleScanDateChange(date: string) {
-    setScanResult(prev => prev ? { ...prev, date } : null)
+    setScanResult(prev => ({ ...prev, date }))
   }
 
   function handleScanParentCategoryChange(parentId: string, firstChildId: string) {
@@ -117,7 +106,7 @@ export function useReceiptScan({ defaultDate, onAddGroup, onClose }: UseReceiptS
   }
 
   function resetScan() {
-    setScanResult(null)
+    setScanResult({ date: defaultDate, items: [{ ...EMPTY_SCAN_ITEM }] })
     setScanStoreName('')
     setError(null)
   }
@@ -140,7 +129,6 @@ export function useReceiptScan({ defaultDate, onAddGroup, onClose }: UseReceiptS
     handleScanChildCategoryChange,
     updateScanItem,
     addScanItem,
-    startManualGroup,
     handleAddFromReceipt,
     resetScan,
     validScanCount,
