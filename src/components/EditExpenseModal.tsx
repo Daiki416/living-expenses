@@ -39,7 +39,7 @@ export function EditExpenseModal({ expense, members, categories, onUpdate, onClo
     setSubmitting(true)
     setError(null)
     try {
-      await onUpdate(expense.id, { date, paid_by: paidBy, description: description.trim(), amount: result.validatedAmount, category_id: effectiveCategoryId })
+      await onUpdate(expense.id, { date, paid_by: paidBy, description: description.trim(), amount: result.validatedAmount, category_id: effectiveCategoryId, parent_id: expense.parent_id })
       onClose()
     } catch (err) {
       setError((err as Error).message)

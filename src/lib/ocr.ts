@@ -11,6 +11,7 @@ type ReceiptItem = {
 }
 
 type ReceiptData = {
+  storeName: string | null
   date: string | null
   items: ReceiptItem[]
 }
@@ -83,6 +84,7 @@ export async function extractReceiptData(imageFile: File): Promise<ReceiptData> 
 
   const receiptItems: ReceiptItem[] = Array.isArray(data.items) ? data.items.filter(isReceiptItem) : []
   return {
+    storeName: typeof data.storeName === 'string' ? data.storeName : null,
     date: typeof data.date === 'string' ? data.date : null,
     items: receiptItems.map((item: ReceiptItem) => ({ description: item.description, amount: Math.round(item.amount) })),
   }

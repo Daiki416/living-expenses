@@ -36,7 +36,7 @@ export function EditCardExpenseModal({ cardExpense, categories, onUpdate, onClos
     setSubmitting(true)
     setError(null)
     try {
-      await onUpdate(cardExpense.id, { date, description: description.trim(), amount: result.validatedAmount, category_id: effectiveCategoryId })
+      await onUpdate(cardExpense.id, { date, description: description.trim(), amount: result.validatedAmount, category_id: effectiveCategoryId, parent_id: cardExpense.parent_id })
       onClose()
     } catch (err) {
       setError((err as Error).message)

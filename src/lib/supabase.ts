@@ -16,6 +16,7 @@ export type Expense = {
   description: string
   amount: number
   category_id: string | null
+  parent_id: string | null
   created_at: string
 }
 
@@ -38,5 +39,6 @@ export type CardExpense = {
   description: string
   amount: number
   category_id: string | null
+  parent_id: string | null
   created_at: string
 }

@@ -14,8 +14,19 @@ export function ExpenseList({ expenses, categories, onEdit, onDelete }: Props) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [sortAsc, setSortAsc] = useState(false)
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
-  if (expenses.length === 0) {
+  const topLevel = expenses.filter(e => e.parent_id === null)
+  const childrenByParentId = new Map<string, Expense[]>()
+  for (const e of expenses) {
+    if (e.parent_id !== null) {
+      const list = childrenByParentId.get(e.parent_id) ?? []
+      list.push(e)
+      childrenByParentId.set(e.parent_id, list)
+    }
+  }
+
+  if (topLevel.length === 0) {
     return (
       <div className="text-center text-gray-400 py-12 text-sm">
         この月の立て替えはありません
@@ -23,9 +34,21 @@ export function ExpenseList({ expenses, categories, onEdit, onDelete }: Props) {
     )
   }
 
-  const sorted = [...expenses].sort((a, b) =>
+  const sorted = [...topLevel].sort((a, b) =>
     sortAsc ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date)
   )
+
+  function toggleExpand(id: string) {
+    setExpandedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
 
   return (
     <div className="overflow-x-auto">
@@ -49,44 +72,78 @@ export function ExpenseList({ expenses, categories, onEdit, onDelete }: Props) {
         <tbody>
           {sorted.map((exp) => {
             const catName = categoryName(exp.category_id)
+            const children = childrenByParentId.get(exp.id) ?? []
+            const hasChildren = children.length > 0
+            const isExpanded = expandedIds.has(exp.id)
+
             return (
-              <tr
-                key={exp.id}
-                className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                onClick={() => onEdit(exp)}
-              >
-                <td className="py-3 pr-3 text-gray-500 whitespace-nowrap">{formatDate(exp.date)}</td>
-                <td className="py-3 pr-3 w-full">
-                  <div className="text-gray-700 text-sm">{exp.description}</div>
-                  <div className="flex justify-between items-center text-xs text-gray-400 mt-0.5">
-                    <span>{exp.paid_by}</span>
-                    {catName && <span>{catName}</span>}
-                  </div>
-                </td>
-                <td className="py-3 pr-3 text-right font-medium text-gray-800 whitespace-nowrap">
-                  ¥{exp.amount.toLocaleString()}
-                </td>
-                <td className="py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={async () => {
-                      setDeleteError(null)
-                      setDeletingId(exp.id)
-                      try {
-                        await onDelete(exp.id)
-                      } catch (err) {
-                        setDeleteError((err as Error).message)
-                      } finally {
-                        setDeletingId(null)
-                      }
-                    }}
-                    disabled={deletingId === exp.id}
-                    className="text-gray-300 hover:text-red-400 disabled:opacity-40 transition text-base leading-none"
-                    title="削除"
-                  >
-                    ×
-                  </button>
-                </td>
-              </tr>
+              <>
+                <tr
+                  key={exp.id}
+                  className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+                  onClick={() => onEdit(exp)}
+                >
+                  <td className="py-3 pr-3 text-gray-500 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1">
+                      {hasChildren && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); toggleExpand(exp.id) }}
+                          className="text-gray-400 hover:text-indigo-500 transition text-xs leading-none"
+                          title={isExpanded ? '閉じる' : '展開'}
+                        >
+                          {isExpanded ? '▼' : '▶'}
+                        </button>
+                      )}
+                      {formatDate(exp.date)}
+                    </span>
+                  </td>
+                  <td className="py-3 pr-3 w-full">
+                    <div className="text-gray-700 text-sm">{exp.description}</div>
+                    <div className="flex justify-between items-center text-xs text-gray-400 mt-0.5">
+                      <span>{exp.paid_by}</span>
+                      {catName && <span>{catName}</span>}
+                    </div>
+                  </td>
+                  <td className="py-3 pr-3 text-right font-medium text-gray-800 whitespace-nowrap">
+                    ¥{exp.amount.toLocaleString()}
+                  </td>
+                  <td className="py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={async () => {
+                        setDeleteError(null)
+                        setDeletingId(exp.id)
+                        try {
+                          await onDelete(exp.id)
+                        } catch (err) {
+                          setDeleteError((err as Error).message)
+                        } finally {
+                          setDeletingId(null)
+                        }
+                      }}
+                      disabled={deletingId === exp.id}
+                      className="text-gray-300 hover:text-red-400 disabled:opacity-40 transition text-base leading-none"
+                      title="削除"
+                    >
+                      ×
+                    </button>
+                  </td>
+                </tr>
+                {isExpanded && children.map((child) => (
+                  <tr key={child.id} className="bg-gray-50 text-sm">
+                    <td className="py-2 pr-3 text-gray-400 whitespace-nowrap pl-5">
+                      {formatDate(child.date)}
+                    </td>
+                    <td className="py-2 pr-3 w-full text-gray-500 pl-2">
+                      {child.description}
+                    </td>
+                    <td className="py-2 pr-3 text-right text-gray-600 whitespace-nowrap">
+                      ¥{child.amount.toLocaleString()}
+                    </td>
+                    <td className="py-2"></td>
+                  </tr>
+                ))}
+              </>
             )
           })}
         </tbody>

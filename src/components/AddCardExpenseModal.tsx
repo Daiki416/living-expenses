@@ -7,14 +7,28 @@ import { CategorySelect } from './CategorySelect'
 import { ScanItemRow } from './ScanItemRow'
 import { parsePositiveInt, FORM_ERROR_MESSAGES } from '../lib/validation'
 
+type OnAddGroupParent = {
+  date: string
+  description: string
+  amount: number
+  categoryId: string | null
+}
+
+type OnAddGroupChild = {
+  description: string
+  amount: number
+  taxRate: number
+}
+
 type Props = {
   categories: Category[]
   defaultDate: string
   onAdd: (input: Omit<CardExpense, 'id' | 'created_at'>) => Promise<void>
+  onAddGroup: (parent: OnAddGroupParent, children: OnAddGroupChild[]) => Promise<void>
   onClose: () => void
 }
 
-export function AddCardExpenseModal({ categories, defaultDate, onAdd, onClose }: Props) {
+export function AddCardExpenseModal({ categories, defaultDate, onAdd, onAddGroup, onClose }: Props) {
   const [date, setDate] = useState(defaultDate)
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
@@ -27,8 +41,7 @@ export function AddCardExpenseModal({ categories, defaultDate, onAdd, onClose }:
 
   const scan = useReceiptScan({
     defaultDate,
-    onAdd: ({ date, description, amount, categoryId }) =>
-      onAdd({ date, description, amount, category_id: categoryId }),
+    onAddGroup,
     onClose,
   })
 
@@ -48,7 +61,7 @@ export function AddCardExpenseModal({ categories, defaultDate, onAdd, onClose }:
     setSubmitting(true)
     setError(null)
     try {
-      await onAdd({ date, description: description.trim(), amount: valid.validatedAmount, category_id: effectiveCategoryId })
+      await onAdd({ date, description: description.trim(), amount: valid.validatedAmount, category_id: effectiveCategoryId, parent_id: null })
       onClose()
     } catch (err) {
       setError((err as Error).message)
@@ -68,7 +81,7 @@ export function AddCardExpenseModal({ categories, defaultDate, onAdd, onClose }:
     setDescription('')
     setAmount('')
     try {
-      await onAdd({ date, description: savedDescription, amount: savedAmount, category_id: effectiveCategoryId })
+      await onAdd({ date, description: savedDescription, amount: savedAmount, category_id: effectiveCategoryId, parent_id: null })
     } catch (err) {
       setError((err as Error).message)
       setDescription(savedDescription)
@@ -125,6 +138,17 @@ export function AddCardExpenseModal({ categories, defaultDate, onAdd, onClose }:
               childCategoryId={scan.scanChildCategoryId}
               onParentChange={scan.handleScanParentCategoryChange}
               onChildChange={scan.handleScanChildCategoryChange}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">店舗名</label>
+            <input
+              type="text"
+              value={scan.scanStoreName}
+              onChange={(e) => scan.handleScanStoreNameChange(e.target.value)}
+              placeholder="例：スーパー"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
           </div>
 

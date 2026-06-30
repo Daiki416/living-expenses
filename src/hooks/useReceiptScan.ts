@@ -1,18 +1,32 @@
 import { useRef, useState, useMemo, useCallback } from 'react'
-import { extractReceiptData, isValidScanItem, applyTax, DEFAULT_SCAN_TAX_RATE, type ScanItem, type ScanResult } from '../lib/ocr'
+import { extractReceiptData, isValidScanItem, DEFAULT_SCAN_TAX_RATE, type ScanItem, type ScanResult } from '../lib/ocr'
 import { sanitizeDate } from '../lib/validation'
+
+type OnAddGroupParent = {
+  date: string
+  description: string
+  amount: number
+  categoryId: string | null
+}
+
+type OnAddGroupChild = {
+  description: string
+  amount: number
+  taxRate: number
+}
 
 type UseReceiptScanOptions = {
   defaultDate: string
-  onAdd: (params: { date: string; description: string; amount: number; categoryId: string | null }) => Promise<void>
+  onAddGroup: (parent: OnAddGroupParent, children: OnAddGroupChild[]) => Promise<void>
   onClose: () => void
 }
 
-export function useReceiptScan({ defaultDate, onAdd, onClose }: UseReceiptScanOptions) {
+export function useReceiptScan({ defaultDate, onAddGroup, onClose }: UseReceiptScanOptions) {
   const [scanning, setScanning] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [scanResult, setScanResult] = useState<ScanResult | null>(null)
+  const [scanStoreName, setScanStoreName] = useState('')
   const [scanParentCategoryId, setScanParentCategoryId] = useState('')
   const [scanChildCategoryId, setScanChildCategoryId] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -25,6 +39,7 @@ export function useReceiptScan({ defaultDate, onAdd, onClose }: UseReceiptScanOp
     setError(null)
     try {
       const data = await extractReceiptData(file)
+      setScanStoreName(data.storeName ?? '')
       setScanResult({
         date: sanitizeDate(data.date, defaultDate),
         items: data.items.map(item => ({ ...item, selected: true, taxRate: DEFAULT_SCAN_TAX_RATE })),
@@ -55,26 +70,25 @@ export function useReceiptScan({ defaultDate, onAdd, onClose }: UseReceiptScanOp
     setSubmitting(true)
     setError(null)
     const categoryId = scanChildCategoryId || scanParentCategoryId || null
+    const parentAmount = validItems.reduce(
+      (sum, item) => sum + Math.round(item.amount * (1 + item.taxRate / 100)),
+      0
+    )
     try {
-      const results = await Promise.allSettled(
-        validItems.map((item) =>
-          onAdd({
-            date: scanResult.date,
-            description: item.description.trim(),
-            amount: applyTax(item.amount, item.taxRate),
-            categoryId,
-          })
-        )
+      await onAddGroup(
+        { date: scanResult.date, description: scanStoreName || 'レシート', amount: parentAmount, categoryId },
+        validItems.map(item => ({ description: item.description, amount: item.amount, taxRate: item.taxRate }))
       )
-      const failedCount = results.filter((r) => r.status === 'rejected').length
-      if (failedCount > 0) {
-        setError(`${failedCount}件の追加に失敗しました`)
-      } else {
-        onClose()
-      }
+      onClose()
+    } catch (err) {
+      setError((err as Error).message)
     } finally {
       setSubmitting(false)
     }
+  }
+
+  function handleScanStoreNameChange(v: string) {
+    setScanStoreName(v)
   }
 
   function handleScanDateChange(date: string) {
@@ -92,6 +106,7 @@ export function useReceiptScan({ defaultDate, onAdd, onClose }: UseReceiptScanOp
 
   function resetScan() {
     setScanResult(null)
+    setScanStoreName('')
     setError(null)
   }
 
@@ -102,10 +117,12 @@ export function useReceiptScan({ defaultDate, onAdd, onClose }: UseReceiptScanOp
     submitting,
     error,
     scanResult,
+    scanStoreName,
     scanParentCategoryId,
     scanChildCategoryId,
     fileInputRef,
     handleScanReceipt,
+    handleScanStoreNameChange,
     handleScanDateChange,
     handleScanParentCategoryChange,
     handleScanChildCategoryChange,

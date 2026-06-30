@@ -19,8 +19,11 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
   const [view, setView] = useState<'table' | 'chart'>('table')
   const [chartMode, setChartMode] = useState<'parent' | 'child'>('parent')
 
-  const expenseTotal = expenses.reduce((s, e) => s + e.amount, 0)
-  const cardTotal = cardExpenses.reduce((s, e) => s + e.amount, 0)
+  const topLevelExpenses = expenses.filter(e => e.parent_id === null)
+  const topLevelCardExpenses = cardExpenses.filter(e => e.parent_id === null)
+
+  const expenseTotal = topLevelExpenses.reduce((s, e) => s + e.amount, 0)
+  const cardTotal = topLevelCardExpenses.reduce((s, e) => s + e.amount, 0)
   const grandTotal = expenseTotal + cardTotal
 
   if (loading) return null
@@ -29,7 +32,7 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
   const parentTotals: Record<string, number> = {}
   const childTotals: Record<string, number> = {}
 
-  for (const e of [...expenses, ...cardExpenses]) {
+  for (const e of [...topLevelExpenses, ...topLevelCardExpenses]) {
     const parentId = getEffectiveParentId(e.category_id, categories) ?? '__uncategorized__'
     parentTotals[parentId] = (parentTotals[parentId] ?? 0) + e.amount
 

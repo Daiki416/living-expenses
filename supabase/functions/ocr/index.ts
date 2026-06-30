@@ -84,7 +84,7 @@ Deno.serve(async (req: Request) => {
             { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
             {
               type: 'text',
-              text: 'このレシート画像から全ての商品・品目を抽出し、以下のJSON形式のみで返してください。\n{"date":"YYYY-MM-DD形式の購入日（不明な場合はnull）","items":[{"description":"商品名","amount":商品行に印字されている金額の整数}]}\n各商品のamountは印字された数字をそのままコピーしてください。税計算は不要です。\n小計・合計・税額・値引き等の集計行はitemsに含めないでください。JSONのみ返してください。',
+              text: 'このレシート画像から店舗名と全ての商品・品目を抽出し、以下のJSON形式のみで返してください。\n{"storeName":"店舗名（不明な場合はnull）","date":"YYYY-MM-DD形式の購入日（不明な場合はnull）","items":[{"description":"商品名","amount":商品行に印字されている金額の整数}]}\n各商品のamountは印字された数字をそのままコピーしてください。税計算は不要です。\n小計・合計・税額・値引き等の集計行はitemsに含めないでください。JSONのみ返してください。',
             },
           ],
         },
@@ -125,6 +125,7 @@ Deno.serve(async (req: Request) => {
 
     const receiptItems: ReceiptItem[] = Array.isArray(data.items) ? data.items.filter(isReceiptItem) : []
     const result = {
+      storeName: typeof data.storeName === 'string' ? data.storeName : null,
       date: typeof data.date === 'string' ? data.date : null,
       items: receiptItems.map((item) => ({ description: item.description, amount: Math.round(item.amount) })),
     }

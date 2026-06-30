@@ -7,15 +7,30 @@ import { CategorySelect } from './CategorySelect'
 import { ScanItemRow } from './ScanItemRow'
 import { parsePositiveInt, FORM_ERROR_MESSAGES } from '../lib/validation'
 
+type OnAddGroupParent = {
+  date: string
+  description: string
+  amount: number
+  categoryId: string | null
+  paidBy: string
+}
+
+type OnAddGroupChild = {
+  description: string
+  amount: number
+  taxRate: number
+}
+
 type Props = {
   members: string[]
   categories: Category[]
   defaultDate: string
   onAdd: (input: Omit<Expense, 'id' | 'created_at'>) => Promise<void>
+  onAddGroup: (parent: OnAddGroupParent, children: OnAddGroupChild[]) => Promise<void>
   onClose: () => void
 }
 
-export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClose }: Props) {
+export function AddExpenseModal({ members, categories, defaultDate, onAdd, onAddGroup, onClose }: Props) {
   const [date, setDate] = useState(defaultDate)
   const [paidBy, setPaidBy] = useState(members[0] ?? '')
   const [description, setDescription] = useState('')
@@ -29,8 +44,8 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
 
   const scan = useReceiptScan({
     defaultDate,
-    onAdd: ({ date, description, amount, categoryId }) =>
-      onAdd({ date, paid_by: paidBy, description, amount, category_id: categoryId }),
+    onAddGroup: (parent, children) =>
+      onAddGroup({ ...parent, paidBy }, children),
     onClose,
   })
 
@@ -51,7 +66,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
     setSubmitting(true)
     setError(null)
     try {
-      await onAdd({ date, paid_by: paidBy, description: description.trim(), amount: valid.validatedAmount, category_id: effectiveCategoryId })
+      await onAdd({ date, paid_by: paidBy, description: description.trim(), amount: valid.validatedAmount, category_id: effectiveCategoryId, parent_id: null })
       onClose()
     } catch (err) {
       setError((err as Error).message)
@@ -71,7 +86,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
     setDescription('')
     setAmount('')
     try {
-      await onAdd({ date, paid_by: paidBy, description: savedDescription, amount: savedAmount, category_id: effectiveCategoryId })
+      await onAdd({ date, paid_by: paidBy, description: savedDescription, amount: savedAmount, category_id: effectiveCategoryId, parent_id: null })
     } catch (err) {
       setError((err as Error).message)
       setDescription(savedDescription)
@@ -140,6 +155,17 @@ export function AddExpenseModal({ members, categories, defaultDate, onAdd, onClo
               childCategoryId={scan.scanChildCategoryId}
               onParentChange={scan.handleScanParentCategoryChange}
               onChildChange={scan.handleScanChildCategoryChange}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">店舗名</label>
+            <input
+              type="text"
+              value={scan.scanStoreName}
+              onChange={(e) => scan.handleScanStoreNameChange(e.target.value)}
+              placeholder="例：スーパー"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
           </div>
 

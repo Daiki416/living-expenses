@@ -39,6 +39,25 @@ export function useExpenses(year: number, month: number) {
     setRefetchKey(k => k + 1)
   }
 
+  async function addExpenseGroup(
+    parent: Omit<Expense, 'id' | 'created_at'>,
+    children: Array<Omit<Expense, 'id' | 'created_at' | 'parent_id'>>
+  ): Promise<void> {
+    const { data: parentData, error: parentError } = await supabase
+      .from('expenses')
+      .insert(parent)
+      .select()
+      .single()
+    if (parentError) throw new Error(parentError.message)
+    if (children.length > 0) {
+      const { error: childError } = await supabase
+        .from('expenses')
+        .insert(children.map(c => ({ ...c, parent_id: parentData.id })))
+      if (childError) throw new Error(childError.message)
+    }
+    setRefetchKey(k => k + 1)
+  }
+
   async function updateExpense(id: string, input: Omit<Expense, 'id' | 'created_at'>) {
     const { error } = await supabase.from('expenses').update(input).eq('id', id)
     if (error) throw new Error(error.message)
@@ -51,5 +70,5 @@ export function useExpenses(year: number, month: number) {
     setRefetchKey(k => k + 1)
   }
 
-  return { expenses, loading, error, addExpense, updateExpense, deleteExpense }
+  return { expenses, loading, error, addExpense, addExpenseGroup, updateExpense, deleteExpense }
 }

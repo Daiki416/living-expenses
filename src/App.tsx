@@ -51,16 +51,19 @@ function AppMain() {
 
   const { members, loading: membersLoading, error: membersError, addMember, deleteMember } = useMembers()
   const { categories, error: categoriesError, addCategory, deleteCategory } = useCategories()
-  const { expenses, loading: expensesLoading, error: expensesError, addExpense, updateExpense, deleteExpense } = useExpenses(year, month)
-  const { cardExpenses, loading: cardLoading, error: cardError, addCardExpense, updateCardExpense, deleteCardExpense } = useCardExpenses(year, month)
+  const { expenses, loading: expensesLoading, error: expensesError, addExpense, addExpenseGroup, updateExpense, deleteExpense } = useExpenses(year, month)
+  const { cardExpenses, loading: cardLoading, error: cardError, addCardExpense, addCardExpenseGroup, updateCardExpense, deleteCardExpense } = useCardExpenses(year, month)
 
   const memberNames = members.map((m) => m.name)
 
-  const expenseTotal = expenses.reduce((s, e) => s + e.amount, 0)
-  const memberTotals: Record<string, number> = Object.fromEntries(memberNames.map(n => [n, 0]))
-  expenses.forEach(e => { if (e.paid_by in memberTotals) memberTotals[e.paid_by] += e.amount })
+  const topLevelExpenses = expenses.filter(e => e.parent_id === null)
+  const topLevelCardExpenses = cardExpenses.filter(e => e.parent_id === null)
 
-  const cardTotal = cardExpenses.reduce((s, e) => s + e.amount, 0)
+  const expenseTotal = topLevelExpenses.reduce((s, e) => s + e.amount, 0)
+  const memberTotals: Record<string, number> = Object.fromEntries(memberNames.map(n => [n, 0]))
+  topLevelExpenses.forEach(e => { if (e.paid_by in memberTotals) memberTotals[e.paid_by] += e.amount })
+
+  const cardTotal = topLevelCardExpenses.reduce((s, e) => s + e.amount, 0)
 
   function prevMonth() {
     if (month === 1) { setYear(y => y - 1); setMonth(12) }
@@ -192,6 +195,18 @@ function AppMain() {
           categories={categories}
           defaultDate={todayYYYYMMDD()}
           onAdd={addExpense}
+          onAddGroup={(parent, children) =>
+            addExpenseGroup(
+              { date: parent.date, paid_by: parent.paidBy, description: parent.description, amount: parent.amount, category_id: parent.categoryId, parent_id: null },
+              children.map(c => ({
+                date: parent.date,
+                paid_by: parent.paidBy,
+                description: c.description,
+                amount: Math.round(c.amount * (1 + c.taxRate / 100)),
+                category_id: parent.categoryId,
+              }))
+            )
+          }
           onClose={() => setShowAdd(false)}
         />
       )}
@@ -201,6 +216,17 @@ function AppMain() {
           categories={categories}
           defaultDate={todayYYYYMMDD()}
           onAdd={addCardExpense}
+          onAddGroup={(parent, children) =>
+            addCardExpenseGroup(
+              { date: parent.date, description: parent.description, amount: parent.amount, category_id: parent.categoryId, parent_id: null },
+              children.map(c => ({
+                date: parent.date,
+                description: c.description,
+                amount: Math.round(c.amount * (1 + c.taxRate / 100)),
+                category_id: parent.categoryId,
+              }))
+            )
+          }
           onClose={() => setShowAddCard(false)}
         />
       )}
