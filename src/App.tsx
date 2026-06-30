@@ -22,7 +22,7 @@ function todayYYYYMMDD() {
 }
 
 export default function App() {
-  const { session, initializing } = useAuth()
+  const { session, initializing, isRecovery } = useAuth()
 
   if (initializing) {
     return (
@@ -32,8 +32,8 @@ export default function App() {
     )
   }
 
-  if (session === null) {
-    return <LoginScreen />
+  if (session === null || isRecovery) {
+    return <LoginScreen isRecovery={isRecovery} />
   }
 
   return <AppMain />

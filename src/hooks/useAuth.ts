@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null)
   const [initializing, setInitializing] = useState(true)
+  const [isRecovery, setIsRecovery] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -12,8 +13,13 @@ export function useAuth() {
       setInitializing(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsRecovery(true)
+      } else {
+        setIsRecovery(false)
+      }
     })
 
     return () => {
@@ -21,5 +27,5 @@ export function useAuth() {
     }
   }, [])
 
-  return { session, initializing }
+  return { session, initializing, isRecovery }
 }
