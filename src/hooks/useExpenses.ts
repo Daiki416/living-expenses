@@ -109,21 +109,7 @@ export function useExpenses(year: number, month: number) {
       .update({ description })
       .eq('id', id)
     if (error) throw new Error(error.message)
-    const receipt = receipts.find(r => r.id === id)
-    if (receipt && receipt.expenses.length === 1) {
-      const { error: expenseError } = await supabase
-        .from('expenses')
-        .update({ description })
-        .eq('id', receipt.expenses[0].id)
-      if (expenseError) throw new Error(expenseError.message)
-    }
-    setReceipts(prev => prev.map(r => {
-      if (r.id !== id) return r
-      const updatedExpenses = r.expenses.length === 1
-        ? [{ ...r.expenses[0], description }]
-        : r.expenses
-      return { ...r, description, expenses: updatedExpenses }
-    }))
+    setReceipts(prev => prev.map(r => r.id !== id ? r : { ...r, description }))
   }
 
   return { receipts, expenses, loading, error, addExpense, addReceiptGroup, updateExpense, deleteReceipt, updateReceiptDescription }
