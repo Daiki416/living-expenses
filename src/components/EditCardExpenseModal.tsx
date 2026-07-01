@@ -16,7 +16,6 @@ type Props = {
 export function EditCardExpenseModal({ cardExpense, categories, onUpdate, onClose }: Props) {
   const { parentId, childId } = resolveInitialCategoryIds(categories, cardExpense.category_id)
 
-  const [date, setDate] = useState(cardExpense.date)
   const [description, setDescription] = useState(cardExpense.description)
   const [amount, setAmount] = useState(String(cardExpense.amount))
   const [parentCategoryId, setParentCategoryId] = useState(parentId)
@@ -28,7 +27,6 @@ export function EditCardExpenseModal({ cardExpense, categories, onUpdate, onClos
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!date) { setError(FORM_ERROR_MESSAGES.invalidDate); return }
     if (!description.trim()) { setError(FORM_ERROR_MESSAGES.invalidDescription); return }
     const result = parsePositiveInt(amount)
     if (!result) { setError(FORM_ERROR_MESSAGES.invalidAmount); return }
@@ -36,7 +34,7 @@ export function EditCardExpenseModal({ cardExpense, categories, onUpdate, onClos
     setSubmitting(true)
     setError(null)
     try {
-      await onUpdate(cardExpense.id, { date, description: description.trim(), amount: result.validatedAmount, category_id: effectiveCategoryId, receipt_id: cardExpense.receipt_id })
+      await onUpdate(cardExpense.id, { description: description.trim(), amount: result.validatedAmount, category_id: effectiveCategoryId, receipt_id: cardExpense.receipt_id })
       onClose()
     } catch (err) {
       setError((err as Error).message)
@@ -50,19 +48,6 @@ export function EditCardExpenseModal({ cardExpense, categories, onUpdate, onClos
       <h2 className="text-lg font-semibold text-gray-800 mb-5">クレカ明細を編集</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">日付</label>
-          <div className="w-full overflow-hidden rounded-lg">
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-              className="w-full min-w-0 appearance-none border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            />
-          </div>
-        </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">内容</label>
           <input

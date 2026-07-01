@@ -8,6 +8,7 @@ import { AddExpenseModal } from './components/AddExpenseModal'
 import { AddCardExpenseModal } from './components/AddCardExpenseModal'
 import { EditExpenseModal } from './components/EditExpenseModal'
 import { EditCardExpenseModal } from './components/EditCardExpenseModal'
+import { EditReceiptModal } from './components/EditReceiptModal'
 import { SettingsModal } from './components/SettingsModal'
 import { LoginScreen } from './components/LoginScreen'
 import { ExpenseList } from './components/ExpenseList'
@@ -48,11 +49,12 @@ function AppMain() {
   const [showSettings, setShowSettings] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const [editingCardExpense, setEditingCardExpense] = useState<CardExpense | null>(null)
+  const [editingReceipt, setEditingReceipt] = useState<{ id: string; description: string; date: string } | null>(null)
 
   const { members, loading: membersLoading, error: membersError, addMember, deleteMember } = useMembers()
   const { categories, error: categoriesError, addCategory, deleteCategory } = useCategories()
-  const { receipts, expenses, loading: expensesLoading, error: expensesError, addReceiptGroup, updateExpense, deleteReceipt, updateReceiptDescription } = useExpenses(year, month)
-  const { cardReceipts, cardExpenses, loading: cardLoading, error: cardError, addCardReceiptGroup, updateCardExpense, deleteCardReceipt, updateCardReceiptDescription } = useCardExpenses(year, month)
+  const { receipts, expenses, loading: expensesLoading, error: expensesError, addReceiptGroup, updateExpense, deleteReceipt, updateReceipt } = useExpenses(year, month)
+  const { cardReceipts, cardExpenses, loading: cardLoading, error: cardError, addCardReceiptGroup, updateCardExpense, deleteCardReceipt, updateCardReceipt } = useCardExpenses(year, month)
 
   const memberNames = members.map((m) => m.name)
 
@@ -150,7 +152,16 @@ function AppMain() {
             ) : expensesError ? (
               <div className="text-center text-red-400 py-8 text-sm">エラー: {expensesError}</div>
             ) : (
-              <ExpenseList receipts={receipts} categories={categories} onEdit={setEditingExpense} onDeleteReceipt={deleteReceipt} onUpdateDescription={updateReceiptDescription} />
+              <ExpenseList
+                receipts={receipts}
+                categories={categories}
+                onEdit={setEditingExpense}
+                onDeleteReceipt={deleteReceipt}
+                onEditReceipt={receiptId => {
+                  const r = receipts.find(r => r.id === receiptId)
+                  if (r) setEditingReceipt({ id: r.id, description: r.description, date: r.date })
+                }}
+              />
             )}
           </div>
           {expensesLoading || expenseTotal === 0 ? null : (
@@ -176,7 +187,16 @@ function AppMain() {
             ) : cardError ? (
               <div className="text-center text-red-400 py-8 text-sm">エラー: {cardError}</div>
             ) : (
-              <CardExpenseList receipts={cardReceipts} categories={categories} onEdit={setEditingCardExpense} onDeleteReceipt={deleteCardReceipt} onUpdateDescription={updateCardReceiptDescription} />
+              <CardExpenseList
+                receipts={cardReceipts}
+                categories={categories}
+                onEdit={setEditingCardExpense}
+                onDeleteReceipt={deleteCardReceipt}
+                onEditReceipt={receiptId => {
+                  const r = cardReceipts.find(r => r.id === receiptId)
+                  if (r) setEditingReceipt({ id: r.id, description: r.description, date: r.date })
+                }}
+              />
             )}
           </div>
           {cardLoading || cardTotal === 0 ? null : (
@@ -195,7 +215,6 @@ function AppMain() {
             addReceiptGroup(
               { date: parent.date, description: parent.description },
               children.map(c => ({
-                date: parent.date,
                 paid_by: parent.paidBy,
                 description: c.description,
                 amount: Math.round(c.amount * (1 + c.taxRate / 100)),
@@ -215,7 +234,6 @@ function AppMain() {
             addCardReceiptGroup(
               { date: parent.date, description: parent.description },
               children.map(c => ({
-                date: parent.date,
                 description: c.description,
                 amount: Math.round(c.amount * (1 + c.taxRate / 100)),
                 category_id: parent.categoryId,
@@ -242,6 +260,19 @@ function AppMain() {
           categories={categories}
           onUpdate={updateCardExpense}
           onClose={() => setEditingCardExpense(null)}
+        />
+      )}
+
+      {editingReceipt && (
+        <EditReceiptModal
+          receiptId={editingReceipt.id}
+          initialDescription={editingReceipt.description}
+          initialDate={editingReceipt.date}
+          onUpdate={(id, input) => {
+            const isCard = cardReceipts.some(r => r.id === id)
+            return isCard ? updateCardReceipt(id, input) : updateReceipt(id, input)
+          }}
+          onClose={() => setEditingReceipt(null)}
         />
       )}
 

@@ -1,0 +1,2 @@
+ALTER TABLE expenses DROP COLUMN IF EXISTS date;
+ALTER TABLE card_expenses DROP COLUMN IF EXISTS date;

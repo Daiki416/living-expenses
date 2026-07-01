@@ -17,7 +17,6 @@ type Props = {
 export function EditExpenseModal({ expense, members, categories, onUpdate, onClose }: Props) {
   const { parentId, childId } = resolveInitialCategoryIds(categories, expense.category_id)
 
-  const [date, setDate] = useState(expense.date)
   const [paidBy, setPaidBy] = useState(expense.paid_by)
   const [description, setDescription] = useState(expense.description)
   const [amount, setAmount] = useState(String(expense.amount))
@@ -30,7 +29,6 @@ export function EditExpenseModal({ expense, members, categories, onUpdate, onClo
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!date) { setError(FORM_ERROR_MESSAGES.invalidDate); return }
     if (!paidBy) { setError(FORM_ERROR_MESSAGES.invalidPaidBy); return }
     if (!description.trim()) { setError(FORM_ERROR_MESSAGES.invalidDescription); return }
     const result = parsePositiveInt(amount)
@@ -39,7 +37,7 @@ export function EditExpenseModal({ expense, members, categories, onUpdate, onClo
     setSubmitting(true)
     setError(null)
     try {
-      await onUpdate(expense.id, { date, paid_by: paidBy, description: description.trim(), amount: result.validatedAmount, category_id: effectiveCategoryId, receipt_id: expense.receipt_id })
+      await onUpdate(expense.id, { paid_by: paidBy, description: description.trim(), amount: result.validatedAmount, category_id: effectiveCategoryId, receipt_id: expense.receipt_id })
       onClose()
     } catch (err) {
       setError((err as Error).message)
@@ -53,19 +51,6 @@ export function EditExpenseModal({ expense, members, categories, onUpdate, onClo
       <h2 className="text-lg font-semibold text-gray-800 mb-5">立替を編集</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">日付</label>
-          <div className="w-full overflow-hidden rounded-lg">
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-              className="w-full min-w-0 appearance-none border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            />
-          </div>
-        </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-2">支払者</label>
           <div className="flex gap-4">

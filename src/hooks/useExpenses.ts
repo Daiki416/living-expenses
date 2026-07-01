@@ -35,16 +35,17 @@ export function useExpenses(year: number, month: number) {
 
   const expenses = receipts.flatMap(r => r.expenses)
 
-  async function addExpense(input: Omit<Expense, 'id' | 'created_at' | 'receipt_id'>) {
+  async function addExpense(input: Omit<Expense, 'id' | 'created_at' | 'receipt_id'> & { date: string }) {
+    const { date, ...expenseInput } = input
     const { data: receiptData, error: receiptError } = await supabase
       .from('expense_receipts')
-      .insert({ date: input.date, description: input.description })
+      .insert({ date, description: expenseInput.description })
       .select()
       .single()
     if (receiptError) throw new Error(receiptError.message)
     const { data: expenseData, error: expenseError } = await supabase
       .from('expenses')
-      .insert({ ...input, receipt_id: receiptData.id })
+      .insert({ ...expenseInput, receipt_id: receiptData.id })
       .select()
       .single()
     if (expenseError) throw new Error(expenseError.message)
@@ -78,22 +79,9 @@ export function useExpenses(year: number, month: number) {
   async function updateExpense(id: string, input: Omit<Expense, 'id' | 'created_at'>) {
     const { error } = await supabase.from('expenses').update(input).eq('id', id)
     if (error) throw new Error(error.message)
-    const receipt = receipts.find(r => r.id === input.receipt_id)
-    if (receipt && receipt.expenses.length === 1) {
-      const { error: receiptError } = await supabase
-        .from('expense_receipts')
-        .update({ date: input.date, description: input.description })
-        .eq('id', input.receipt_id)
-      if (receiptError) throw new Error(receiptError.message)
-    }
     setReceipts(prev => prev.map(r => {
       if (r.id !== input.receipt_id) return r
-      const shouldUpdateReceipt = r.expenses.length === 1
-      return {
-        ...r,
-        ...(shouldUpdateReceipt ? { date: input.date, description: input.description } : {}),
-        expenses: r.expenses.map(e => e.id === id ? { ...e, ...input } : e),
-      }
+      return { ...r, expenses: r.expenses.map(e => e.id === id ? { ...e, ...input } : e) }
     }))
   }
 
@@ -103,14 +91,14 @@ export function useExpenses(year: number, month: number) {
     setReceipts(prev => prev.filter(r => r.id !== receiptId))
   }
 
-  async function updateReceiptDescription(id: string, description: string): Promise<void> {
+  async function updateReceipt(id: string, input: { description: string; date: string }): Promise<void> {
     const { error } = await supabase
       .from('expense_receipts')
-      .update({ description })
+      .update(input)
       .eq('id', id)
     if (error) throw new Error(error.message)
-    setReceipts(prev => prev.map(r => r.id !== id ? r : { ...r, description }))
+    setReceipts(prev => prev.map(r => r.id !== id ? r : { ...r, ...input }))
   }
 
-  return { receipts, expenses, loading, error, addExpense, addReceiptGroup, updateExpense, deleteReceipt, updateReceiptDescription }
+  return { receipts, expenses, loading, error, addExpense, addReceiptGroup, updateExpense, deleteReceipt, updateReceipt }
 }
