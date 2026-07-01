@@ -42,6 +42,7 @@ export default function App() {
 
 function AppMain() {
   const now = new Date()
+  const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [showAdd, setShowAdd] = useState(false)
@@ -50,6 +51,10 @@ function AppMain() {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const [editingCardExpense, setEditingCardExpense] = useState<CardExpense | null>(null)
   const [editingReceipt, setEditingReceipt] = useState<{ id: string; description: string; date: string } | null>(null)
+  const [reminderDismissed, setReminderDismissed] = useState(
+    () => localStorage.getItem('reminderDismissedYM') === currentYM
+  )
+  const [reminderConfirming, setReminderConfirming] = useState(false)
 
   const { members, loading: membersLoading, error: membersError, addMember, deleteMember } = useMembers()
   const { categories, error: categoriesError, addCategory, deleteCategory } = useCategories()
@@ -105,6 +110,42 @@ function AppMain() {
         )}
         {categoriesError && (
           <p className="text-red-400 text-xs text-center mb-2">{categoriesError}</p>
+        )}
+
+        {/* 月初清算リマインダー */}
+        {now.getDate() <= 3 && !reminderDismissed && (
+          <div className="bg-amber-50 border border-amber-300 text-amber-700 rounded-xl px-4 py-2.5 mb-3">
+            {reminderConfirming ? (
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-medium">生活費の振り込みは済ませましたか？</span>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={() => { localStorage.setItem('reminderDismissedYM', currentYM); setReminderDismissed(true); setReminderConfirming(false) }}
+                    className="text-xs font-medium bg-amber-500 text-white px-3 py-1 rounded-lg hover:bg-amber-600 transition"
+                  >
+                    はい
+                  </button>
+                  <button
+                    onClick={() => setReminderConfirming(false)}
+                    className="text-xs font-medium border border-amber-400 text-amber-700 px-3 py-1 rounded-lg hover:bg-amber-100 transition"
+                  >
+                    いいえ
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">生活費の清算・振り込みを忘れずに</span>
+                <button
+                  onClick={() => setReminderConfirming(true)}
+                  className="text-amber-500 hover:text-amber-700 text-lg leading-none ml-3 transition"
+                  aria-label="閉じる"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Month nav */}
