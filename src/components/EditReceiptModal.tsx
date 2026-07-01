@@ -38,12 +38,14 @@ export function EditReceiptModal({ receiptId, initialDescription, initialDate, o
       <div className="space-y-3">
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">日付</label>
-          <input
-            type="date"
-            value={date}
-            onChange={e => setDate(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          />
+          <div className="w-full overflow-hidden rounded-lg">
+            <input
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              className="w-full min-w-0 appearance-none border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">店舗名</label>
