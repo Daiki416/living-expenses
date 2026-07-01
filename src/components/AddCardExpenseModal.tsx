@@ -36,27 +36,29 @@ export function AddCardExpenseModal({ categories, defaultDate, onAddGroup, onClo
   const addButtonLabel = scan.submitting ? '追加中…' : `${scan.validScanCount}件を追加`
 
   return (
-    <ModalShell onClose={onClose} className="overflow-hidden">
-      <h2 className="text-lg font-semibold text-gray-800 mb-5">クレカ明細追加</h2>
+    <ModalShell onClose={onClose} className="max-h-[90dvh] flex flex-col">
+      <div className="shrink-0">
+        <h2 className="text-lg font-semibold text-gray-800 mb-5">クレカ明細追加</h2>
 
-      <input
-        ref={scan.fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={scan.handleScanReceipt}
-      />
-      <button
-        type="button"
-        onClick={() => scan.fileInputRef.current?.click()}
-        disabled={scan.scanning || scan.submitting}
-        className="w-full mb-4 border border-dashed border-indigo-300 text-indigo-500 rounded-lg py-2 text-sm font-medium hover:bg-indigo-50 disabled:opacity-50 transition"
-      >
-        {scan.scanning ? '読み込み中…' : 'レシートを読み込む'}
-      </button>
+        <input
+          ref={scan.fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={scan.handleScanReceipt}
+        />
+        <button
+          type="button"
+          onClick={() => scan.fileInputRef.current?.click()}
+          disabled={scan.scanning || scan.submitting}
+          className="w-full mb-4 border border-dashed border-indigo-300 text-indigo-500 rounded-lg py-2 text-sm font-medium hover:bg-indigo-50 disabled:opacity-50 transition"
+        >
+          {scan.scanning ? '読み込み中…' : 'レシートを読み込む'}
+        </button>
+      </div>
 
-      <div className="space-y-3">
+      <div className="flex-1 overflow-y-auto min-h-0 space-y-3 pb-1">
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">日付</label>
           <div className="w-full overflow-hidden rounded-lg">
@@ -93,7 +95,7 @@ export function AddCardExpenseModal({ categories, defaultDate, onAddGroup, onClo
 
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">明細</label>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
+          <div className="space-y-2">
             {scan.scanResult.items.map((item, i) => (
               <ScanItemRow key={i} item={item} index={i} onUpdate={scan.updateScanItem} />
             ))}
@@ -108,24 +110,24 @@ export function AddCardExpenseModal({ categories, defaultDate, onAddGroup, onClo
         </div>
 
         {scan.error && <p className="text-red-500 text-sm">{scan.error}</p>}
+      </div>
 
-        <div className="flex gap-3 pt-1">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 border border-gray-300 text-gray-600 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition"
-          >
-            キャンセル
-          </button>
-          <button
-            type="button"
-            onClick={scan.handleAddFromReceipt}
-            disabled={scan.submitting}
-            className="flex-1 bg-indigo-500 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-60 transition"
-          >
-            {addButtonLabel}
-          </button>
-        </div>
+      <div className="shrink-0 flex gap-3 pt-3 border-t border-gray-100">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 border border-gray-300 text-gray-600 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition"
+        >
+          キャンセル
+        </button>
+        <button
+          type="button"
+          onClick={scan.handleAddFromReceipt}
+          disabled={scan.submitting}
+          className="flex-1 bg-indigo-500 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-60 transition"
+        >
+          {addButtonLabel}
+        </button>
       </div>
     </ModalShell>
   )
