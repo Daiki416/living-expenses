@@ -51,8 +51,8 @@ function AppMain() {
 
   const { members, loading: membersLoading, error: membersError, addMember, deleteMember } = useMembers()
   const { categories, error: categoriesError, addCategory, deleteCategory } = useCategories()
-  const { receipts, expenses, loading: expensesLoading, error: expensesError, addReceiptGroup, updateExpense, deleteReceipt } = useExpenses(year, month)
-  const { cardReceipts, cardExpenses, loading: cardLoading, error: cardError, addCardReceiptGroup, updateCardExpense, deleteCardReceipt } = useCardExpenses(year, month)
+  const { receipts, expenses, loading: expensesLoading, error: expensesError, addReceiptGroup, updateExpense, deleteReceipt, updateReceiptDescription } = useExpenses(year, month)
+  const { cardReceipts, cardExpenses, loading: cardLoading, error: cardError, addCardReceiptGroup, updateCardExpense, deleteCardReceipt, updateCardReceiptDescription } = useCardExpenses(year, month)
 
   const memberNames = members.map((m) => m.name)
 
@@ -150,7 +150,7 @@ function AppMain() {
             ) : expensesError ? (
               <div className="text-center text-red-400 py-8 text-sm">エラー: {expensesError}</div>
             ) : (
-              <ExpenseList receipts={receipts} categories={categories} onEdit={setEditingExpense} onDeleteReceipt={deleteReceipt} />
+              <ExpenseList receipts={receipts} categories={categories} onEdit={setEditingExpense} onDeleteReceipt={deleteReceipt} onUpdateDescription={updateReceiptDescription} />
             )}
           </div>
           {expensesLoading || expenseTotal === 0 ? null : (
@@ -176,7 +176,7 @@ function AppMain() {
             ) : cardError ? (
               <div className="text-center text-red-400 py-8 text-sm">エラー: {cardError}</div>
             ) : (
-              <CardExpenseList receipts={cardReceipts} categories={categories} onEdit={setEditingCardExpense} onDeleteReceipt={deleteCardReceipt} />
+              <CardExpenseList receipts={cardReceipts} categories={categories} onEdit={setEditingCardExpense} onDeleteReceipt={deleteCardReceipt} onUpdateDescription={updateCardReceiptDescription} />
             )}
           </div>
           {cardLoading || cardTotal === 0 ? null : (

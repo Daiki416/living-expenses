@@ -89,5 +89,22 @@ export function useExpenses(year: number, month: number) {
     setRefetchKey(k => k + 1)
   }
 
-  return { receipts, expenses, loading, error, addExpense, addReceiptGroup, updateExpense, deleteReceipt }
+  async function updateReceiptDescription(id: string, description: string): Promise<void> {
+    const { error } = await supabase
+      .from('expense_receipts')
+      .update({ description })
+      .eq('id', id)
+    if (error) throw new Error(error.message)
+    const receipt = receipts.find(r => r.id === id)
+    if (receipt && receipt.expenses.length === 1) {
+      const { error: expenseError } = await supabase
+        .from('expenses')
+        .update({ description })
+        .eq('id', receipt.expenses[0].id)
+      if (expenseError) throw new Error(expenseError.message)
+    }
+    setRefetchKey(k => k + 1)
+  }
+
+  return { receipts, expenses, loading, error, addExpense, addReceiptGroup, updateExpense, deleteReceipt, updateReceiptDescription }
 }
