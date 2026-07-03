@@ -198,7 +198,12 @@ export function MonthlyTrendView({ categories, onClose }: Props) {
               <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <XAxis dataKey="label" tick={{ fontSize: 12 }} />
                 <YAxis
-                  tickFormatter={(v: number) => v === 0 ? '0' : `${Math.round(v / 10000)}万`}
+                  tickFormatter={(v: number) => {
+                    if (v === 0) return '0'
+                    if (v >= 10000) return `${Math.round(v / 10000)}万`
+                    if (v >= 1000) return `${Math.round(v / 1000)}千`
+                    return `${v}`
+                  }}
                   tick={{ fontSize: 11 }}
                   width={40}
                 />
