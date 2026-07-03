@@ -14,6 +14,7 @@ import { LoginScreen } from './components/LoginScreen'
 import { ExpenseList } from './components/ExpenseList'
 import { CardExpenseList } from './components/CardExpenseList'
 import { CategorySummary } from './components/CategorySummary'
+import { MonthlyTrendView } from './components/MonthlyTrendView'
 import type { Expense, CardExpense } from './lib/supabase'
 import { supabase } from './lib/supabase'
 
@@ -45,6 +46,7 @@ function AppMain() {
   const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
+  const [showTrend, setShowTrend] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [showAddCard, setShowAddCard] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -79,6 +81,10 @@ function AppMain() {
     else setMonth(m => m + 1)
   }
 
+  if (showTrend) {
+    return <MonthlyTrendView categories={categories} onClose={() => setShowTrend(false)} />
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-xl mx-auto px-4 py-6">
@@ -87,6 +93,13 @@ function AppMain() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold text-gray-800">家計管理</h1>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowTrend(true)}
+              className="text-gray-400 hover:text-gray-600 transition text-xl"
+              title="支出推移"
+            >
+              📊
+            </button>
             <button
               onClick={() => setShowSettings(true)}
               disabled={membersLoading}
