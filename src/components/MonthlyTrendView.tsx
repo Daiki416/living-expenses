@@ -202,7 +202,7 @@ export function MonthlyTrendView({ categories, onClose }: Props) {
                   tick={{ fontSize: 11 }}
                   width={40}
                 />
-                <Tooltip formatter={(v: number) => `¥${v.toLocaleString()}`} />
+                <Tooltip formatter={(v) => typeof v === 'number' ? `¥${v.toLocaleString()}` : ''} />
                 <Legend />
                 {activeIds.map((id, i) => (
                   <Bar
