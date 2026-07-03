@@ -193,34 +193,59 @@ export function MonthlyTrendView({ categories, onClose }: Props) {
             <div className="text-center text-gray-400 py-8 text-sm">読み込み中…</div>
           ) : error ? (
             <div className="text-center text-red-400 py-8 text-sm">エラー: {error}</div>
-          ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-                <YAxis
-                  tickFormatter={(v: number) => {
-                    if (v === 0) return '0'
-                    if (v >= 10000) return `${Math.round(v / 10000)}万`
-                    if (v >= 1000) return `${Math.round(v / 1000)}千`
-                    return `${v}`
-                  }}
-                  tick={{ fontSize: 11 }}
-                  width={40}
-                />
-                <Tooltip formatter={(v) => typeof v === 'number' ? `¥${v.toLocaleString()}` : ''} />
-                <Legend />
-                {activeIds.map((id, i) => (
-                  <Bar
-                    key={id}
-                    dataKey={id}
-                    stackId="a"
-                    fill={CHART_COLORS[i % 8]}
-                    name={id === '__uncategorized__' ? '未分類' : categoryName(id)}
-                  />
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
-          )}
+          ) : (() => {
+            const maxVal = chartData.length > 0
+              ? Math.max(...chartData.map(d =>
+                  activeIds.reduce((s, id) => s + ((d[id] as number) ?? 0), 0)
+                ), 0)
+              : 0
+            const useMan = maxVal >= 10000
+            const divisor = useMan ? 10000 : 1000
+            const unitSuffix = useMan ? '万' : '千'
+
+            // 単位系でキリのいいステップ幅を選び、等間隔 tick を生成する
+            const NICE_STEPS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000]
+            const TARGET_TICKS = 5
+            const maxInUnit = maxVal / divisor
+            const rawStep = maxInUnit / (TARGET_TICKS - 1)
+            const niceStep = NICE_STEPS.find(s => s >= rawStep) ?? NICE_STEPS[NICE_STEPS.length - 1]
+            const tickCountN = Math.ceil(maxInUnit / niceStep) + 1
+            const ticks = Array.from({ length: tickCountN }, (_, i) => Math.round(i * niceStep * divisor))
+
+            const formatTick = (v: number) => {
+              if (v === 0) return '0'
+              const n = v / divisor
+              return Number.isInteger(n) ? `${n}${unitSuffix}` : `${n.toFixed(1)}${unitSuffix}`
+            }
+            return (
+              <>
+                <p className="text-xs text-gray-400 mb-1">単位: 円</p>
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                    <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+                    <YAxis
+                      ticks={ticks}
+                      domain={[0, ticks[ticks.length - 1]]}
+                      tickFormatter={formatTick}
+                      tick={{ fontSize: 11 }}
+                      width={40}
+                    />
+                    <Tooltip formatter={(v) => typeof v === 'number' ? `¥${v.toLocaleString()}` : ''} />
+                    <Legend />
+                    {activeIds.map((id, i) => (
+                      <Bar
+                        key={id}
+                        dataKey={id}
+                        stackId="a"
+                        fill={CHART_COLORS[i % 8]}
+                        name={id === '__uncategorized__' ? '未分類' : categoryName(id)}
+                      />
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              </>
+            )
+          })()}
         </div>
 
       </div>
