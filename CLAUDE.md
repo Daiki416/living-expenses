@@ -93,7 +93,7 @@ npm run dev          # 開発サーバー起動
 npm run build        # ビルド
 npm run test         # テスト実行（Vitest）
 npm run test:watch   # テストウォッチモード
-npx tsc --noEmit     # 型チェックのみ
+npx tsc -p tsconfig.app.json  # 型チェックのみ（noUnusedLocals も有効）
 ```
 
 ---
