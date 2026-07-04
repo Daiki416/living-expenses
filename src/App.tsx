@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useExpenses } from './hooks/useExpenses'
 import { useMembers } from './hooks/useMembers'
 import { useCategories } from './hooks/useCategories'
@@ -58,12 +58,19 @@ function AppMain() {
   )
   const [reminderConfirming, setReminderConfirming] = useState(false)
 
-  const { members, loading: membersLoading, error: membersError, addMember, deleteMember } = useMembers()
+  const { members, loading: membersLoading, error: membersError, addMember, deleteMember, updateMemberBudget } = useMembers()
+
+  const prevMonthNum = now.getMonth() === 0 ? 12 : now.getMonth()
+  const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
   const { categories, error: categoriesError, addCategory, deleteCategory } = useCategories()
   const { receipts, expenses, loading: expensesLoading, error: expensesError, addReceiptGroup, updateExpense, deleteReceipt, updateReceipt } = useExpenses(year, month)
+  const { expenses: prevMonthExpenses, loading: prevMonthLoading } = useExpenses(prevYear, prevMonthNum)
   const { cardReceipts, cardExpenses, loading: cardLoading, error: cardError, addCardReceiptGroup, updateCardExpense, deleteCardReceipt, updateCardReceipt } = useCardExpenses(year, month)
 
   const memberNames = members.map((m) => m.name)
+
+  const prevMonthMemberTotals: Record<string, number> = {}
+  prevMonthExpenses.forEach(e => { prevMonthMemberTotals[e.paid_by] = (prevMonthMemberTotals[e.paid_by] ?? 0) + e.amount })
 
   const expenseTotal = expenses.reduce((s, e) => s + e.amount, 0)
   const memberTotals: Record<string, number> = Object.fromEntries(memberNames.map(n => [n, 0]))
@@ -147,11 +154,32 @@ function AppMain() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">生活費の清算・振り込みを忘れずに</span>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium mb-1">月初になりました。今月の生活費振込をお忘れなく。</p>
+                  {prevMonthLoading ? (
+                    <p className="text-xs text-amber-600">計算中…</p>
+                  ) : (
+                    <ul className="space-y-0.5">
+                      {members
+                        .filter(m => m.monthly_budget > 0)
+                        .map(m => {
+                          const prev = prevMonthMemberTotals[m.name] ?? 0
+                          const due = Math.max(0, m.monthly_budget - prev)
+                          return (
+                            <li key={m.id} className="text-xs text-amber-700">
+                              {m.name}: ¥{due.toLocaleString()}
+                              {m.monthly_budget - prev < 0 && <span className="ml-1 text-amber-500">（立替超過）</span>}
+                            </li>
+                          )
+                        })
+                      }
+                    </ul>
+                  )}
+                </div>
                 <button
                   onClick={() => setReminderConfirming(true)}
-                  className="text-amber-500 hover:text-amber-700 text-lg leading-none ml-3 transition"
+                  className="text-amber-500 hover:text-amber-700 text-lg leading-none shrink-0 transition"
                   aria-label="閉じる"
                 >
                   ×
@@ -336,6 +364,7 @@ function AppMain() {
           categories={categories}
           onAddMember={addMember}
           onDeleteMember={deleteMember}
+          onUpdateMemberBudget={updateMemberBudget}
           onAddCategory={(name, parentId) => addCategory(name, parentId)}
           onDeleteCategory={deleteCategory}
           onClose={() => setShowSettings(false)}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Member, Category } from '../lib/supabase'
 import { supabase } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
@@ -12,18 +12,25 @@ type Props = {
   categories: Category[]
   onAddMember: (name: string) => Promise<void>
   onDeleteMember: (id: string) => Promise<void>
+  onUpdateMemberBudget: (id: string, budget: number) => Promise<void>
   onAddCategory: (name: string, parentId?: string | null) => Promise<void>
   onDeleteCategory: (id: string) => Promise<void>
   onClose: () => void
 }
 
-export function SettingsModal({ members, categories, onAddMember, onDeleteMember, onAddCategory, onDeleteCategory, onClose }: Props) {
+export function SettingsModal({ members, categories, onAddMember, onDeleteMember, onUpdateMemberBudget, onAddCategory, onDeleteCategory, onClose }: Props) {
   const [tab, setTab] = useState<Tab>('members')
 
   const [newMemberName, setNewMemberName] = useState('')
   const [addingMember, setAddingMember] = useState(false)
   const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null)
   const [memberError, setMemberError] = useState<string | null>(null)
+  const [budgetDrafts, setBudgetDrafts] = useState<Record<string, string>>({})
+  const [savingBudgetId, setSavingBudgetId] = useState<string | null>(null)
+
+  useEffect(() => {
+    setBudgetDrafts(Object.fromEntries(members.map(m => [m.id, String(m.monthly_budget)])))
+  }, [members])
 
   const [newParentName, setNewParentName] = useState('')
   const [addingParent, setAddingParent] = useState(false)
@@ -79,6 +86,23 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
       setMemberError((err as Error).message)
     } finally {
       setDeletingMemberId(null)
+    }
+  }
+
+  async function handleSaveBudget(id: string) {
+    const raw = budgetDrafts[id] ?? ''
+    const budget = Number(raw)
+    if (!Number.isInteger(budget) || budget < 0) return
+    const current = members.find(m => m.id === id)?.monthly_budget ?? 0
+    if (budget === current) return
+    setSavingBudgetId(id)
+    setMemberError(null)
+    try {
+      await onUpdateMemberBudget(id, budget)
+    } catch (err) {
+      setMemberError((err as Error).message)
+    } finally {
+      setSavingBudgetId(null)
     }
   }
 
@@ -176,15 +200,30 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
           <div className="flex-1 overflow-y-auto min-h-0">
             <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden mb-3">
               {members.map((m) => (
-                <div key={m.id} className="flex items-center justify-between px-3 py-2">
-                  <span className="text-sm text-gray-700">{m.name}</span>
-                  <button
-                    onClick={() => handleDeleteMember(m.id, m.name)}
-                    disabled={deletingMemberId === m.id}
-                    className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition"
-                  >
-                    {deletingMemberId === m.id ? '削除中…' : '削除'}
-                  </button>
+                <div key={m.id} className="flex items-center justify-between px-3 py-2 gap-2">
+                  <span className="text-sm text-gray-700 shrink-0">{m.name}</span>
+                  <div className="flex items-center gap-1 flex-1 justify-end">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={budgetDrafts[m.id] ?? ''}
+                      onChange={e => setBudgetDrafts(prev => ({ ...prev, [m.id]: e.target.value }))}
+                      onBlur={() => handleSaveBudget(m.id)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleSaveBudget(m.id) }}
+                      disabled={savingBudgetId === m.id}
+                      placeholder="振込額"
+                      className="w-24 border border-gray-300 rounded-lg px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-50"
+                    />
+                    <span className="text-xs text-gray-500 shrink-0">円</span>
+                    <button
+                      onClick={() => handleDeleteMember(m.id, m.name)}
+                      disabled={deletingMemberId === m.id}
+                      className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition ml-2"
+                    >
+                      {deletingMemberId === m.id ? '削除中…' : '削除'}
+                    </button>
+                  </div>
                 </div>
               ))}
               {members.length === 0 && (

@@ -1,0 +1,1 @@
+ALTER TABLE members ADD COLUMN monthly_budget INTEGER NOT NULL DEFAULT 0;

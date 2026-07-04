@@ -36,5 +36,11 @@ export function useMembers() {
     setRefetchKey(k => k + 1)
   }
 
-  return { members, loading, error, addMember, deleteMember }
+  async function updateMemberBudget(id: string, budget: number) {
+    const { error } = await supabase.from('members').update({ monthly_budget: budget }).eq('id', id)
+    if (error) throw new Error(error.message)
+    setRefetchKey(k => k + 1)
+  }
+
+  return { members, loading, error, addMember, deleteMember, updateMemberBudget }
 }

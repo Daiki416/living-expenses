@@ -22,6 +22,7 @@ export type Expense = {
 export type Member = {
   id: string
   name: string
+  monthly_budget: number
   created_at: string
 }
 
