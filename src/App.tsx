@@ -17,6 +17,7 @@ import { CategorySummary } from './components/CategorySummary'
 import { MonthlyTrendView } from './components/MonthlyTrendView'
 import type { Expense, CardExpense } from './lib/supabase'
 import { supabase } from './lib/supabase'
+import { applyTax, type TaxRate } from './lib/ocr'
 
 function todayYYYYMMDD() {
   const d = new Date()
@@ -299,7 +300,7 @@ function AppMain() {
               children.map(c => ({
                 paid_by: parent.paidBy,
                 description: c.description,
-                amount: Math.round(c.amount * (1 + c.taxRate / 100)),
+                amount: applyTax(c.amount, c.taxRate as TaxRate),
                 category_id: parent.categoryId,
               }))
             )
@@ -317,7 +318,7 @@ function AppMain() {
               { date: parent.date, description: parent.description },
               children.map(c => ({
                 description: c.description,
-                amount: Math.round(c.amount * (1 + c.taxRate / 100)),
+                amount: applyTax(c.amount, c.taxRate as TaxRate),
                 category_id: parent.categoryId,
               }))
             )
