@@ -1,9 +1,51 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Member, Category } from '../lib/supabase'
 import { supabase } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
 import { toUserErrorMessage } from '../lib/validation'
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+
+// 並べ替え可能な行。ドラッグは children に渡される handle にのみ効く。
+function SortableRow({ id, className, children }: { id: string; className?: string; children: (handle: ReactNode) => ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+  }
+  const handle = (
+    <button
+      type="button"
+      aria-label="並べ替え"
+      className="text-gray-400 hover:text-gray-500 cursor-grab touch-none select-none px-1 leading-none"
+      {...attributes}
+      {...listeners}
+    >
+      ≡
+    </button>
+  )
+  return (
+    <div ref={setNodeRef} style={style} className={className}>
+      {children(handle)}
+    </div>
+  )
+}
 
 type Tab = 'members' | 'categories' | 'password'
 
@@ -15,10 +57,12 @@ type Props = {
   onUpdateMemberBudget: (id: string, budget: number) => Promise<void>
   onAddCategory: (name: string, parentId?: string | null) => Promise<void>
   onDeleteCategory: (id: string) => Promise<void>
+  onRenameCategory: (id: string, name: string) => Promise<void>
+  onReorderCategory: (orderedIds: string[]) => Promise<void>
   onClose: () => void
 }
 
-export function SettingsModal({ members, categories, onAddMember, onDeleteMember, onUpdateMemberBudget, onAddCategory, onDeleteCategory, onClose }: Props) {
+export function SettingsModal({ members, categories, onAddMember, onDeleteMember, onUpdateMemberBudget, onAddCategory, onDeleteCategory, onRenameCategory, onReorderCategory, onClose }: Props) {
   const [tab, setTab] = useState<Tab>('members')
 
   const [newMemberName, setNewMemberName] = useState('')
@@ -54,18 +98,119 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
 
   useEscapeKey(onClose)
 
-  const { parentCategories, childrenByParentId } = useMemo(() => {
+  const { parentCategories, childrenByParentId, categoryById } = useMemo(() => {
     const parentCategories = categories.filter(c => c.parent_id === null)
     const childrenByParentId = new Map<string, Category[]>()
+    const categoryById = new Map<string, Category>()
     for (const c of categories) {
+      categoryById.set(c.id, c)
       if (c.parent_id !== null) {
         const list = childrenByParentId.get(c.parent_id) ?? []
         list.push(c)
         childrenByParentId.set(c.parent_id, list)
       }
     }
-    return { parentCategories, childrenByParentId }
+    return { parentCategories, childrenByParentId, categoryById }
   }, [categories])
+
+  // 並べ替え用の楽観的ローカル順序。ドラッグ中のフリッカを避けるため props から保持する。
+  const buildChildOrder = () => {
+    const rec: Record<string, string[]> = {}
+    for (const [pid, list] of childrenByParentId) rec[pid] = list.map(c => c.id)
+    return rec
+  }
+  const [parentOrder, setParentOrder] = useState<string[]>(() => parentCategories.map(c => c.id))
+  const [childOrder, setChildOrder] = useState<Record<string, string[]>>(buildChildOrder)
+
+  // categories の再取得（追加・削除・並べ替え・名称変更後）で順序を再シードする。
+  // budgetDrafts と同じくレンダー中の状態調整パターンで同期する。
+  const [prevCategories, setPrevCategories] = useState(categories)
+  if (categories !== prevCategories) {
+    setPrevCategories(categories)
+    setParentOrder(parentCategories.map(c => c.id))
+    setChildOrder(buildChildOrder())
+  }
+
+  // インライン編集
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
+  const [editDraft, setEditDraft] = useState('')
+  // Escape によるキャンセル時、直後の blur が保存を発火させないよう抑止する。
+  const canceledEditRef = useRef(false)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
+  )
+
+  async function handleParentDragEnd(e: DragEndEvent) {
+    const { active, over } = e
+    if (!over || active.id === over.id) return
+    const oldIndex = parentOrder.indexOf(active.id as string)
+    const newIndex = parentOrder.indexOf(over.id as string)
+    if (oldIndex < 0 || newIndex < 0) return
+    const next = arrayMove(parentOrder, oldIndex, newIndex)
+    const prev = parentOrder
+    setParentOrder(next)
+    setCategoryError(null)
+    try {
+      await onReorderCategory(next)
+    } catch (err) {
+      setCategoryError(toUserErrorMessage(err))
+      setParentOrder(prev)
+    }
+  }
+
+  async function handleChildDragEnd(parentId: string, e: DragEndEvent) {
+    const { active, over } = e
+    if (!over || active.id === over.id) return
+    const order = childOrder[parentId] ?? []
+    const oldIndex = order.indexOf(active.id as string)
+    const newIndex = order.indexOf(over.id as string)
+    if (oldIndex < 0 || newIndex < 0) return
+    const next = arrayMove(order, oldIndex, newIndex)
+    setChildOrder(prev => ({ ...prev, [parentId]: next }))
+    setCategoryError(null)
+    try {
+      await onReorderCategory(next)
+    } catch (err) {
+      setCategoryError(toUserErrorMessage(err))
+      setChildOrder(prev => ({ ...prev, [parentId]: order }))
+    }
+  }
+
+  function startEditCategory(id: string, name: string) {
+    setEditingCategoryId(id)
+    setEditDraft(name)
+  }
+
+  function cancelEditCategory() {
+    canceledEditRef.current = true
+    setEditingCategoryId(null)
+    setEditDraft('')
+  }
+
+  async function handleRenameCategory(id: string) {
+    if (canceledEditRef.current) {
+      canceledEditRef.current = false
+      return
+    }
+    const original = categoryById.get(id)?.name ?? ''
+    const n = editDraft.trim()
+    // 空・100超は編集破棄で表示に戻す。同一名は no-op。
+    if (!n || n.length > 100 || n === original) {
+      setEditingCategoryId(null)
+      setEditDraft('')
+      return
+    }
+    setCategoryError(null)
+    try {
+      await onRenameCategory(id, n)
+      setEditingCategoryId(null)
+      setEditDraft('')
+    } catch (err) {
+      setCategoryError(toUserErrorMessage(err))
+    }
+  }
 
   async function handleAddMember() {
     const name = newMemberName.trim()
@@ -269,38 +414,108 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
               {parentCategories.length === 0 && (
                 <div className="px-3 py-3 text-sm text-gray-400 text-center">カテゴリーがありません</div>
               )}
-              {parentCategories.map((parent) => {
-                const children = childrenByParentId.get(parent.id) ?? []
-                return (
-                  <div key={parent.id}>
-                    <div className="flex items-center justify-between px-3 py-2">
-                      <span className="text-sm font-medium text-gray-700">{parent.name}</span>
-                      <button
-                        onClick={() => handleDeleteCategory(parent.id, parent.name)}
-                        disabled={deletingCategoryId === parent.id}
-                        className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition"
-                      >
-                        {deletingCategoryId === parent.id ? '削除中…' : '削除'}
-                      </button>
-                    </div>
-                    {children.map((child) => (
-                      <div key={child.id} className="flex items-center justify-between pl-7 pr-3 py-1.5 bg-gray-50 border-t border-gray-100">
-                        <div className="flex items-center gap-1">
-                          <span className="text-gray-400 text-xs">└</span>
-                          <span className="text-sm text-gray-600">{child.name}</span>
-                        </div>
-                        <button
-                          onClick={() => handleDeleteCategory(child.id, child.name)}
-                          disabled={deletingCategoryId === child.id}
-                          className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition"
-                        >
-                          {deletingCategoryId === child.id ? '削除中…' : '削除'}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )
-              })}
+              {/* 親リスト：親同士のみ並べ替え可能 */}
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleParentDragEnd}>
+                <SortableContext items={parentOrder} strategy={verticalListSortingStrategy}>
+                  {parentOrder.map((parentId) => {
+                    const parent = categoryById.get(parentId)
+                    if (!parent) return null
+                    const childIds = childOrder[parent.id] ?? []
+                    return (
+                      <SortableRow key={parent.id} id={parent.id} className="bg-white">
+                        {(handle) => (
+                          <>
+                            <div className="flex items-center justify-between px-3 py-2 gap-2">
+                              <div className="flex items-center gap-1 flex-1 min-w-0">
+                                {handle}
+                                {editingCategoryId === parent.id ? (
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    value={editDraft}
+                                    onChange={(e) => setEditDraft(e.target.value)}
+                                    onBlur={() => handleRenameCategory(parent.id)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') { e.preventDefault(); handleRenameCategory(parent.id) }
+                                      else if (e.key === 'Escape') { e.stopPropagation(); cancelEditCategory() }
+                                    }}
+                                    className="flex-1 min-w-0 border border-gray-300 rounded-lg px-2 py-1 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                                  />
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => startEditCategory(parent.id, parent.name)}
+                                    className="text-sm font-medium text-gray-700 text-left truncate hover:text-indigo-600 transition"
+                                  >
+                                    {parent.name}
+                                  </button>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => handleDeleteCategory(parent.id, parent.name)}
+                                disabled={deletingCategoryId === parent.id}
+                                className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition shrink-0"
+                              >
+                                {deletingCategoryId === parent.id ? '削除中…' : '削除'}
+                              </button>
+                            </div>
+                            {/* 子リスト：同じ親の中でのみ並べ替え可能 */}
+                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleChildDragEnd(parent.id, e)}>
+                              <SortableContext items={childIds} strategy={verticalListSortingStrategy}>
+                                {childIds.map((childId) => {
+                                  const child = categoryById.get(childId)
+                                  if (!child) return null
+                                  return (
+                                    <SortableRow key={child.id} id={child.id} className="flex items-center justify-between pl-7 pr-3 py-1.5 bg-gray-50 border-t border-gray-100 gap-2">
+                                      {(childHandle) => (
+                                        <>
+                                          <div className="flex items-center gap-1 flex-1 min-w-0">
+                                            {childHandle}
+                                            <span className="text-gray-400 text-xs">└</span>
+                                            {editingCategoryId === child.id ? (
+                                              <input
+                                                type="text"
+                                                autoFocus
+                                                value={editDraft}
+                                                onChange={(e) => setEditDraft(e.target.value)}
+                                                onBlur={() => handleRenameCategory(child.id)}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === 'Enter') { e.preventDefault(); handleRenameCategory(child.id) }
+                                                  else if (e.key === 'Escape') { e.stopPropagation(); cancelEditCategory() }
+                                                }}
+                                                className="flex-1 min-w-0 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                                              />
+                                            ) : (
+                                              <button
+                                                type="button"
+                                                onClick={() => startEditCategory(child.id, child.name)}
+                                                className="text-sm text-gray-600 text-left truncate hover:text-indigo-600 transition"
+                                              >
+                                                {child.name}
+                                              </button>
+                                            )}
+                                          </div>
+                                          <button
+                                            onClick={() => handleDeleteCategory(child.id, child.name)}
+                                            disabled={deletingCategoryId === child.id}
+                                            className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition shrink-0"
+                                          >
+                                            {deletingCategoryId === child.id ? '削除中…' : '削除'}
+                                          </button>
+                                        </>
+                                      )}
+                                    </SortableRow>
+                                  )
+                                })}
+                              </SortableContext>
+                            </DndContext>
+                          </>
+                        )}
+                      </SortableRow>
+                    )
+                  })}
+                </SortableContext>
+              </DndContext>
             </div>
           </div>
           {/* 追加フォーム：常に表示 */}

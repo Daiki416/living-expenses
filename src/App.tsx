@@ -63,7 +63,7 @@ function AppMain() {
 
   const prevMonthNum = now.getMonth() === 0 ? 12 : now.getMonth()
   const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
-  const { categories, error: categoriesError, addCategory, deleteCategory } = useCategories()
+  const { categories, error: categoriesError, addCategory, deleteCategory, renameCategory, reorderCategory } = useCategories()
   const { receipts, expenses, loading: expensesLoading, error: expensesError, addReceiptGroup, updateExpense, deleteReceipt, updateReceipt } = useExpenses(year, month)
   const { expenses: prevMonthExpenses, loading: prevMonthLoading } = useExpenses(prevYear, prevMonthNum)
   const { cardReceipts, cardExpenses, loading: cardLoading, error: cardError, addCardReceiptGroup, updateCardExpense, deleteCardReceipt, updateCardReceipt } = useCardExpenses(year, month)
@@ -368,6 +368,8 @@ function AppMain() {
           onUpdateMemberBudget={updateMemberBudget}
           onAddCategory={(name, parentId) => addCategory(name, parentId)}
           onDeleteCategory={deleteCategory}
+          onRenameCategory={renameCategory}
+          onReorderCategory={reorderCategory}
           onClose={() => setShowSettings(false)}
         />
       )}
