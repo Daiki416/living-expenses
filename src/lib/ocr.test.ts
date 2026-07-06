@@ -1,4 +1,9 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
+
+// ocr.ts が import する supabase クライアントをモックし、
+// テストを環境変数・ネットワーク・Node の WebSocket 実装に依存させない
+vi.mock('./supabase', () => ({ supabase: { functions: { invoke: vi.fn() } } }))
+
 import { toTaxRate, isValidScanItem, toMediaType, applyTax, fileToBase64, isReceiptItem } from './ocr'
 import type { ScanItem } from './ocr'
 

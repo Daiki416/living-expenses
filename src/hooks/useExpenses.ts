@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, type Expense, type ExpenseReceiptWithExpenses } from '../lib/supabase'
+import { monthDateRange } from '../lib/date'
 
 export function useExpenses(year: number, month: number) {
   const [receipts, setReceipts] = useState<ExpenseReceiptWithExpenses[]>([])
@@ -7,10 +8,7 @@ export function useExpenses(year: number, month: number) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const from = `${year}-${String(month).padStart(2, '0')}-01`
-    const nextMonth = month === 12 ? 1 : month + 1
-    const nextYear = month === 12 ? year + 1 : year
-    const to = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`
+    const { from, to } = monthDateRange(year, month)
 
     let cancelled = false
     ;(async () => {
@@ -34,24 +32,6 @@ export function useExpenses(year: number, month: number) {
   }, [year, month])
 
   const expenses = receipts.flatMap(r => r.expenses)
-
-  async function addExpense(input: Omit<Expense, 'id' | 'created_at' | 'receipt_id'> & { date: string }) {
-    const { date, ...expenseInput } = input
-    const { data: receiptData, error: receiptError } = await supabase
-      .from('expense_receipts')
-      .insert({ date, description: expenseInput.description })
-      .select()
-      .single()
-    if (receiptError) throw new Error(receiptError.message)
-    const { data: expenseData, error: expenseError } = await supabase
-      .from('expenses')
-      .insert({ ...expenseInput, receipt_id: receiptData.id })
-      .select()
-      .single()
-    if (expenseError) throw new Error(expenseError.message)
-    const newReceipt: ExpenseReceiptWithExpenses = { ...receiptData, expenses: [expenseData] }
-    setReceipts(prev => [newReceipt, ...prev])
-  }
 
   async function addReceiptGroup(
     receipt: { date: string; description: string },
@@ -100,5 +80,5 @@ export function useExpenses(year: number, month: number) {
     setReceipts(prev => prev.map(r => r.id !== id ? r : { ...r, ...input }))
   }
 
-  return { receipts, expenses, loading, error, addExpense, addReceiptGroup, updateExpense, deleteReceipt, updateReceipt }
+  return { receipts, expenses, loading, error, addReceiptGroup, updateExpense, deleteReceipt, updateReceipt }
 }

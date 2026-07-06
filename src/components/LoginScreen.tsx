@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 type View = 'login' | 'forgot' | 'sent' | 'reset'
@@ -8,18 +8,20 @@ interface LoginScreenProps {
 }
 
 export function LoginScreen({ isRecovery }: LoginScreenProps) {
-  const [view, setView] = useState<View>('login')
+  const [view, setView] = useState<View>(isRecovery ? 'reset' : 'login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    if (isRecovery) {
-      setView('reset')
-    }
-  }, [isRecovery])
+  // isRecovery の変化（PASSWORD_RECOVERY イベント到着）でリセット画面に切り替える。
+  // useEffect ではなくレンダー中の状態調整パターンで同期する。
+  const [prevRecovery, setPrevRecovery] = useState(isRecovery)
+  if (isRecovery !== prevRecovery) {
+    setPrevRecovery(isRecovery)
+    if (isRecovery) setView('reset')
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()

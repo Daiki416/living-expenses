@@ -1,5 +1,5 @@
 import { useRef, useState, useMemo, useCallback } from 'react'
-import { extractReceiptData, isValidScanItem, DEFAULT_SCAN_TAX_RATE, type ScanItem, type ScanResult } from '../lib/ocr'
+import { extractReceiptData, isValidScanItem, DEFAULT_SCAN_TAX_RATE, type ScanItem, type ScanResult, type TaxRate } from '../lib/ocr'
 import { sanitizeDate } from '../lib/validation'
 
 type OnAddGroupParent = {
@@ -11,7 +11,7 @@ type OnAddGroupParent = {
 type OnAddGroupChild = {
   description: string
   amount: number
-  taxRate: number
+  taxRate: TaxRate
 }
 
 type UseReceiptScanOptions = {
@@ -77,7 +77,6 @@ export function useReceiptScan({ defaultDate, onAddGroup, onClose }: UseReceiptS
     try {
       await onAddGroup(
         { date: scanResult.date, description: scanStoreName || 'レシート', categoryId },
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         validItems.map(item => ({ description: item.description, amount: item.amount!, taxRate: item.taxRate }))
       )
       onClose()

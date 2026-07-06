@@ -2,13 +2,12 @@ import { useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { useMonthlyTrend } from '../hooks/useMonthlyTrend'
 import type { Category } from '../lib/supabase'
+import { CHART_COLORS } from '../lib/chartColors'
 
 type Props = {
   categories: Category[]
   onClose: () => void
 }
-
-const CHART_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6']
 
 function calcDefaultStartYM(currentYM: string): string {
   const [y, m] = currentYM.split('-').map(Number)
@@ -237,7 +236,7 @@ export function MonthlyTrendView({ categories, onClose }: Props) {
                         key={id}
                         dataKey={id}
                         stackId="a"
-                        fill={CHART_COLORS[i % 8]}
+                        fill={CHART_COLORS[i % CHART_COLORS.length]}
                         name={id === '__uncategorized__' ? '未分類' : categoryName(id)}
                       />
                     ))}

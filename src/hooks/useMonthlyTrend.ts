@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { monthDateRange } from '../lib/date'
 
 export type MonthlyPoint = {
   ym: string
@@ -26,9 +27,7 @@ export function useMonthlyTrend(startYM: string, endYM: string) {
   useEffect(() => {
     const from = `${startYM}-01`
     const [ey, em] = endYM.split('-').map(Number)
-    const nextM = em === 12 ? 1 : em + 1
-    const nextY = em === 12 ? ey + 1 : ey
-    const to = `${nextY}-${String(nextM).padStart(2, '0')}-01`
+    const { to } = monthDateRange(ey, em)
 
     let cancelled = false
     ;(async () => {

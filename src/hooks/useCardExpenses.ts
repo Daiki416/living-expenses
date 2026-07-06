@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, type CardExpense, type CardExpenseReceiptWithCardExpenses } from '../lib/supabase'
+import { monthDateRange } from '../lib/date'
 
 export function useCardExpenses(year: number, month: number) {
   const [cardReceipts, setCardReceipts] = useState<CardExpenseReceiptWithCardExpenses[]>([])
@@ -7,10 +8,7 @@ export function useCardExpenses(year: number, month: number) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const from = `${year}-${String(month).padStart(2, '0')}-01`
-    const nextMonth = month === 12 ? 1 : month + 1
-    const nextYear = month === 12 ? year + 1 : year
-    const to = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`
+    const { from, to } = monthDateRange(year, month)
 
     let cancelled = false
     ;(async () => {
@@ -34,24 +32,6 @@ export function useCardExpenses(year: number, month: number) {
   }, [year, month])
 
   const cardExpenses = cardReceipts.flatMap(r => r.card_expenses)
-
-  async function addCardExpense(input: Omit<CardExpense, 'id' | 'created_at' | 'receipt_id'> & { date: string }) {
-    const { date, ...cardExpenseInput } = input
-    const { data: receiptData, error: receiptError } = await supabase
-      .from('card_expense_receipts')
-      .insert({ date, description: cardExpenseInput.description })
-      .select()
-      .single()
-    if (receiptError) throw new Error(receiptError.message)
-    const { data: expenseData, error: expenseError } = await supabase
-      .from('card_expenses')
-      .insert({ ...cardExpenseInput, receipt_id: receiptData.id })
-      .select()
-      .single()
-    if (expenseError) throw new Error(expenseError.message)
-    const newReceipt: CardExpenseReceiptWithCardExpenses = { ...receiptData, card_expenses: [expenseData] }
-    setCardReceipts(prev => [newReceipt, ...prev])
-  }
 
   async function addCardReceiptGroup(
     receipt: { date: string; description: string },
@@ -100,5 +80,5 @@ export function useCardExpenses(year: number, month: number) {
     setCardReceipts(prev => prev.map(r => r.id !== id ? r : { ...r, ...input }))
   }
 
-  return { cardReceipts, cardExpenses, loading, error, addCardExpense, addCardReceiptGroup, updateCardExpense, deleteCardReceipt, updateCardReceipt }
+  return { cardReceipts, cardExpenses, loading, error, addCardReceiptGroup, updateCardExpense, deleteCardReceipt, updateCardReceipt }
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Expense, CardExpense, Category } from '../lib/supabase'
+import { CHART_COLORS } from '../lib/chartColors'
 
 type Props = {
   expenses: Expense[]
@@ -47,7 +48,6 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
     return parentTotals[b] - parentTotals[a]
   })
 
-  const CHART_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6']
   const cx = 100
   const cy = 100
   const r = 80

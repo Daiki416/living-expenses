@@ -15,7 +15,7 @@
 | フロントエンド | React 19 + TypeScript + Vite |
 | スタイリング | Tailwind CSS v4 |
 | バックエンド/DB | Supabase (PostgreSQL + RLS) |
-| OCR | Anthropic API (claude-haiku) |
+| OCR | Anthropic API (claude-haiku) — Supabase Edge Function (`supabase/functions/ocr`) 経由で呼び出し |
 | テスト | Vitest |
 
 ---
@@ -80,8 +80,8 @@ src/
 
 ## 既知の設計トレードオフ（指摘不要）
 
-- `VITE_ANTHROPIC_API_KEY` をフロントエンドに保持 → **個人利用・セルフホストのため許容**
 - Supabase AnonKey のフロントエンド保持 → **Supabase の設計上の前提**
+- Anthropic API キーは Supabase Edge Function（`supabase/functions/ocr`）のシークレット `ANTHROPIC_API_KEY` として保持し、フロントエンドには置かない
 - コンポーネントの結合テストなし → `@testing-library/react` 未導入、純粋関数のみ Vitest でテスト
 
 ---
@@ -93,6 +93,7 @@ npm run dev          # 開発サーバー起動
 npm run build        # ビルド
 npm run test         # テスト実行（Vitest）
 npm run test:watch   # テストウォッチモード
+npm run lint         # ESLint（現在エラー0件・維持すること）
 npx tsc -p tsconfig.app.json  # 型チェックのみ（noUnusedLocals も有効）
 ```
 
@@ -103,5 +104,6 @@ npx tsc -p tsconfig.app.json  # 型チェックのみ（noUnusedLocals も有効
 ```
 VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
-VITE_ANTHROPIC_API_KEY=...
 ```
+
+OCR 用の `ANTHROPIC_API_KEY` はフロントの .env ではなく、Supabase Edge Function のシークレットとして設定する（`supabase secrets set ANTHROPIC_API_KEY=...`）。

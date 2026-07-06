@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import type { CardExpense, Category, CardExpenseReceiptWithCardExpenses } from '../lib/supabase'
 import { formatDate, resolveCategoryLabel } from '../lib/format'
 
@@ -66,9 +66,8 @@ export function CardExpenseList({ receipts, categories, onEdit, onDeleteReceipt,
             const isExpanded = expandedIds.has(receipt.id)
 
             return (
-              <>
+              <Fragment key={receipt.id}>
                 <tr
-                  key={receipt.id}
                   className="border-b border-gray-100 hover:bg-gray-50"
                 >
                   <td className="py-3 pr-3 text-gray-500 whitespace-nowrap">
@@ -136,7 +135,7 @@ export function CardExpenseList({ receipts, categories, onEdit, onDeleteReceipt,
                     </tr>
                   )
                 })}
-              </>
+              </Fragment>
             )
           })}
         </tbody>

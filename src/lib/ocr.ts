@@ -81,6 +81,7 @@ export async function extractReceiptData(imageFile: File): Promise<ReceiptData> 
   })
 
   if (error) throw new Error(error.message ?? 'OCR Edge Function の呼び出しに失敗しました')
+  if (data == null) throw new Error('OCR Edge Function のレスポンスが不正です')
 
   const receiptItems: ReceiptItem[] = Array.isArray(data.items) ? data.items.filter(isReceiptItem) : []
   return {

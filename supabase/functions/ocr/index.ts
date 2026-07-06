@@ -11,9 +11,20 @@ const OCR_MODEL = 'claude-haiku-4-5-20251001'
 const OCR_MAX_TOKENS = 1024
 const ANTHROPIC_API_VERSION = '2023-06-01'
 
+const ALLOWED_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+// クライアント側の上限 5MB を base64 化した長さ（約6.9M文字）+ 余裕
+const MAX_BASE64_LENGTH = 7_200_000
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers: CORS_HEADERS })
+  }
+
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    })
   }
 
   const authHeader = req.headers.get('Authorization')
@@ -59,10 +70,24 @@ Deno.serve(async (req: Request) => {
     const body = await req.json()
     base64 = body.base64
     mediaType = body.mediaType
-    if (!base64 || !mediaType) throw new Error('missing fields')
+    if (typeof base64 !== 'string' || base64 === '' || typeof mediaType !== 'string') throw new Error('missing fields')
   } catch {
     return new Response(JSON.stringify({ error: 'Invalid request body' }), {
       status: 400,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    })
+  }
+
+  if (!ALLOWED_MEDIA_TYPES.includes(mediaType)) {
+    return new Response(JSON.stringify({ error: 'サポートされていない画像形式です' }), {
+      status: 400,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    })
+  }
+
+  if (base64.length > MAX_BASE64_LENGTH) {
+    return new Response(JSON.stringify({ error: '画像ファイルは5MB以下にしてください' }), {
+      status: 413,
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
     })
   }

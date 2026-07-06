@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Member, Category } from '../lib/supabase'
 import { supabase } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
@@ -25,12 +25,18 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
   const [addingMember, setAddingMember] = useState(false)
   const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null)
   const [memberError, setMemberError] = useState<string | null>(null)
-  const [budgetDrafts, setBudgetDrafts] = useState<Record<string, string>>({})
+  const [budgetDrafts, setBudgetDrafts] = useState<Record<string, string>>(
+    () => Object.fromEntries(members.map(m => [m.id, String(m.monthly_budget)]))
+  )
   const [savingBudgetId, setSavingBudgetId] = useState<string | null>(null)
 
-  useEffect(() => {
+  // members の再取得（追加・削除・振込額保存後）でドラフトを再シードする。
+  // useEffect ではなくレンダー中の状態調整パターンで同期する。
+  const [prevMembers, setPrevMembers] = useState(members)
+  if (members !== prevMembers) {
+    setPrevMembers(members)
     setBudgetDrafts(Object.fromEntries(members.map(m => [m.id, String(m.monthly_budget)])))
-  }, [members])
+  }
 
   const [newParentName, setNewParentName] = useState('')
   const [addingParent, setAddingParent] = useState(false)
@@ -70,7 +76,7 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
       await onAddMember(name)
       setNewMemberName('')
     } catch (err) {
-      setMemberError((err as Error).message)
+      setMemberError(toUserErrorMessage(err))
     } finally {
       setAddingMember(false)
     }
@@ -83,7 +89,7 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
     try {
       await onDeleteMember(id)
     } catch (err) {
-      setMemberError((err as Error).message)
+      setMemberError(toUserErrorMessage(err))
     } finally {
       setDeletingMemberId(null)
     }
@@ -100,7 +106,7 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
     try {
       await onUpdateMemberBudget(id, budget)
     } catch (err) {
-      setMemberError((err as Error).message)
+      setMemberError(toUserErrorMessage(err))
     } finally {
       setSavingBudgetId(null)
     }
@@ -158,7 +164,7 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
     try {
       await onDeleteCategory(id)
     } catch (err) {
-      setCategoryError((err as Error).message)
+      setCategoryError(toUserErrorMessage(err))
     } finally {
       setDeletingCategoryId(null)
     }
