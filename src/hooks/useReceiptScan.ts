@@ -1,5 +1,5 @@
 import { useRef, useState, useMemo, useCallback } from 'react'
-import { extractReceiptData, isValidScanItem, DEFAULT_SCAN_TAX_RATE, type ScanItem, type ScanResult, type TaxRate } from '../lib/ocr'
+import { extractReceiptData, isValidScanItem, applyTax, DEFAULT_SCAN_TAX_RATE, type ScanItem, type ScanResult, type TaxRate } from '../lib/ocr'
 import type { Category } from '../lib/supabase'
 import { sanitizeDate } from '../lib/validation'
 import { applyRulesToItems } from '../lib/categoryRules'
@@ -93,6 +93,11 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
     [scanResult]
   )
 
+  const registeredTotal = useMemo(
+    () => validItems.reduce((sum, item) => sum + applyTax(item.amount!, item.taxRate), 0),
+    [validItems]
+  )
+
   async function handleAddFromReceipt() {
     if (submitting) return
     if (validItems.length === 0) { setError('追加する項目を選択してください'); return }
@@ -163,5 +168,6 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
     handleAddFromReceipt,
     resetScan,
     validScanCount,
+    registeredTotal,
   }
 }

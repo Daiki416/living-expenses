@@ -36,7 +36,7 @@ export function AddCardExpenseModal({ categories, defaultDate, rulesMap, onUpser
     scanParentCategoryId, scanChildCategoryId, fileInputRef,
     handleScanReceipt, handleScanStoreNameChange, handleScanDateChange,
     handleScanParentCategoryChange, handleScanChildCategoryChange,
-    updateScanItem, setItemCategory, addScanItem, applyCategoryToAll, handleAddFromReceipt, validScanCount,
+    updateScanItem, setItemCategory, addScanItem, applyCategoryToAll, handleAddFromReceipt, validScanCount, registeredTotal,
   } = useReceiptScan({
     defaultDate,
     categories,
@@ -132,6 +132,10 @@ export function AddCardExpenseModal({ categories, defaultDate, rulesMap, onUpser
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
       </div>
+
+      {registeredTotal > 0 && (
+        <p className="text-xs text-gray-400 text-right">登録合計 ¥{registeredTotal.toLocaleString()}</p>
+      )}
 
       <div className="shrink-0 flex gap-3 pt-3 border-t border-gray-100">
         <button

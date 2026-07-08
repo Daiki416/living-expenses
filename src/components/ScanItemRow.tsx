@@ -1,5 +1,5 @@
 import { memo, useMemo, useState } from 'react'
-import { toTaxRate } from '../lib/ocr'
+import { toTaxRate, applyTax } from '../lib/ocr'
 import type { ScanItem } from '../lib/ocr'
 import type { Category } from '../lib/supabase'
 import { CategorySelect } from './CategorySelect'
@@ -48,9 +48,12 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
     onSetCategory(index, childId || parentCategoryId || null)
   }
 
+  const showTaxedAmount =
+    item.selected && item.amount !== null && Number.isInteger(item.amount) && item.amount > 0
+
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-center gap-2">
+      <div className={`flex items-center gap-2 ${item.selected ? '' : 'opacity-50'}`}>
         <input
           type="checkbox"
           checked={item.selected}
@@ -61,6 +64,7 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
           type="text"
           value={item.description}
           onChange={(e) => onUpdate(index, { description: e.target.value })}
+          disabled={!item.selected}
           className="flex-1 min-w-0 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
         />
         <input
@@ -73,6 +77,7 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
           }}
           min={1}
           placeholder="金額"
+          disabled={!item.selected}
           className={`w-20 shrink-0 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 ${
             amountInvalid
               ? 'border-red-400 focus:ring-red-400'
@@ -82,6 +87,7 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
         <select
           value={item.taxRate}
           onChange={(e) => onUpdate(index, { taxRate: toTaxRate(Number(e.target.value)) })}
+          disabled={!item.selected}
           className="w-20 shrink-0 border border-gray-300 rounded-lg px-1 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
         >
           <option value={8}>8%</option>
@@ -90,16 +96,24 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
         </select>
       </div>
 
-      <div className="pl-6">
-        <button
-          type="button"
-          onClick={() => setPickerOpen(o => !o)}
-          className={`inline-flex items-center gap-1 border border-gray-300 rounded-full px-2.5 py-0.5 text-xs hover:bg-gray-50 transition ${
-            categoryLabel ? 'text-gray-600' : 'text-gray-400'
-          }`}
-        >
-          {categoryLabel ?? '未分類'}
-        </button>
+      <div className={`pl-6 ${item.selected ? '' : 'opacity-50'}`}>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPickerOpen(o => !o)}
+            disabled={!item.selected}
+            className={`inline-flex items-center gap-1 border border-gray-300 rounded-full px-2.5 py-0.5 text-xs hover:bg-gray-50 transition ${
+              categoryLabel ? 'text-gray-600' : 'text-gray-400'
+            }`}
+          >
+            {categoryLabel ?? '未分類'}
+          </button>
+          {showTaxedAmount && (
+            <span className="ml-auto text-xs text-gray-400 tabular-nums">
+              → ¥{applyTax(item.amount!, item.taxRate).toLocaleString()}
+            </span>
+          )}
+        </div>
         {pickerOpen && (
           <div className="mt-1.5 space-y-2">
             <CategorySelect

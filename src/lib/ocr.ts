@@ -51,7 +51,7 @@ export function resolveCategoryIndex(index: unknown, options: { id: string }[]):
   return null
 }
 
-export const DEFAULT_SCAN_TAX_RATE: TaxRate = 8
+export const DEFAULT_SCAN_TAX_RATE: TaxRate = 0
 
 const ALLOWED_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const
 type AllowedMediaType = typeof ALLOWED_MEDIA_TYPES[number]
