@@ -3,7 +3,7 @@ import type { Category } from './supabase'
 
 export type TaxRate = 8 | 10 | 0
 
-export type ScanItem = { description: string; amount: number | null; selected: boolean; taxRate: TaxRate; categoryId: string | null }
+export type ScanItem = { description: string; amount: number | null; selected: boolean; taxRate: TaxRate; categoryId: string | null; categoryTouched: boolean }
 export type ScanResult = { date: string; items: ScanItem[] }
 
 // API から抽出した生の品目（category は index 想定・未解決）

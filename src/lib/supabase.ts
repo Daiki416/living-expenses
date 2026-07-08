@@ -57,6 +57,13 @@ export type CardExpenseReceipt = {
   created_at: string
 }
 
+export type CategoryRule = {
+  id: string
+  keyword: string
+  category_id: string
+  created_at: string
+}
+
 export type ExpenseReceiptWithExpenses = ExpenseReceipt & { expenses: Expense[] }
 
 export type CardExpenseReceiptWithCardExpenses = CardExpenseReceipt & { card_expenses: CardExpense[] }

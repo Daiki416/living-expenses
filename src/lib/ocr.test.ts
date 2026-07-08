@@ -102,7 +102,7 @@ describe('resolveCategoryIndex', () => {
 })
 
 describe('isValidScanItem', () => {
-  const base: ScanItem = { description: '牛乳', amount: 200, selected: true, taxRate: 8, categoryId: null }
+  const base: ScanItem = { description: '牛乳', amount: 200, selected: true, taxRate: 8, categoryId: null, categoryTouched: false }
 
   it('有効なアイテムは true', () => {
     expect(isValidScanItem(base)).toBe(true)

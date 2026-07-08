@@ -24,11 +24,14 @@ type Props = {
   members: string[]
   categories: Category[]
   defaultDate: string
+  rulesMap: ReadonlyMap<string, string>
+  onUpsertRule: (keyword: string, categoryId: string) => void
+  onDeleteRule: (keyword: string) => void
   onAddGroup: (parent: OnAddGroupParent, children: OnAddGroupChild[]) => Promise<void>
   onClose: () => void
 }
 
-export function AddExpenseModal({ members, categories, defaultDate, onAddGroup, onClose }: Props) {
+export function AddExpenseModal({ members, categories, defaultDate, rulesMap, onUpsertRule, onDeleteRule, onAddGroup, onClose }: Props) {
   const [paidBy, setPaidBy] = useState(members[0] ?? '')
 
   useEscapeKey(onClose)
@@ -38,10 +41,13 @@ export function AddExpenseModal({ members, categories, defaultDate, onAddGroup, 
     scanParentCategoryId, scanChildCategoryId, fileInputRef,
     handleScanReceipt, handleScanStoreNameChange, handleScanDateChange,
     handleScanParentCategoryChange, handleScanChildCategoryChange,
-    updateScanItem, addScanItem, applyCategoryToAll, handleAddFromReceipt, validScanCount,
+    updateScanItem, setItemCategory, addScanItem, applyCategoryToAll, handleAddFromReceipt, validScanCount,
   } = useReceiptScan({
     defaultDate,
     categories,
+    rulesMap,
+    onUpsertRule,
+    onDeleteRule,
     onAddGroup: (parent, children) =>
       onAddGroup({ ...parent, paidBy }, children),
     onClose,
@@ -130,7 +136,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAddGroup, 
           <label className="block text-sm font-medium text-gray-600 mb-1">明細</label>
           <div className="space-y-2">
             {scanResult.items.map((item, i) => (
-              <ScanItemRow key={i} item={item} index={i} categories={categories} onUpdate={updateScanItem} />
+              <ScanItemRow key={i} item={item} index={i} categories={categories} onUpdate={updateScanItem} onSetCategory={setItemCategory} />
             ))}
           </div>
           <button

@@ -10,10 +10,12 @@ type Props = {
   cardExpense: CardExpense
   categories: Category[]
   onUpdate: (id: string, input: Omit<CardExpense, 'id' | 'created_at'>) => Promise<void>
+  onUpsertRule: (keyword: string, categoryId: string) => void
+  onDeleteRule: (keyword: string) => void
   onClose: () => void
 }
 
-export function EditCardExpenseModal({ cardExpense, categories, onUpdate, onClose }: Props) {
+export function EditCardExpenseModal({ cardExpense, categories, onUpdate, onUpsertRule, onDeleteRule, onClose }: Props) {
   const { parentId, childId } = resolveInitialCategoryIds(categories, cardExpense.category_id)
 
   const [description, setDescription] = useState(cardExpense.description)
@@ -35,6 +37,12 @@ export function EditCardExpenseModal({ cardExpense, categories, onUpdate, onClos
     setError(null)
     try {
       await onUpdate(cardExpense.id, { description: description.trim(), amount: result.validatedAmount, category_id: effectiveCategoryId, receipt_id: cardExpense.receipt_id })
+      // カテゴリーを訂正したら品名→カテゴリーを訂正メモリに反映する。
+      if (effectiveCategoryId !== cardExpense.category_id) {
+        const desc = description.trim()
+        if (effectiveCategoryId) onUpsertRule(desc, effectiveCategoryId)
+        else onDeleteRule(desc)
+      }
       onClose()
     } catch (err) {
       setError((err as Error).message)

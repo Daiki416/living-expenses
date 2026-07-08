@@ -9,6 +9,7 @@ type Props = {
   index: number
   categories: Category[]
   onUpdate: (index: number, patch: Partial<ScanItem>) => void
+  onSetCategory: (index: number, categoryId: string | null) => void
 }
 
 // categoryId から表示ラベル（親のみ or `親 > 子`）を算出する。未分類は null を返す。
@@ -21,7 +22,7 @@ function resolveCategoryLabel(categoryId: string | null, categories: Category[])
   return parent ? `${parent.name} > ${category.name}` : category.name
 }
 
-export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, onUpdate }: Props) {
+export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, onUpdate, onSetCategory }: Props) {
   const amountInvalid = item.selected && (item.amount === null || item.amount <= 0)
   const [pickerOpen, setPickerOpen] = useState(false)
 
@@ -40,11 +41,11 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
   )
 
   function handleParentChange(parentId: string, firstChildId: string) {
-    onUpdate(index, { categoryId: firstChildId || parentId || null })
+    onSetCategory(index, firstChildId || parentId || null)
   }
 
   function handleChildChange(childId: string) {
-    onUpdate(index, { categoryId: childId || parentCategoryId || null })
+    onSetCategory(index, childId || parentCategoryId || null)
   }
 
   return (

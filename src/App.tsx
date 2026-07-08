@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useExpenses } from './hooks/useExpenses'
 import { useMembers } from './hooks/useMembers'
 import { useCategories } from './hooks/useCategories'
+import { useCategoryRules } from './hooks/useCategoryRules'
 import { useCardExpenses } from './hooks/useCardExpenses'
 import { useAuth } from './hooks/useAuth'
 import { AddExpenseModal } from './components/AddExpenseModal'
@@ -64,6 +65,7 @@ function AppMain() {
   const prevMonthNum = now.getMonth() === 0 ? 12 : now.getMonth()
   const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
   const { categories, error: categoriesError, addCategory, deleteCategory, renameCategory, reorderCategory } = useCategories()
+  const { rulesMap, upsertRule, deleteRule } = useCategoryRules()
   const { receipts, expenses, loading: expensesLoading, error: expensesError, addReceiptGroup, updateExpense, deleteReceipt, updateReceipt } = useExpenses(year, month)
   const { expenses: prevMonthExpenses, loading: prevMonthLoading } = useExpenses(prevYear, prevMonthNum)
   const { cardReceipts, cardExpenses, loading: cardLoading, error: cardError, addCardReceiptGroup, updateCardExpense, deleteCardReceipt, updateCardReceipt } = useCardExpenses(year, month)
@@ -294,6 +296,9 @@ function AppMain() {
           members={memberNames}
           categories={categories}
           defaultDate={todayYYYYMMDD()}
+          rulesMap={rulesMap}
+          onUpsertRule={upsertRule}
+          onDeleteRule={deleteRule}
           onAddGroup={(parent, children) =>
             addReceiptGroup(
               { date: parent.date, description: parent.description },
@@ -313,6 +318,9 @@ function AppMain() {
         <AddCardExpenseModal
           categories={categories}
           defaultDate={todayYYYYMMDD()}
+          rulesMap={rulesMap}
+          onUpsertRule={upsertRule}
+          onDeleteRule={deleteRule}
           onAddGroup={(parent, children) =>
             addCardReceiptGroup(
               { date: parent.date, description: parent.description },
@@ -333,6 +341,8 @@ function AppMain() {
           members={memberNames}
           categories={categories}
           onUpdate={updateExpense}
+          onUpsertRule={upsertRule}
+          onDeleteRule={deleteRule}
           onClose={() => setEditingExpense(null)}
         />
       )}
@@ -342,6 +352,8 @@ function AppMain() {
           cardExpense={editingCardExpense}
           categories={categories}
           onUpdate={updateCardExpense}
+          onUpsertRule={upsertRule}
+          onDeleteRule={deleteRule}
           onClose={() => setEditingCardExpense(null)}
         />
       )}

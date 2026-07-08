@@ -2,6 +2,7 @@ import { useRef, useState, useMemo, useCallback } from 'react'
 import { extractReceiptData, isValidScanItem, DEFAULT_SCAN_TAX_RATE, type ScanItem, type ScanResult, type TaxRate } from '../lib/ocr'
 import type { Category } from '../lib/supabase'
 import { sanitizeDate } from '../lib/validation'
+import { applyRulesToItems } from '../lib/categoryRules'
 
 type OnAddGroupParent = {
   date: string
@@ -18,13 +19,16 @@ type OnAddGroupChild = {
 type UseReceiptScanOptions = {
   defaultDate: string
   categories: Category[]
+  rulesMap: ReadonlyMap<string, string>
+  onUpsertRule: (keyword: string, categoryId: string) => void
+  onDeleteRule: (keyword: string) => void
   onAddGroup: (parent: OnAddGroupParent, children: OnAddGroupChild[]) => Promise<void>
   onClose: () => void
 }
 
-const EMPTY_SCAN_ITEM: ScanItem = { description: '', amount: null, selected: true, taxRate: DEFAULT_SCAN_TAX_RATE, categoryId: null }
+const EMPTY_SCAN_ITEM: ScanItem = { description: '', amount: null, selected: true, taxRate: DEFAULT_SCAN_TAX_RATE, categoryId: null, categoryTouched: false }
 
-export function useReceiptScan({ defaultDate, categories, onAddGroup, onClose }: UseReceiptScanOptions) {
+export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule, onDeleteRule, onAddGroup, onClose }: UseReceiptScanOptions) {
   const [scanning, setScanning] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -33,6 +37,9 @@ export function useReceiptScan({ defaultDate, categories, onAddGroup, onClose }:
   const [scanParentCategoryId, setScanParentCategoryId] = useState('')
   const [scanChildCategoryId, setScanChildCategoryId] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 削除済みカテゴリーの stale なルールを弾くための有効カテゴリーID集合。
+  const validCategoryIds = useMemo(() => new Set(categories.map(c => c.id)), [categories])
 
   async function handleScanReceipt(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -43,9 +50,11 @@ export function useReceiptScan({ defaultDate, categories, onAddGroup, onClose }:
     try {
       const data = await extractReceiptData(file, categories)
       setScanStoreName(data.storeName ?? '')
+      const items = data.items.map(item => ({ ...item, selected: true, taxRate: DEFAULT_SCAN_TAX_RATE, categoryId: item.categoryId, categoryTouched: false }))
       setScanResult({
         date: sanitizeDate(data.date, defaultDate),
-        items: data.items.map(item => ({ ...item, selected: true, taxRate: DEFAULT_SCAN_TAX_RATE, categoryId: item.categoryId })),
+        // 訂正メモリを Haiku 判定より優先して確定オーバーライドする。
+        items: applyRulesToItems(items, rulesMap, validCategoryIds),
       })
     } catch (err) {
       setError((err as Error).message)
@@ -61,16 +70,21 @@ export function useReceiptScan({ defaultDate, categories, onAddGroup, onClose }:
     }))
   }, [])
 
+  // 品目のカテゴリーをユーザーが個別に手で選んだことを記録する（学習は登録確定時にまとめて行う）。
+  const setItemCategory = useCallback((index: number, categoryId: string | null) => {
+    updateScanItem(index, { categoryId, categoryTouched: true })
+  }, [updateScanItem])
+
   function addScanItem() {
     setScanResult(prev => ({ ...prev, items: [...prev.items, { ...EMPTY_SCAN_ITEM }] }))
   }
 
-  // グループのカテゴリー（子優先）を全明細の categoryId に一括上書きする。
+  // グループのカテゴリー（子優先）を全明細の categoryId に一括上書きする。一括適用は学習しない。
   const applyCategoryToAll = useCallback(() => {
     const categoryId = scanChildCategoryId || scanParentCategoryId || null
     setScanResult(prev => ({
       ...prev,
-      items: prev.items.map(item => ({ ...item, categoryId })),
+      items: prev.items.map(item => ({ ...item, categoryId, categoryTouched: false })),
     }))
   }, [scanChildCategoryId, scanParentCategoryId])
 
@@ -89,6 +103,12 @@ export function useReceiptScan({ defaultDate, categories, onAddGroup, onClose }:
         { date: scanResult.date, description: scanStoreName || 'レシート' },
         validItems.map(item => ({ description: item.description, amount: item.amount!, taxRate: item.taxRate, categoryId: item.categoryId }))
       )
+      // ユーザーが個別に手で選んだ明細のみ、登録確定後に訂正メモリへ学習する（fire-and-forget）。
+      for (const item of validItems) {
+        if (!item.categoryTouched) continue
+        if (item.categoryId) onUpsertRule(item.description, item.categoryId)
+        else onDeleteRule(item.description)
+      }
       onClose()
     } catch (err) {
       setError((err as Error).message)
@@ -137,6 +157,7 @@ export function useReceiptScan({ defaultDate, categories, onAddGroup, onClose }:
     handleScanParentCategoryChange,
     handleScanChildCategoryChange,
     updateScanItem,
+    setItemCategory,
     addScanItem,
     applyCategoryToAll,
     handleAddFromReceipt,
