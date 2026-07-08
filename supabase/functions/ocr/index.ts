@@ -124,7 +124,7 @@ Deno.serve(async (req: Request) => {
   const itemShape = categories.length > 0
     ? '{"description":"商品名","amount":商品行に印字されている金額の整数,"category":番号またはnull}'
     : '{"description":"商品名","amount":商品行に印字されている金額の整数}'
-  const promptText = `このレシート画像から店舗名と全ての商品・品目を抽出し、以下のJSON形式のみで返してください。\n{"storeName":"店舗名（不明な場合はnull）","date":"YYYY-MM-DD形式の購入日（不明な場合はnull）","items":[${itemShape}]}\n各商品のamountは印字された数字をそのままコピーしてください。税計算は不要です。\n小計・合計・税額・値引き等の集計行はitemsに含めないでください。JSONのみ返してください。${categoryPrompt}`
+  const promptText = `このレシート画像から店舗名と全ての商品・品目を抽出し、以下のJSON形式のみで返してください。\n{"storeName":"店舗名（不明な場合はnull）","date":"YYYY-MM-DD形式の購入日（不明な場合はnull）","items":[${itemShape}]}\n各商品のamountは印字された金額をそのままコピーしてください。税計算は不要です。\nただし特定の商品に紐づく値引き・割引がある場合は、その商品のamountを値引き後の金額にしてください。正味が印字されていれば（例:「¥216を¥198にしました」）その正味（198）を採用し、値引き額のみ印字されていれば（例:「-18」「値引 -18」）元金額から値引き額を引いた整数を採用してください。値引き行そのものをitemにしたり、マイナス金額のitemを作ったりしないでください。\n商品に紐づかないレシート全体のクーポン・割引は無視し、itemsに反映しないでください。\n小計・合計・税額の集計行はitemsに含めないでください。JSONのみ返してください。${categoryPrompt}`
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
