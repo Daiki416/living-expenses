@@ -50,7 +50,7 @@ export function CardExpenseList({ receipts, categories, onEdit, onDeleteReceipt,
             <th className="pb-2 pr-3 font-medium whitespace-nowrap">
               <button
                 onClick={() => setSortAsc(v => !v)}
-                className="hover:text-indigo-500 transition"
+                className="hover:text-indigo-500 transition-colors"
               >
                 日付 {sortAsc ? '↑' : '↓'}
               </button>
@@ -75,7 +75,7 @@ export function CardExpenseList({ receipts, categories, onEdit, onDeleteReceipt,
                       <button
                         type="button"
                         onClick={() => toggleExpand(receipt.id)}
-                        className="text-gray-400 hover:text-indigo-500 transition text-xs leading-none"
+                        className="text-gray-400 hover:text-indigo-500 transition-colors text-xs leading-none"
                         title={isExpanded ? '閉じる' : '展開'}
                       >
                         {isExpanded ? '▼' : '▶'}
@@ -91,7 +91,7 @@ export function CardExpenseList({ receipts, categories, onEdit, onDeleteReceipt,
                       {receipt.description}
                     </div>
                   </td>
-                  <td className="py-3 pr-3 text-right font-medium text-gray-800 whitespace-nowrap">
+                  <td className="py-3 pr-3 text-right font-medium text-gray-800 whitespace-nowrap tabular-nums">
                     ¥{total.toLocaleString()}
                   </td>
                   <td className="py-3 text-right">
@@ -108,7 +108,7 @@ export function CardExpenseList({ receipts, categories, onEdit, onDeleteReceipt,
                         }
                       }}
                       disabled={deletingId === receipt.id}
-                      className="text-gray-300 hover:text-red-400 disabled:opacity-40 transition text-base leading-none"
+                      className="text-gray-300 hover:text-red-400 disabled:opacity-40 transition-colors text-base leading-none"
                       title="削除"
                     >
                       ×
@@ -128,7 +128,7 @@ export function CardExpenseList({ receipts, categories, onEdit, onDeleteReceipt,
                         <div>{expense.description}</div>
                         {catName && <div className="text-xs text-gray-400">{catName}</div>}
                       </td>
-                      <td className="py-2 pr-3 text-right text-gray-600 whitespace-nowrap">
+                      <td className="py-2 pr-3 text-right text-gray-600 whitespace-nowrap tabular-nums">
                         ¥{expense.amount.toLocaleString()}
                       </td>
                       <td className="py-2"></td>

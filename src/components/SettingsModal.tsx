@@ -321,24 +321,24 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
       <div className="shrink-0">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-800">設定</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition text-xl leading-none">×</button>
+          <button onClick={onClose} className="icon-btn text-xl leading-none">×</button>
         </div>
         <div className="flex border-b border-gray-200 mb-4">
           <button
             onClick={() => setTab('members')}
-            className={`flex-1 py-2 text-sm font-medium transition ${tab === 'members' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === 'members' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
           >
             メンバー
           </button>
           <button
             onClick={() => setTab('categories')}
-            className={`flex-1 py-2 text-sm font-medium transition ${tab === 'categories' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === 'categories' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
           >
             カテゴリー
           </button>
           <button
             onClick={() => setTab('password')}
-            className={`flex-1 py-2 text-sm font-medium transition ${tab === 'password' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === 'password' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
           >
             パスワード
           </button>
@@ -364,13 +364,13 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                       onKeyDown={e => { if (e.key === 'Enter') handleSaveBudget(m.id) }}
                       disabled={savingBudgetId === m.id}
                       placeholder="振込額"
-                      className="w-24 border border-gray-300 rounded-lg px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-50"
+                      className="field-input w-24 px-2 py-1 text-sm text-right disabled:opacity-50"
                     />
                     <span className="text-xs text-gray-500 shrink-0">円</span>
                     <button
                       onClick={() => handleDeleteMember(m.id, m.name)}
                       disabled={deletingMemberId === m.id}
-                      className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition ml-2"
+                      className="btn-danger text-xs ml-2"
                     >
                       {deletingMemberId === m.id ? '削除中…' : '削除'}
                     </button>
@@ -391,12 +391,12 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                 onChange={(e) => setNewMemberName(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !addingMember && newMemberName.trim()) handleAddMember() }}
                 placeholder="名前を入力"
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="field-input flex-1"
               />
               <button
                 onClick={handleAddMember}
                 disabled={addingMember || !newMemberName.trim()}
-                className="bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition"
+                className="btn-primary px-4 py-2"
               >
                 {addingMember ? '追加中…' : '追加'}
               </button>
@@ -439,13 +439,13 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                                       if (e.key === 'Enter') { e.preventDefault(); handleRenameCategory(parent.id) }
                                       else if (e.key === 'Escape') { e.stopPropagation(); cancelEditCategory() }
                                     }}
-                                    className="flex-1 min-w-0 border border-gray-300 rounded-lg px-2 py-1 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                                    className="field-input flex-1 min-w-0 px-2 py-1 text-sm font-medium"
                                   />
                                 ) : (
                                   <button
                                     type="button"
                                     onClick={() => startEditCategory(parent.id, parent.name)}
-                                    className="text-sm font-medium text-gray-700 text-left truncate hover:text-indigo-600 transition"
+                                    className="text-sm font-medium text-gray-700 text-left truncate hover:text-indigo-600 transition-colors"
                                   >
                                     {parent.name}
                                   </button>
@@ -454,7 +454,7 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                               <button
                                 onClick={() => handleDeleteCategory(parent.id, parent.name)}
                                 disabled={deletingCategoryId === parent.id}
-                                className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition shrink-0"
+                                className="btn-danger text-xs shrink-0"
                               >
                                 {deletingCategoryId === parent.id ? '削除中…' : '削除'}
                               </button>
@@ -483,13 +483,13 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                                                   if (e.key === 'Enter') { e.preventDefault(); handleRenameCategory(child.id) }
                                                   else if (e.key === 'Escape') { e.stopPropagation(); cancelEditCategory() }
                                                 }}
-                                                className="flex-1 min-w-0 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                                                className="field-input flex-1 min-w-0 px-2 py-1 text-sm"
                                               />
                                             ) : (
                                               <button
                                                 type="button"
                                                 onClick={() => startEditCategory(child.id, child.name)}
-                                                className="text-sm text-gray-600 text-left truncate hover:text-indigo-600 transition"
+                                                className="text-sm text-gray-600 text-left truncate hover:text-indigo-600 transition-colors"
                                               >
                                                 {child.name}
                                               </button>
@@ -498,7 +498,7 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                                           <button
                                             onClick={() => handleDeleteCategory(child.id, child.name)}
                                             disabled={deletingCategoryId === child.id}
-                                            className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition shrink-0"
+                                            className="btn-danger text-xs shrink-0"
                                           >
                                             {deletingCategoryId === child.id ? '削除中…' : '削除'}
                                           </button>
@@ -531,12 +531,12 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                   }
                 }}
                 placeholder="大分類名（例：食費）"
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="field-input flex-1"
               />
               <button
                 onClick={() => handleAddCategory(newParentName.trim(), null, () => setNewParentName(''), setAddingParent)}
                 disabled={addingParent || !newParentName.trim()}
-                className="bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition whitespace-nowrap"
+                className="btn-primary px-4 py-2 whitespace-nowrap"
               >
                 {addingParent ? '追加中…' : '追加'}
               </button>
@@ -546,7 +546,7 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                 <select
                   value={newChildParentId}
                   onChange={(e) => setNewChildParentId(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                  className="field-input"
                 >
                   <option value="">大分類を選択</option>
                   {parentCategories.map(p => (
@@ -564,12 +564,12 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                       }
                     }}
                     placeholder="小分類名"
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="field-input flex-1"
                   />
                   <button
                     onClick={() => handleAddCategory(newChildName.trim(), newChildParentId, () => setNewChildName(''), setAddingChild)}
                     disabled={addingChild || !newChildName.trim() || !newChildParentId}
-                    className="bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition whitespace-nowrap"
+                    className="btn-primary px-4 py-2 whitespace-nowrap"
                   >
                     {addingChild ? '追加中…' : '追加'}
                   </button>
@@ -589,19 +589,19 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="新しいパスワード"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="field-input"
             />
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="新しいパスワード（確認）"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="field-input"
             />
             <button
               onClick={handleChangePassword}
               disabled={passwordChanging || !newPassword.trim()}
-              className="w-full bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition"
+              className="btn-primary w-full px-4 py-2"
             >
               {passwordChanging ? '変更中…' : '変更する'}
             </button>

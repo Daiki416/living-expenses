@@ -63,7 +63,7 @@ export function EditCardExpenseModal({ cardExpense, categories, onUpdate, onUpse
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="field-input"
           />
         </div>
 
@@ -76,7 +76,7 @@ export function EditCardExpenseModal({ cardExpense, categories, onUpdate, onUpse
             min={1}
             step={1}
             required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="field-input"
           />
         </div>
 
@@ -97,14 +97,14 @@ export function EditCardExpenseModal({ cardExpense, categories, onUpdate, onUpse
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 border border-gray-300 text-gray-600 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition"
+            className="btn-secondary flex-1 py-2"
           >
             キャンセル
           </button>
           <button
             type="submit"
             disabled={submitting}
-            className="flex-1 bg-indigo-500 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-60 transition"
+            className="btn-primary flex-1 py-2"
           >
             {submitting ? '更新中…' : '更新'}
           </button>

@@ -105,14 +105,14 @@ export function MonthlyTrendView({ categories, onClose }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-transparent">
       <div className="max-w-xl mx-auto px-4 py-6">
 
         {/* ヘッダー */}
         <div className="flex items-center justify-between mb-5">
           <button
             onClick={onClose}
-            className="text-indigo-500 hover:text-indigo-700 text-sm font-medium transition"
+            className="text-indigo-500 hover:text-indigo-700 text-sm font-medium transition-colors"
           >
             ← 戻る
           </button>
@@ -121,13 +121,13 @@ export function MonthlyTrendView({ categories, onClose }: Props) {
         </div>
 
         {/* 月範囲セレクター */}
-        <div className="bg-white rounded-xl shadow-sm px-4 py-3 mb-4 flex items-center gap-2">
+        <div className="card px-4 py-3 mb-4 flex items-center gap-2">
           <input
             type="month"
             value={startYM}
             onChange={e => setStartYM(e.target.value)}
             max={endYM}
-            className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="field-input w-auto px-2 py-1 text-sm"
           />
           <span className="text-gray-400">〜</span>
           <input
@@ -135,19 +135,17 @@ export function MonthlyTrendView({ categories, onClose }: Props) {
             value={endYM}
             onChange={e => setEndYM(e.target.value)}
             min={startYM}
-            className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="field-input w-auto px-2 py-1 text-sm"
           />
         </div>
 
         {/* カテゴリーフィルター */}
-        <div className="bg-white rounded-xl shadow-sm px-4 py-3 mb-4">
+        <div className="card px-4 py-3 mb-4">
           <div className="flex flex-wrap gap-1.5 mb-2">
             <button
               onClick={() => { setSelectedParentId(null); setSelectedChildId(null) }}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition ${
-                selectedParentId === null
-                  ? 'bg-indigo-100 text-indigo-700'
-                  : 'text-gray-500 hover:bg-gray-100'
+              className={`px-3 py-1 text-xs font-medium ${
+                selectedParentId === null ? 'chip-active' : 'chip'
               }`}
             >
               全体
@@ -156,10 +154,8 @@ export function MonthlyTrendView({ categories, onClose }: Props) {
               <button
                 key={cat.id}
                 onClick={() => { setSelectedParentId(cat.id); setSelectedChildId(null) }}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition ${
-                  selectedParentId === cat.id
-                    ? 'bg-indigo-100 text-indigo-700'
-                    : 'text-gray-500 hover:bg-gray-100'
+                className={`px-3 py-1 text-xs font-medium ${
+                  selectedParentId === cat.id ? 'chip-active' : 'chip'
                 }`}
               >
                 {cat.name}
@@ -173,10 +169,8 @@ export function MonthlyTrendView({ categories, onClose }: Props) {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedChildId(selectedChildId === cat.id ? null : cat.id)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition ${
-                    selectedChildId === cat.id
-                      ? 'bg-indigo-100 text-indigo-700'
-                      : 'text-gray-500 hover:bg-gray-100'
+                  className={`px-3 py-1 text-xs font-medium ${
+                    selectedChildId === cat.id ? 'chip-active' : 'chip'
                   }`}
                 >
                   {cat.name}
@@ -187,7 +181,7 @@ export function MonthlyTrendView({ categories, onClose }: Props) {
         </div>
 
         {/* グラフ */}
-        <div className="bg-white rounded-xl shadow-sm px-4 py-4">
+        <div className="card px-4 py-4">
           {loading ? (
             <div className="text-center text-gray-400 py-8 text-sm">読み込み中…</div>
           ) : error ? (

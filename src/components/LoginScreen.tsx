@@ -78,7 +78,7 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
 
   if (view === 'forgot') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-transparent flex items-center justify-center px-4">
         <div className="bg-white rounded-xl shadow-sm w-full max-w-sm px-6 py-8">
           <h1 className="text-xl font-bold text-gray-800 mb-6 text-center">パスワードリセット</h1>
 
@@ -94,7 +94,7 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
                 onChange={e => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                className="field-input text-sm"
               />
             </div>
 
@@ -105,7 +105,7 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
             <button
               type="submit"
               disabled={loading}
-              className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white font-medium text-sm px-4 py-2.5 rounded-lg shadow-sm transition"
+              className="btn-primary px-4 py-2.5 shadow-sm"
             >
               {loading ? '送信中…' : 'リセットメールを送信'}
             </button>
@@ -115,7 +115,7 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
             <button
               type="button"
               onClick={() => { setError(null); setView('login') }}
-              className="text-xs text-indigo-500 hover:text-indigo-700 transition"
+              className="text-xs text-indigo-500 hover:text-indigo-700 transition-colors"
             >
               戻る
             </button>
@@ -127,7 +127,7 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
 
   if (view === 'sent') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-transparent flex items-center justify-center px-4">
         <div className="bg-white rounded-xl shadow-sm w-full max-w-sm px-6 py-8">
           <h1 className="text-xl font-bold text-gray-800 mb-6 text-center">メールを送信しました</h1>
 
@@ -139,7 +139,7 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
             <button
               type="button"
               onClick={() => { setError(null); setView('login') }}
-              className="text-xs text-indigo-500 hover:text-indigo-700 transition"
+              className="text-xs text-indigo-500 hover:text-indigo-700 transition-colors"
             >
               ログイン画面に戻る
             </button>
@@ -151,7 +151,7 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
 
   if (view === 'reset') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-transparent flex items-center justify-center px-4">
         <div className="bg-white rounded-xl shadow-sm w-full max-w-sm px-6 py-8">
           <h1 className="text-xl font-bold text-gray-800 mb-6 text-center">新しいパスワードを設定</h1>
 
@@ -167,7 +167,7 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
                 onChange={e => setPassword(e.target.value)}
                 required
                 autoComplete="new-password"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                className="field-input text-sm"
               />
             </div>
 
@@ -182,7 +182,7 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
                 onChange={e => setConfirmPassword(e.target.value)}
                 required
                 autoComplete="new-password"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                className="field-input text-sm"
               />
             </div>
 
@@ -193,7 +193,7 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
             <button
               type="submit"
               disabled={loading}
-              className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white font-medium text-sm px-4 py-2.5 rounded-lg shadow-sm transition"
+              className="btn-primary px-4 py-2.5 shadow-sm"
             >
               {loading ? '更新中…' : 'パスワードを更新'}
             </button>
@@ -204,7 +204,7 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-transparent flex items-center justify-center px-4">
       <div className="bg-white rounded-xl shadow-sm w-full max-w-sm px-6 py-8">
         <h1 className="text-xl font-bold text-gray-800 mb-6 text-center">家計管理</h1>
 
@@ -220,7 +220,7 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
               onChange={e => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              className="field-input text-sm"
             />
           </div>
 
@@ -235,13 +235,13 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
               onChange={e => setPassword(e.target.value)}
               required
               autoComplete="current-password"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              className="field-input text-sm"
             />
             <p className="text-right mt-1">
               <button
                 type="button"
                 onClick={() => { setError(null); setView('forgot') }}
-                className="text-xs text-indigo-500 hover:text-indigo-700 transition"
+                className="text-xs text-indigo-500 hover:text-indigo-700 transition-colors"
               >
                 パスワードをお忘れですか？
               </button>

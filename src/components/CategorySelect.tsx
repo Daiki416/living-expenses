@@ -44,7 +44,7 @@ export function CategorySelect({ categories, parentCategoryId, childCategoryId, 
       <select
         value={parentCategoryId}
         onChange={handleParentChange}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+        className="field-input"
       >
         <option value="">未分類</option>
         {parentCategories.map(c => (
@@ -55,7 +55,7 @@ export function CategorySelect({ categories, parentCategoryId, childCategoryId, 
         <select
           value={childCategoryId}
           onChange={(e) => onChildChange(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white mt-2"
+          className="field-input mt-2"
         >
           {childCategories.map(c => (
             <option key={c.id} value={c.id}>{c.name}</option>

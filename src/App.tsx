@@ -30,7 +30,7 @@ export default function App() {
 
   if (initializing) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-transparent flex items-center justify-center">
         <p className="text-gray-400 text-sm">読み込み中…</p>
       </div>
     )
@@ -96,7 +96,7 @@ function AppMain() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-transparent">
       <div className="max-w-xl mx-auto px-4 py-6">
 
         {/* Header */}
@@ -105,7 +105,7 @@ function AppMain() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowTrend(true)}
-              className="text-gray-400 hover:text-gray-600 transition text-xl"
+              className="icon-btn text-xl"
               title="支出推移"
             >
               📊
@@ -113,14 +113,14 @@ function AppMain() {
             <button
               onClick={() => setShowSettings(true)}
               disabled={membersLoading}
-              className="text-gray-400 hover:text-gray-600 disabled:opacity-40 transition text-xl"
+              className="icon-btn text-xl"
               title="設定"
             >
               ⚙
             </button>
             <button
               onClick={() => supabase.auth.signOut()}
-              className="text-xs text-gray-400 hover:text-gray-600 transition px-2 py-1 rounded border border-gray-200 hover:border-gray-300"
+              className="icon-btn text-xs px-2 py-1 rounded border border-gray-200 hover:border-gray-300"
               title="ログアウト"
             >
               ログアウト
@@ -144,13 +144,13 @@ function AppMain() {
                 <div className="flex gap-2 shrink-0">
                   <button
                     onClick={() => { localStorage.setItem('reminderDismissedYM', currentYM); setReminderDismissed(true); setReminderConfirming(false) }}
-                    className="text-xs font-medium bg-amber-500 text-white px-3 py-1 rounded-lg hover:bg-amber-600 transition"
+                    className="text-xs font-medium bg-amber-500 text-white px-3 py-1 rounded-lg hover:bg-amber-600 transition-colors"
                   >
                     はい
                   </button>
                   <button
                     onClick={() => setReminderConfirming(false)}
-                    className="text-xs font-medium border border-amber-400 text-amber-700 px-3 py-1 rounded-lg hover:bg-amber-100 transition"
+                    className="text-xs font-medium border border-amber-400 text-amber-700 px-3 py-1 rounded-lg hover:bg-amber-100 transition-colors"
                   >
                     いいえ
                   </button>
@@ -182,7 +182,7 @@ function AppMain() {
                 </div>
                 <button
                   onClick={() => setReminderConfirming(true)}
-                  className="text-amber-500 hover:text-amber-700 text-lg leading-none shrink-0 transition"
+                  className="text-amber-500 hover:text-amber-700 text-lg leading-none shrink-0 transition-colors"
                   aria-label="閉じる"
                 >
                   ×
@@ -193,10 +193,10 @@ function AppMain() {
         )}
 
         {/* Month nav */}
-        <div className="flex items-center justify-between bg-white rounded-xl shadow-sm px-5 py-3 mb-4">
-          <button onClick={prevMonth} className="text-gray-400 hover:text-indigo-500 transition text-lg font-medium px-2">‹</button>
-          <span className="font-semibold text-gray-700">{year}年{month}月</span>
-          <button onClick={nextMonth} className="text-gray-400 hover:text-indigo-500 transition text-lg font-medium px-2">›</button>
+        <div className="flex items-center justify-between card px-4 py-2.5 mb-4">
+          <button onClick={prevMonth} className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors text-xl leading-none">‹</button>
+          <span className="text-base font-semibold text-gray-800 tabular-nums">{year}年{month}月</span>
+          <button onClick={nextMonth} className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors text-xl leading-none">›</button>
         </div>
 
         {/* Category summary */}
@@ -210,10 +210,12 @@ function AppMain() {
         {/* 立替セクション */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">立替</h2>
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">
+              <span className="w-1 h-4 rounded-full bg-indigo-500"></span>立替
+            </h2>
             <button
               onClick={() => setShowAdd(true)}
-              className="bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-sm transition"
+              className="btn-primary text-xs px-3 py-1.5 shadow-sm"
             >
               ＋ 追加
             </button>
@@ -223,15 +225,15 @@ function AppMain() {
           {memberNames.length > 0 && (
             <div className="grid grid-cols-2 gap-3 mb-3">
               {memberNames.map(name => (
-                <div key={name} className="bg-indigo-50 rounded-xl px-4 py-3 text-center">
-                  <div className="text-xs text-indigo-500 font-medium mb-0.5">{name}</div>
-                  <div className="text-lg font-semibold text-indigo-700">¥{memberTotals[name].toLocaleString()}</div>
+                <div key={name} className="bg-gradient-to-br from-indigo-50 to-indigo-100/70 border border-indigo-100 rounded-2xl px-4 py-3.5 text-center">
+                  <div className="text-xs text-indigo-500 font-medium mb-1">{name}</div>
+                  <div className="text-2xl font-bold text-indigo-700 tabular-nums tracking-tight">¥{memberTotals[name].toLocaleString()}</div>
                 </div>
               ))}
             </div>
           )}
 
-          <div className="bg-white rounded-xl shadow-sm px-5 py-4">
+          <div className="card px-5 py-4">
             {expensesLoading ? (
               <div className="text-center text-gray-400 py-8 text-sm">読み込み中…</div>
             ) : expensesError ? (
@@ -250,23 +252,25 @@ function AppMain() {
             )}
           </div>
           {expensesLoading || expenseTotal === 0 ? null : (
-            <p className="text-xs text-gray-400 text-right mt-1">合計 ¥{expenseTotal.toLocaleString()}</p>
+            <p className="text-xs text-gray-400 text-right mt-1 tabular-nums">合計 ¥{expenseTotal.toLocaleString()}</p>
           )}
         </div>
 
         {/* クレカセクション */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">クレカ</h2>
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">
+              <span className="w-1 h-4 rounded-full bg-indigo-500"></span>クレカ
+            </h2>
             <button
               onClick={() => setShowAddCard(true)}
-              className="bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-sm transition"
+              className="btn-primary text-xs px-3 py-1.5 shadow-sm"
             >
               ＋ 追加
             </button>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm px-5 py-4">
+          <div className="card px-5 py-4">
             {cardLoading ? (
               <div className="text-center text-gray-400 py-8 text-sm">読み込み中…</div>
             ) : cardError ? (
@@ -285,7 +289,7 @@ function AppMain() {
             )}
           </div>
           {cardLoading || cardTotal === 0 ? null : (
-            <p className="text-xs text-gray-400 text-right mt-1">合計 ¥{cardTotal.toLocaleString()}</p>
+            <p className="text-xs text-gray-400 text-right mt-1 tabular-nums">合計 ¥{cardTotal.toLocaleString()}</p>
           )}
         </div>
 

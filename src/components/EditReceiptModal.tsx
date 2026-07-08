@@ -43,7 +43,7 @@ export function EditReceiptModal({ receiptId, initialDescription, initialDate, o
               type="date"
               value={date}
               onChange={e => setDate(e.target.value)}
-              className="w-full min-w-0 appearance-none border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="field-input min-w-0 appearance-none"
             />
           </div>
         </div>
@@ -53,7 +53,7 @@ export function EditReceiptModal({ receiptId, initialDescription, initialDate, o
             type="text"
             value={description}
             onChange={e => setDescription(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="field-input"
           />
         </div>
         {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -62,7 +62,7 @@ export function EditReceiptModal({ receiptId, initialDescription, initialDate, o
         <button
           type="button"
           onClick={onClose}
-          className="flex-1 border border-gray-300 text-gray-600 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition"
+          className="btn-secondary flex-1 py-2"
         >
           キャンセル
         </button>
@@ -70,7 +70,7 @@ export function EditReceiptModal({ receiptId, initialDescription, initialDate, o
           type="button"
           onClick={handleSubmit}
           disabled={submitting || !description.trim()}
-          className="flex-1 bg-indigo-500 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-60 transition"
+          className="btn-primary flex-1 py-2"
         >
           {submitting ? '保存中…' : '保存'}
         </button>

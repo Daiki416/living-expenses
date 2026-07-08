@@ -72,7 +72,7 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={scanning || submitting}
-          className="w-full mb-4 border border-dashed border-indigo-300 text-indigo-500 rounded-lg py-2 text-sm font-medium hover:bg-indigo-50 disabled:opacity-50 transition"
+          className="w-full mb-4 border border-dashed border-indigo-300 text-indigo-500 rounded-lg py-2 text-sm font-medium hover:bg-indigo-50 disabled:opacity-50 transition-colors"
         >
           {scanning ? '読み込み中…' : 'レシートを読み込む'}
         </button>
@@ -86,7 +86,7 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
               type="date"
               value={scanResult.date}
               onChange={(e) => handleScanDateChange(e.target.value)}
-              className="w-full min-w-0 appearance-none border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="field-input min-w-0 appearance-none"
             />
           </div>
         </div>
@@ -115,7 +115,7 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
           <button
             type="button"
             onClick={applyCategoryToAll}
-            className="w-full mt-2 border border-dashed border-gray-300 text-gray-500 rounded-lg py-1.5 text-sm hover:bg-gray-50 transition"
+            className="w-full mt-2 border border-dashed border-gray-300 text-gray-500 rounded-lg py-1.5 text-sm hover:bg-gray-50 transition-colors"
           >
             全明細に適用
           </button>
@@ -128,7 +128,7 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
             value={scanStoreName}
             onChange={(e) => handleScanStoreNameChange(e.target.value)}
             placeholder="例：スーパー"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="field-input"
           />
         </div>
 
@@ -142,7 +142,7 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
           <button
             type="button"
             onClick={addScanItem}
-            className="w-full mt-2 border border-dashed border-gray-300 text-gray-500 rounded-lg py-1.5 text-sm hover:bg-gray-50 transition"
+            className="w-full mt-2 border border-dashed border-gray-300 text-gray-500 rounded-lg py-1.5 text-sm hover:bg-gray-50 transition-colors"
           >
             ＋ 明細を追加
           </button>
@@ -159,7 +159,7 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
         <button
           type="button"
           onClick={onClose}
-          className="flex-1 border border-gray-300 text-gray-600 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition"
+          className="btn-secondary flex-1 py-2"
         >
           キャンセル
         </button>
@@ -167,7 +167,7 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
           type="button"
           onClick={handleAddFromReceipt}
           disabled={submitting}
-          className="flex-1 bg-indigo-500 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-60 transition"
+          className="btn-primary flex-1 py-2"
         >
           {addButtonLabel}
         </button>

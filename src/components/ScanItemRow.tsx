@@ -65,7 +65,7 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
           value={item.description}
           onChange={(e) => onUpdate(index, { description: e.target.value })}
           disabled={!item.selected}
-          className="flex-1 min-w-0 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          className="field-input flex-1 min-w-0 px-2 py-1.5 text-sm"
         />
         <input
           type="number"
@@ -88,7 +88,7 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
           value={item.taxRate}
           onChange={(e) => onUpdate(index, { taxRate: toTaxRate(Number(e.target.value)) })}
           disabled={!item.selected}
-          className="w-20 shrink-0 border border-gray-300 rounded-lg px-1 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          className="field-input w-20 shrink-0 px-1 py-1.5 text-sm"
         >
           <option value={8}>8%</option>
           <option value={10}>10%</option>
@@ -102,7 +102,7 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
             type="button"
             onClick={() => setPickerOpen(o => !o)}
             disabled={!item.selected}
-            className={`inline-flex items-center gap-1 border border-gray-300 rounded-full px-2.5 py-0.5 text-xs hover:bg-gray-50 transition ${
+            className={`chip inline-flex items-center gap-1 border border-gray-300 px-2.5 py-0.5 text-xs ${
               categoryLabel ? 'text-gray-600' : 'text-gray-400'
             }`}
           >
