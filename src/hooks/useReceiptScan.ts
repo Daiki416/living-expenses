@@ -50,7 +50,7 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
     try {
       const data = await extractReceiptData(file, categories)
       setScanStoreName(data.storeName ?? '')
-      const items = data.items.map(item => ({ ...item, selected: true, taxRate: DEFAULT_SCAN_TAX_RATE, categoryId: item.categoryId, categoryTouched: false }))
+      const items = data.items.map(item => ({ ...item, selected: true, taxRate: item.taxRate, categoryId: item.categoryId, categoryTouched: false }))
       setScanResult({
         date: sanitizeDate(data.date, defaultDate),
         // 訂正メモリを Haiku 判定より優先して確定オーバーライドする。

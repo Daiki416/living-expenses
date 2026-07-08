@@ -10,12 +10,14 @@ export type ScanResult = { date: string; items: ScanItem[] }
 type RawReceiptItem = {
   description: string
   amount: number
+  taxRate?: unknown
 }
 
 // カテゴリー index を id に解決したあとの品目
 type ReceiptItem = {
   description: string
   amount: number
+  taxRate: TaxRate
   categoryId: string | null
 }
 
@@ -69,6 +71,11 @@ export function applyTax(amount: number, taxRate: TaxRate): number {
 export function toTaxRate(rawValue: number): TaxRate {
   if (rawValue === 8 || rawValue === 10 || rawValue === 0) return rawValue
   return 8
+}
+
+// OCR経路の unknown な taxRate を検証する。0|8|10 のみ採用し、それ以外は 8。
+export function resolveTaxRate(value: unknown): TaxRate {
+  return value === 8 || value === 10 || value === 0 ? value : 8
 }
 
 export function isValidScanItem(item: ScanItem): boolean {
@@ -126,6 +133,7 @@ export async function extractReceiptData(imageFile: File, categories: Category[]
     .map((item) => ({
       description: item.description,
       amount: Math.round(item.amount),
+      taxRate: resolveTaxRate((item as { taxRate?: unknown }).taxRate),
       categoryId: resolveCategoryIndex((item as { category?: unknown }).category, options),
     }))
   return {

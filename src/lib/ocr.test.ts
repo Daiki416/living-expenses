@@ -4,7 +4,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 // テストを環境変数・ネットワーク・Node の WebSocket 実装に依存させない
 vi.mock('./supabase', () => ({ supabase: { functions: { invoke: vi.fn() } } }))
 
-import { toTaxRate, isValidScanItem, toMediaType, applyTax, fileToBase64, isReceiptItem, buildCategoryOptions, resolveCategoryIndex } from './ocr'
+import { toTaxRate, resolveTaxRate, isValidScanItem, toMediaType, applyTax, fileToBase64, isReceiptItem, buildCategoryOptions, resolveCategoryIndex } from './ocr'
 import type { ScanItem } from './ocr'
 import type { Category } from './supabase'
 
@@ -24,6 +24,39 @@ describe('toTaxRate', () => {
   })
   it('不明な値は 8 にフォールバックする', () => {
     expect(toTaxRate(5)).toBe(8)
+  })
+})
+
+describe('resolveTaxRate', () => {
+  it('8 をそのまま返す', () => {
+    expect(resolveTaxRate(8)).toBe(8)
+  })
+  it('10 をそのまま返す', () => {
+    expect(resolveTaxRate(10)).toBe(10)
+  })
+  it('0 をそのまま返す', () => {
+    expect(resolveTaxRate(0)).toBe(0)
+  })
+  it('範囲外の数値は 8 にフォールバックする', () => {
+    expect(resolveTaxRate(5)).toBe(8)
+    expect(resolveTaxRate(-1)).toBe(8)
+    expect(resolveTaxRate(100)).toBe(8)
+  })
+  it('NaN は 8 にフォールバックする', () => {
+    expect(resolveTaxRate(NaN)).toBe(8)
+  })
+  it('小数は 8 にフォールバックする', () => {
+    expect(resolveTaxRate(8.5)).toBe(8)
+  })
+  it('null / undefined は 8 にフォールバックする', () => {
+    expect(resolveTaxRate(null)).toBe(8)
+    expect(resolveTaxRate(undefined)).toBe(8)
+  })
+  it('文字列の "8" は 8 にフォールバックする', () => {
+    expect(resolveTaxRate('8')).toBe(8)
+  })
+  it('オブジェクトは 8 にフォールバックする', () => {
+    expect(resolveTaxRate({})).toBe(8)
   })
 })
 

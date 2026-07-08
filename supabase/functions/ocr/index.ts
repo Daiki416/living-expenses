@@ -122,9 +122,10 @@ Deno.serve(async (req: Request) => {
     ? `\n\n以下は選択可能なカテゴリーの一覧です。\n${categories.map(c => `${c.index}: ${c.label}`).join('\n')}\n各商品に最も適切なカテゴリーの番号を category に入れてください。該当が無ければ null にしてください。店舗名も判定の手がかりにしてよいです。`
     : ''
   const itemShape = categories.length > 0
-    ? '{"description":"商品名","amount":商品行に印字されている金額の整数,"category":番号またはnull}'
-    : '{"description":"商品名","amount":商品行に印字されている金額の整数}'
-  const promptText = `このレシート画像から店舗名と全ての商品・品目を抽出し、以下のJSON形式のみで返してください。\n{"storeName":"店舗名（不明な場合はnull）","date":"YYYY-MM-DD形式の購入日（不明な場合はnull）","items":[${itemShape}]}\n各商品のamountは印字された金額をそのままコピーしてください。税計算は不要です。\nただし特定の商品に紐づく値引き・割引がある場合は、その商品のamountを値引き後の金額にしてください。正味が印字されていれば（例:「¥216を¥198にしました」）その正味（198）を採用し、値引き額のみ印字されていれば（例:「-18」「値引 -18」）元金額から値引き額を引いた整数を採用してください。値引き行そのものをitemにしたり、マイナス金額のitemを作ったりしないでください。\n商品に紐づかないレシート全体のクーポン・割引は無視し、itemsに反映しないでください。\n小計・合計・税額の集計行はitemsに含めないでください。JSONのみ返してください。${categoryPrompt}`
+    ? '{"description":"商品名","amount":商品行に印字されている金額の整数,"taxRate":0か8か10,"category":番号またはnull}'
+    : '{"description":"商品名","amount":商品行に印字されている金額の整数,"taxRate":0か8か10}'
+  const taxRatePrompt = `\n\n各商品のtaxRate（消費税率）を次の手順で判定してください。\n1. まず商品の印字金額が税込（内税・総額表示）か税抜（外税）かを判定する。「内」マークや「税込」表記があれば税込とみなし、taxRate=0を返す（この金額には後段で税を加算しないため）。\n2. 「外」（外税）マークなど税抜と判定できる場合のみ、税率を次で決める。\n   a. 商品行に軽減税率マーク（※, 軽, *, ⑧ 等）があれば8、標準税率マークがあれば10を優先する。\n   b. マークが無く、レシート末尾の税区分集計が1区分のみ（例:「10%対象」だけ）なら全商品をその率にする。\n   c. 8%対象と10%対象が併記されマークが無い場合は、食品・飲料は8、それ以外（酒類・日用品・雑貨等）は10とし、区分別対象額の合計が合うよう調整する。\n3. 税込か税抜か判別できない場合は8とする。`
+  const promptText = `このレシート画像から店舗名と全ての商品・品目を抽出し、以下のJSON形式のみで返してください。\n{"storeName":"店舗名（不明な場合はnull）","date":"YYYY-MM-DD形式の購入日（不明な場合はnull）","items":[${itemShape}]}\n各商品のamountは印字された金額をそのままコピーしてください。税計算は不要です。\nただし特定の商品に紐づく値引き・割引がある場合は、その商品のamountを値引き後の金額にしてください。正味が印字されていれば（例:「¥216を¥198にしました」）その正味（198）を採用し、値引き額のみ印字されていれば（例:「-18」「値引 -18」）元金額から値引き額を引いた整数を採用してください。値引き行そのものをitemにしたり、マイナス金額のitemを作ったりしないでください。\n商品に紐づかないレシート全体のクーポン・割引は無視し、itemsに反映しないでください。\n小計・合計・税額の集計行はitemsに含めないでください。JSONのみ返してください。${taxRatePrompt}${categoryPrompt}`
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -168,7 +169,7 @@ Deno.serve(async (req: Request) => {
     if (!match) throw new Error('JSON not found')
     const data = JSON.parse(match[0])
 
-    type ReceiptItem = { description: string; amount: number; category?: unknown }
+    type ReceiptItem = { description: string; amount: number; taxRate?: unknown; category?: unknown }
     function isReceiptItem(item: unknown): item is ReceiptItem {
       return (
         typeof item === 'object' &&
@@ -190,6 +191,11 @@ Deno.serve(async (req: Request) => {
       return null
     }
 
+    // taxRate は 0|8|10 のみ採用し、それ以外は 8 にフォールバックする。
+    function resolveTaxRate(v: unknown): number {
+      return v === 0 || v === 8 || v === 10 ? v : 8
+    }
+
     const receiptItems: ReceiptItem[] = Array.isArray(data.items) ? data.items.filter(isReceiptItem) : []
     const result = {
       storeName: typeof data.storeName === 'string' ? data.storeName : null,
@@ -197,6 +203,7 @@ Deno.serve(async (req: Request) => {
       items: receiptItems.map((item) => ({
         description: item.description,
         amount: Math.round(item.amount),
+        taxRate: resolveTaxRate(item.taxRate),
         category: resolveCategory(item.category),
       })),
     }
