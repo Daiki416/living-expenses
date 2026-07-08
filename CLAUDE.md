@@ -24,32 +24,12 @@
 
 ```
 src/
-  components/       # UIコンポーネント
-    AddExpenseModal.tsx       # 立替追加モーダル（レシートスキャン対応）
-    AddCardExpenseModal.tsx   # クレカ追加モーダル（レシートスキャン対応）
-    EditExpenseModal.tsx      # 立替編集モーダル
-    EditCardExpenseModal.tsx  # クレカ編集モーダル
-    SettingsModal.tsx         # メンバー・カテゴリー設定
-    CategorySelect.tsx        # 親子カテゴリー選択UI
-    ScanItemRow.tsx           # レシートスキャン明細行
-    ExpenseList.tsx           # 立替一覧
-    CardExpenseList.tsx       # クレカ一覧
-    CategorySummary.tsx       # カテゴリー別集計
-    ModalShell.tsx            # モーダル共通ラッパー
-  hooks/            # カスタムフック
-    useExpenses.ts            # 立替CRUD
-    useCardExpenses.ts        # クレカCRUD
-    useMembers.ts             # メンバーCRUD
-    useCategories.ts          # カテゴリーCRUD
-    useReceiptScan.ts         # レシートスキャンフロー
-    useEscapeKey.ts           # Escキーハンドリング
-  lib/              # ユーティリティ
-    supabase.ts               # Supabaseクライアント・型定義
-    ocr.ts                    # Anthropic API呼び出し・OCR処理
-    validation.ts             # バリデーション・エラーメッセージ定数
-    format.ts                 # フォーマットユーティリティ
-    ocr.test.ts
-    validation.test.ts
+  components/       # UIコンポーネント、モーダル、一覧、集計表示
+  hooks/            # Supabase CRUD、認証、OCR、集計用フック
+  lib/              # Supabase型、OCR、バリデーション、整形、純粋関数テスト
+supabase/
+  functions/ocr/    # レシートOCR Edge Function
+  migrations/       # DBスキーマ変更
 ```
 
 ---

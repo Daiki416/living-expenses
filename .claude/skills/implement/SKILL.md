@@ -13,7 +13,8 @@ $ARGUMENTS
 
 ### Phase 0: 設計
 - `designer` を実行
-- ユーザーの指示と、存在すれば `CLAUDE.md` を渡す
+- ユーザーの指示を渡す
+- `CLAUDE.md` は毎回渡さない。DB・認証・RLS・OCR・カテゴリー・集計・仕様判断に関わる場合のみ、必要な節だけ渡す
 - 設計方針をそのまま提示し、承認を得る
 - 承認されるまで次へ進まない
 
@@ -25,7 +26,7 @@ $ARGUMENTS
 
 ### Phase 2: レビュー（codex-review → validator 精査）
 1. `mcp__codex-review__review_current_diff` を実行する（旧 `reviewer` サブエージェントは使わない）
-   - `repo_path`: リポジトリのルート（このプロジェクトでは `/Users/daikisaito/dev/recipe_mng`）
+   - `repo_path`: リポジトリのルート（このプロジェクトでは `/Users/daikisaito/dev/living-expenses`）
    - `doc_paths`: 毎回固定では渡さない。変更内容から必要と判断した場合のみ、関連ドキュメントを最小限渡す
       - 原則: 軽微なUI修正・文言修正・局所的なリファクタは `doc_paths` なし
       - 渡す場合: 要件・設計・DB・認証・RLS・権限・データ構造・API契約に関わる変更
@@ -37,7 +38,7 @@ $ARGUMENTS
    - 入力: codex-review の出力（指摘一覧）＋変更ファイル一覧・実装概要
    - validator が必要に応じて実ファイルを確認して妥当性を判断する
 3. validator 精査後の結果（Critical/Warning/Suggestion）を Phase 3 の判定に使う
-- 旧 `reviewer` / `reviewer-*`（5専門レビュアー）は休眠（残置）。レビュー本体は codex-review に置換
+- 旧 `reviewer` / `reviewer-*`（5専門レビュアー）は使わない。レビュー本体は codex-review に置換済み
 - 必要なら Warning / Suggestion を `docs/review-notes.md` に追記してよい（任意・git 管理対象外）
 
 ### Phase 3: 判定
