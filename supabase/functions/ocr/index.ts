@@ -8,8 +8,31 @@ const CORS_HEADERS = {
 }
 
 const OCR_MODEL = 'claude-haiku-4-5-20251001'
-const OCR_MAX_TOKENS = 1024
+// カテゴリー判定の相乗りにより items 1件あたりの出力が増えるため 1024→1536 に引き上げ
+const OCR_MAX_TOKENS = 1536
 const ANTHROPIC_API_VERSION = '2023-06-01'
+
+// クライアントから受け取るカテゴリー一覧の上限件数・label 最大長
+const MAX_CATEGORY_OPTIONS = 50
+const MAX_CATEGORY_LABEL_LENGTH = 60
+// 改行・制御文字（\x00-\x1F, \x7F）
+// eslint-disable-next-line no-control-regex
+const CONTROL_CHARS = /[\x00-\x1F\x7F]/g
+
+// クライアントの categories をサニタイズし、サーバ側で index を 0..n-1 に振り直す。
+// 順序のみ信頼し、index 値そのものは信用しない。
+function sanitizeCategories(raw: unknown): { index: number; label: string }[] {
+  if (!Array.isArray(raw)) return []
+  const labels: string[] = []
+  for (const item of raw.slice(0, MAX_CATEGORY_OPTIONS)) {
+    const label = String((item as { label?: unknown })?.label ?? '')
+      .replace(CONTROL_CHARS, '')
+      .trim()
+      .slice(0, MAX_CATEGORY_LABEL_LENGTH)
+    if (label !== '') labels.push(label)
+  }
+  return labels.map((label, index) => ({ index, label }))
+}
 
 const ALLOWED_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 // クライアント側の上限 5MB を base64 化した長さ（約6.9M文字）+ 余裕
@@ -66,10 +89,12 @@ Deno.serve(async (req: Request) => {
 
   let base64: string
   let mediaType: string
+  let categories: { index: number; label: string }[]
   try {
     const body = await req.json()
     base64 = body.base64
     mediaType = body.mediaType
+    categories = sanitizeCategories(body.categories)
     if (typeof base64 !== 'string' || base64 === '' || typeof mediaType !== 'string') throw new Error('missing fields')
   } catch {
     return new Response(JSON.stringify({ error: 'Invalid request body' }), {
@@ -92,6 +117,15 @@ Deno.serve(async (req: Request) => {
     })
   }
 
+  // カテゴリー一覧がある場合のみ、番号付き一覧と category 判定指示をプロンプトに追加する。
+  const categoryPrompt = categories.length > 0
+    ? `\n\n以下は選択可能なカテゴリーの一覧です。\n${categories.map(c => `${c.index}: ${c.label}`).join('\n')}\n各商品に最も適切なカテゴリーの番号を category に入れてください。該当が無ければ null にしてください。店舗名も判定の手がかりにしてよいです。`
+    : ''
+  const itemShape = categories.length > 0
+    ? '{"description":"商品名","amount":商品行に印字されている金額の整数,"category":番号またはnull}'
+    : '{"description":"商品名","amount":商品行に印字されている金額の整数}'
+  const promptText = `このレシート画像から店舗名と全ての商品・品目を抽出し、以下のJSON形式のみで返してください。\n{"storeName":"店舗名（不明な場合はnull）","date":"YYYY-MM-DD形式の購入日（不明な場合はnull）","items":[${itemShape}]}\n各商品のamountは印字された数字をそのままコピーしてください。税計算は不要です。\n小計・合計・税額・値引き等の集計行はitemsに含めないでください。JSONのみ返してください。${categoryPrompt}`
+
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -109,7 +143,7 @@ Deno.serve(async (req: Request) => {
             { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
             {
               type: 'text',
-              text: 'このレシート画像から店舗名と全ての商品・品目を抽出し、以下のJSON形式のみで返してください。\n{"storeName":"店舗名（不明な場合はnull）","date":"YYYY-MM-DD形式の購入日（不明な場合はnull）","items":[{"description":"商品名","amount":商品行に印字されている金額の整数}]}\n各商品のamountは印字された数字をそのままコピーしてください。税計算は不要です。\n小計・合計・税額・値引き等の集計行はitemsに含めないでください。JSONのみ返してください。',
+              text: promptText,
             },
           ],
         },
@@ -134,7 +168,7 @@ Deno.serve(async (req: Request) => {
     if (!match) throw new Error('JSON not found')
     const data = JSON.parse(match[0])
 
-    type ReceiptItem = { description: string; amount: number }
+    type ReceiptItem = { description: string; amount: number; category?: unknown }
     function isReceiptItem(item: unknown): item is ReceiptItem {
       return (
         typeof item === 'object' &&
@@ -148,11 +182,23 @@ Deno.serve(async (req: Request) => {
       )
     }
 
+    // category は「整数かつ 0..n-1」のみ採用し、それ以外は null にする。
+    function resolveCategory(category: unknown): number | null {
+      if (typeof category === 'number' && Number.isInteger(category) && category >= 0 && category < categories.length) {
+        return category
+      }
+      return null
+    }
+
     const receiptItems: ReceiptItem[] = Array.isArray(data.items) ? data.items.filter(isReceiptItem) : []
     const result = {
       storeName: typeof data.storeName === 'string' ? data.storeName : null,
       date: typeof data.date === 'string' ? data.date : null,
-      items: receiptItems.map((item) => ({ description: item.description, amount: Math.round(item.amount) })),
+      items: receiptItems.map((item) => ({
+        description: item.description,
+        amount: Math.round(item.amount),
+        category: resolveCategory(item.category),
+      })),
     }
 
     return new Response(JSON.stringify(result), {

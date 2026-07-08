@@ -301,7 +301,7 @@ function AppMain() {
                 paid_by: parent.paidBy,
                 description: c.description,
                 amount: applyTax(c.amount, c.taxRate),
-                category_id: parent.categoryId,
+                category_id: c.categoryId,
               }))
             )
           }
@@ -319,7 +319,7 @@ function AppMain() {
               children.map(c => ({
                 description: c.description,
                 amount: applyTax(c.amount, c.taxRate),
-                category_id: parent.categoryId,
+                category_id: c.categoryId,
               }))
             )
           }

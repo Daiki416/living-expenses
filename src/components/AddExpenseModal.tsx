@@ -10,7 +10,6 @@ import { ScanItemRow } from './ScanItemRow'
 type OnAddGroupParent = {
   date: string
   description: string
-  categoryId: string | null
   paidBy: string
 }
 
@@ -18,6 +17,7 @@ type OnAddGroupChild = {
   description: string
   amount: number
   taxRate: TaxRate
+  categoryId: string | null
 }
 
 type Props = {
@@ -38,9 +38,10 @@ export function AddExpenseModal({ members, categories, defaultDate, onAddGroup, 
     scanParentCategoryId, scanChildCategoryId, fileInputRef,
     handleScanReceipt, handleScanStoreNameChange, handleScanDateChange,
     handleScanParentCategoryChange, handleScanChildCategoryChange,
-    updateScanItem, addScanItem, handleAddFromReceipt, validScanCount,
+    updateScanItem, addScanItem, applyCategoryToAll, handleAddFromReceipt, validScanCount,
   } = useReceiptScan({
     defaultDate,
+    categories,
     onAddGroup: (parent, children) =>
       onAddGroup({ ...parent, paidBy }, children),
     onClose,
@@ -97,7 +98,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAddGroup, 
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">カテゴリー</label>
+          <label className="block text-sm font-medium text-gray-600 mb-1">カテゴリー（全明細に適用）</label>
           <CategorySelect
             categories={categories}
             parentCategoryId={scanParentCategoryId}
@@ -105,6 +106,13 @@ export function AddExpenseModal({ members, categories, defaultDate, onAddGroup, 
             onParentChange={handleScanParentCategoryChange}
             onChildChange={handleScanChildCategoryChange}
           />
+          <button
+            type="button"
+            onClick={applyCategoryToAll}
+            className="w-full mt-2 border border-dashed border-gray-300 text-gray-500 rounded-lg py-1.5 text-sm hover:bg-gray-50 transition"
+          >
+            全明細に適用
+          </button>
         </div>
 
         <div>
@@ -122,7 +130,7 @@ export function AddExpenseModal({ members, categories, defaultDate, onAddGroup, 
           <label className="block text-sm font-medium text-gray-600 mb-1">明細</label>
           <div className="space-y-2">
             {scanResult.items.map((item, i) => (
-              <ScanItemRow key={i} item={item} index={i} onUpdate={updateScanItem} />
+              <ScanItemRow key={i} item={item} index={i} categories={categories} onUpdate={updateScanItem} />
             ))}
           </div>
           <button

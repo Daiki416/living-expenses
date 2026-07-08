@@ -4,8 +4,13 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 // テストを環境変数・ネットワーク・Node の WebSocket 実装に依存させない
 vi.mock('./supabase', () => ({ supabase: { functions: { invoke: vi.fn() } } }))
 
-import { toTaxRate, isValidScanItem, toMediaType, applyTax, fileToBase64, isReceiptItem } from './ocr'
+import { toTaxRate, isValidScanItem, toMediaType, applyTax, fileToBase64, isReceiptItem, buildCategoryOptions, resolveCategoryIndex } from './ocr'
 import type { ScanItem } from './ocr'
+import type { Category } from './supabase'
+
+function makeCategory(partial: Partial<Category> & { id: string; name: string; parent_id: string | null }): Category {
+  return { sort_order: 0, created_at: '2024-01-01', ...partial }
+}
 
 describe('toTaxRate', () => {
   it('8 をそのまま返す', () => {
@@ -22,8 +27,82 @@ describe('toTaxRate', () => {
   })
 })
 
+describe('buildCategoryOptions', () => {
+  it('親のみの場合は label が親名になる', () => {
+    const categories = [
+      makeCategory({ id: 'p1', name: '食費', parent_id: null }),
+      makeCategory({ id: 'p2', name: '日用品', parent_id: null }),
+    ]
+    expect(buildCategoryOptions(categories)).toEqual([
+      { index: 0, label: '食費', id: 'p1' },
+      { index: 1, label: '日用品', id: 'p2' },
+    ])
+  })
+
+  it('親子混在の場合、子は「親 > 子」で親の直後に並ぶ', () => {
+    const categories = [
+      makeCategory({ id: 'p1', name: '食費', parent_id: null }),
+      makeCategory({ id: 'c1', name: '食料品', parent_id: 'p1' }),
+      makeCategory({ id: 'c2', name: '外食', parent_id: 'p1' }),
+      makeCategory({ id: 'p2', name: '日用品', parent_id: null }),
+    ]
+    expect(buildCategoryOptions(categories)).toEqual([
+      { index: 0, label: '食費', id: 'p1' },
+      { index: 1, label: '食費 > 食料品', id: 'c1' },
+      { index: 2, label: '食費 > 外食', id: 'c2' },
+      { index: 3, label: '日用品', id: 'p2' },
+    ])
+  })
+
+  it('index は 0 から連番になる', () => {
+    const categories = [
+      makeCategory({ id: 'p1', name: 'A', parent_id: null }),
+      makeCategory({ id: 'p2', name: 'B', parent_id: null }),
+      makeCategory({ id: 'p3', name: 'C', parent_id: null }),
+    ]
+    expect(buildCategoryOptions(categories).map(o => o.index)).toEqual([0, 1, 2])
+  })
+
+  it('50件を超える分は切り捨てる', () => {
+    const categories = Array.from({ length: 60 }, (_, i) =>
+      makeCategory({ id: `p${i}`, name: `cat${i}`, parent_id: null })
+    )
+    const options = buildCategoryOptions(categories)
+    expect(options).toHaveLength(50)
+    expect(options[49].index).toBe(49)
+  })
+})
+
+describe('resolveCategoryIndex', () => {
+  const options = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
+
+  it('範囲内の index は対応する id を返す', () => {
+    expect(resolveCategoryIndex(0, options)).toBe('a')
+    expect(resolveCategoryIndex(2, options)).toBe('c')
+  })
+  it('負数は null', () => {
+    expect(resolveCategoryIndex(-1, options)).toBe(null)
+  })
+  it('範囲外は null', () => {
+    expect(resolveCategoryIndex(3, options)).toBe(null)
+  })
+  it('非整数は null', () => {
+    expect(resolveCategoryIndex(1.5, options)).toBe(null)
+  })
+  it('NaN は null', () => {
+    expect(resolveCategoryIndex(NaN, options)).toBe(null)
+  })
+  it('null / undefined は null', () => {
+    expect(resolveCategoryIndex(null, options)).toBe(null)
+    expect(resolveCategoryIndex(undefined, options)).toBe(null)
+  })
+  it('空 options は null', () => {
+    expect(resolveCategoryIndex(0, [])).toBe(null)
+  })
+})
+
 describe('isValidScanItem', () => {
-  const base: ScanItem = { description: '牛乳', amount: 200, selected: true, taxRate: 8 }
+  const base: ScanItem = { description: '牛乳', amount: 200, selected: true, taxRate: 8, categoryId: null }
 
   it('有効なアイテムは true', () => {
     expect(isValidScanItem(base)).toBe(true)

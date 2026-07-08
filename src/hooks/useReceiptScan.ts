@@ -1,28 +1,30 @@
 import { useRef, useState, useMemo, useCallback } from 'react'
 import { extractReceiptData, isValidScanItem, DEFAULT_SCAN_TAX_RATE, type ScanItem, type ScanResult, type TaxRate } from '../lib/ocr'
+import type { Category } from '../lib/supabase'
 import { sanitizeDate } from '../lib/validation'
 
 type OnAddGroupParent = {
   date: string
   description: string
-  categoryId: string | null
 }
 
 type OnAddGroupChild = {
   description: string
   amount: number
   taxRate: TaxRate
+  categoryId: string | null
 }
 
 type UseReceiptScanOptions = {
   defaultDate: string
+  categories: Category[]
   onAddGroup: (parent: OnAddGroupParent, children: OnAddGroupChild[]) => Promise<void>
   onClose: () => void
 }
 
-const EMPTY_SCAN_ITEM: ScanItem = { description: '', amount: null, selected: true, taxRate: DEFAULT_SCAN_TAX_RATE }
+const EMPTY_SCAN_ITEM: ScanItem = { description: '', amount: null, selected: true, taxRate: DEFAULT_SCAN_TAX_RATE, categoryId: null }
 
-export function useReceiptScan({ defaultDate, onAddGroup, onClose }: UseReceiptScanOptions) {
+export function useReceiptScan({ defaultDate, categories, onAddGroup, onClose }: UseReceiptScanOptions) {
   const [scanning, setScanning] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -39,11 +41,11 @@ export function useReceiptScan({ defaultDate, onAddGroup, onClose }: UseReceiptS
     setScanning(true)
     setError(null)
     try {
-      const data = await extractReceiptData(file)
+      const data = await extractReceiptData(file, categories)
       setScanStoreName(data.storeName ?? '')
       setScanResult({
         date: sanitizeDate(data.date, defaultDate),
-        items: data.items.map(item => ({ ...item, selected: true, taxRate: DEFAULT_SCAN_TAX_RATE })),
+        items: data.items.map(item => ({ ...item, selected: true, taxRate: DEFAULT_SCAN_TAX_RATE, categoryId: item.categoryId })),
       })
     } catch (err) {
       setError((err as Error).message)
@@ -63,6 +65,15 @@ export function useReceiptScan({ defaultDate, onAddGroup, onClose }: UseReceiptS
     setScanResult(prev => ({ ...prev, items: [...prev.items, { ...EMPTY_SCAN_ITEM }] }))
   }
 
+  // グループのカテゴリー（子優先）を全明細の categoryId に一括上書きする。
+  const applyCategoryToAll = useCallback(() => {
+    const categoryId = scanChildCategoryId || scanParentCategoryId || null
+    setScanResult(prev => ({
+      ...prev,
+      items: prev.items.map(item => ({ ...item, categoryId })),
+    }))
+  }, [scanChildCategoryId, scanParentCategoryId])
+
   const validItems = useMemo(
     () => scanResult.items.filter(isValidScanItem),
     [scanResult]
@@ -73,11 +84,10 @@ export function useReceiptScan({ defaultDate, onAddGroup, onClose }: UseReceiptS
     if (validItems.length === 0) { setError('追加する項目を選択してください'); return }
     setSubmitting(true)
     setError(null)
-    const categoryId = scanChildCategoryId || scanParentCategoryId || null
     try {
       await onAddGroup(
-        { date: scanResult.date, description: scanStoreName || 'レシート', categoryId },
-        validItems.map(item => ({ description: item.description, amount: item.amount!, taxRate: item.taxRate }))
+        { date: scanResult.date, description: scanStoreName || 'レシート' },
+        validItems.map(item => ({ description: item.description, amount: item.amount!, taxRate: item.taxRate, categoryId: item.categoryId }))
       )
       onClose()
     } catch (err) {
@@ -128,6 +138,7 @@ export function useReceiptScan({ defaultDate, onAddGroup, onClose }: UseReceiptS
     handleScanChildCategoryChange,
     updateScanItem,
     addScanItem,
+    applyCategoryToAll,
     handleAddFromReceipt,
     resetScan,
     validScanCount,
