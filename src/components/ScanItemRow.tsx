@@ -70,8 +70,9 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
           type="text"
           value={item.description}
           onChange={(e) => onUpdate(index, { description: e.target.value })}
+          placeholder="品目名"
           disabled={!item.selected}
-          className="flex-1 min-w-0 bg-transparent px-1 py-1 text-sm text-gray-800 border-b border-transparent focus:outline-none focus:border-indigo-400 disabled:text-gray-400"
+          className="flex-1 min-w-0 bg-transparent px-1 py-1 text-sm text-gray-800 border-b border-transparent focus:outline-none focus:border-indigo-400 disabled:text-gray-400 placeholder:text-gray-300"
         />
         <div className="shrink-0 flex items-baseline justify-end gap-0.5">
           <span className={`text-sm ${amountInvalid ? 'text-red-500' : 'text-gray-400'}`}>¥</span>
