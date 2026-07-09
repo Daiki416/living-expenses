@@ -34,28 +34,16 @@ export function useMonthlyTrend(startYM: string, endYM: string) {
       setLoading(true)
       setError(null)
 
-      const [expenseRes, cardRes] = await Promise.all([
-        supabase
-          .from('expense_receipts')
-          .select('date, expenses(amount, category_id)')
-          .gte('date', from)
-          .lt('date', to),
-        supabase
-          .from('card_expense_receipts')
-          .select('date, card_expenses(amount, category_id)')
-          .gte('date', from)
-          .lt('date', to),
-      ])
+      const { data, error } = await supabase
+        .from('receipts')
+        .select('date, expenses(amount, category_id)')
+        .gte('date', from)
+        .lt('date', to)
 
       if (cancelled) return
 
-      if (expenseRes.error) {
-        setError(expenseRes.error.message)
-        setLoading(false)
-        return
-      }
-      if (cardRes.error) {
-        setError(cardRes.error.message)
+      if (error) {
+        setError(error.message)
         setLoading(false)
         return
       }
@@ -68,16 +56,9 @@ export function useMonthlyTrend(startYM: string, endYM: string) {
         totalsMap[ym][key] = (totalsMap[ym][key] ?? 0) + amount
       }
 
-      for (const row of expenseRes.data ?? []) {
+      for (const row of data ?? []) {
         const ym = row.date.slice(0, 7)
         for (const e of (row.expenses as { amount: number; category_id: string | null }[])) {
-          addToMap(ym, e.category_id, e.amount)
-        }
-      }
-
-      for (const row of cardRes.data ?? []) {
-        const ym = row.date.slice(0, 7)
-        for (const e of (row.card_expenses as { amount: number; category_id: string | null }[])) {
           addToMap(ym, e.category_id, e.amount)
         }
       }

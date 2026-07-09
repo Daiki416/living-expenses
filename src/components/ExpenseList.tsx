@@ -1,17 +1,18 @@
 import { useState } from 'react'
-import type { Expense, Category, ExpenseReceiptWithExpenses } from '../lib/supabase'
+import type { Expense, Category, ReceiptKind, ReceiptWithExpenses } from '../lib/supabase'
 import { resolveCategoryLabel, splitDateChip } from '../lib/format'
 import { resolveCategoryColor } from '../lib/categoryColors'
 
 type Props = {
-  receipts: ExpenseReceiptWithExpenses[]
+  kind: ReceiptKind
+  receipts: ReceiptWithExpenses[]
   categories: Category[]
   onEdit: (expense: Expense) => void
   onDeleteReceipt: (receiptId: string) => Promise<void>
   onEditReceipt: (receiptId: string) => void
 }
 
-export function ExpenseList({ receipts, categories, onEdit, onDeleteReceipt, onEditReceipt }: Props) {
+export function ExpenseList({ kind, receipts, categories, onEdit, onDeleteReceipt, onEditReceipt }: Props) {
   const categoryName = (id: string | null) => {
     const label = resolveCategoryLabel(id, categories)
     return label ? label.replace(' > ', ' › ') : null
@@ -22,9 +23,13 @@ export function ExpenseList({ receipts, categories, onEdit, onDeleteReceipt, onE
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
   if (receipts.length === 0) {
-    return (
+    return kind === 'advance' ? (
       <div className="text-center text-ink-4 py-12 text-sm">
         この月の立て替えはありません
+      </div>
+    ) : (
+      <div className="text-center text-ink-4 py-8 text-sm">
+        この月のクレカ明細はありません
       </div>
     )
   }

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { supabase, type Expense, type ExpenseReceiptWithExpenses } from '../lib/supabase'
+import { supabase, type Expense, type ReceiptKind, type ReceiptWithExpenses } from '../lib/supabase'
 import { monthDateRange } from '../lib/date'
 
-export function useExpenses(year: number, month: number) {
-  const [receipts, setReceipts] = useState<ExpenseReceiptWithExpenses[]>([])
+export function useReceipts(year: number, month: number) {
+  const [receipts, setReceipts] = useState<ReceiptWithExpenses[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -15,7 +15,7 @@ export function useExpenses(year: number, month: number) {
       setLoading(true)
       setError(null)
       const { data, error } = await supabase
-        .from('expense_receipts')
+        .from('receipts')
         .select('*, expenses(*)')
         .gte('date', from)
         .lt('date', to)
@@ -24,7 +24,7 @@ export function useExpenses(year: number, month: number) {
       if (error) {
         setError(error.message)
       } else {
-        setReceipts((data as ExpenseReceiptWithExpenses[]) ?? [])
+        setReceipts((data as ReceiptWithExpenses[]) ?? [])
       }
       setLoading(false)
     })()
@@ -34,11 +34,11 @@ export function useExpenses(year: number, month: number) {
   const expenses = receipts.flatMap(r => r.expenses)
 
   async function addReceiptGroup(
-    receipt: { date: string; description: string },
+    receipt: { date: string; description: string; kind: ReceiptKind },
     items: Array<Omit<Expense, 'id' | 'created_at' | 'receipt_id'>>
   ): Promise<void> {
     const { data: receiptData, error: receiptError } = await supabase
-      .from('expense_receipts')
+      .from('receipts')
       .insert(receipt)
       .select()
       .single()
@@ -52,7 +52,7 @@ export function useExpenses(year: number, month: number) {
       if (itemsError) throw new Error(itemsError.message)
       insertedItems = itemsData ?? []
     }
-    const newReceipt: ExpenseReceiptWithExpenses = { ...receiptData, expenses: insertedItems }
+    const newReceipt: ReceiptWithExpenses = { ...receiptData, expenses: insertedItems }
     setReceipts(prev => [newReceipt, ...prev])
   }
 
@@ -66,14 +66,14 @@ export function useExpenses(year: number, month: number) {
   }
 
   async function deleteReceipt(receiptId: string) {
-    const { error } = await supabase.from('expense_receipts').delete().eq('id', receiptId)
+    const { error } = await supabase.from('receipts').delete().eq('id', receiptId)
     if (error) throw new Error(error.message)
     setReceipts(prev => prev.filter(r => r.id !== receiptId))
   }
 
   async function updateReceipt(id: string, input: { description: string; date: string }): Promise<void> {
     const { error } = await supabase
-      .from('expense_receipts')
+      .from('receipts')
       .update(input)
       .eq('id', id)
     if (error) throw new Error(error.message)

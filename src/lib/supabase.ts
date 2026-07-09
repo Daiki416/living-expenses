@@ -11,7 +11,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export type Expense = {
   id: string
-  paid_by: string
+  paid_by: string | null
   description: string
   amount: number
   category_id: string | null
@@ -34,26 +34,13 @@ export type Category = {
   created_at: string
 }
 
-export type CardExpense = {
-  id: string
-  description: string
-  amount: number
-  category_id: string | null
-  receipt_id: string
-  created_at: string
-}
+export type ReceiptKind = 'advance' | 'card'
 
-export type ExpenseReceipt = {
+export type Receipt = {
   id: string
   date: string
   description: string
-  created_at: string
-}
-
-export type CardExpenseReceipt = {
-  id: string
-  date: string
-  description: string
+  kind: ReceiptKind
   created_at: string
 }
 
@@ -64,6 +51,4 @@ export type CategoryRule = {
   created_at: string
 }
 
-export type ExpenseReceiptWithExpenses = ExpenseReceipt & { expenses: Expense[] }
-
-export type CardExpenseReceiptWithCardExpenses = CardExpenseReceipt & { card_expenses: CardExpense[] }
+export type ReceiptWithExpenses = Receipt & { expenses: Expense[] }

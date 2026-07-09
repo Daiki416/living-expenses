@@ -1,24 +1,20 @@
 import { useState } from 'react'
 import { useTheme } from './hooks/useTheme'
-import { useExpenses } from './hooks/useExpenses'
+import { useReceipts } from './hooks/useReceipts'
 import { useMembers } from './hooks/useMembers'
 import { useCategories } from './hooks/useCategories'
 import { useCategoryRules } from './hooks/useCategoryRules'
-import { useCardExpenses } from './hooks/useCardExpenses'
 import { useAuth } from './hooks/useAuth'
 import { AddExpenseModal } from './components/AddExpenseModal'
-import { AddCardExpenseModal } from './components/AddCardExpenseModal'
 import { EditExpenseModal } from './components/EditExpenseModal'
-import { EditCardExpenseModal } from './components/EditCardExpenseModal'
 import { EditReceiptModal } from './components/EditReceiptModal'
 import { SettingsModal } from './components/SettingsModal'
 import { LoginScreen } from './components/LoginScreen'
 import { ExpenseList } from './components/ExpenseList'
-import { CardExpenseList } from './components/CardExpenseList'
 import { CategorySummary } from './components/CategorySummary'
 import { MonthlyTrendView } from './components/MonthlyTrendView'
 import { HeaderActions } from './components/HeaderActions'
-import type { Expense, CardExpense } from './lib/supabase'
+import type { Expense } from './lib/supabase'
 import { applyTax } from './lib/ocr'
 
 function todayYYYYMMDD() {
@@ -55,7 +51,6 @@ function AppMain() {
   const [showAddCard, setShowAddCard] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
-  const [editingCardExpense, setEditingCardExpense] = useState<CardExpense | null>(null)
   const [editingReceipt, setEditingReceipt] = useState<{ id: string; description: string; date: string } | null>(null)
   const [reminderDismissed, setReminderDismissed] = useState(
     () => localStorage.getItem('reminderDismissedYM') === currentYM
@@ -68,18 +63,23 @@ function AppMain() {
   const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
   const { categories, error: categoriesError, addCategory, deleteCategory, renameCategory, reorderCategory } = useCategories()
   const { rulesMap, upsertRule, deleteRule } = useCategoryRules()
-  const { receipts, expenses, loading: expensesLoading, error: expensesError, addReceiptGroup, updateExpense, deleteReceipt, updateReceipt } = useExpenses(year, month)
-  const { expenses: prevMonthExpenses, loading: prevMonthLoading } = useExpenses(prevYear, prevMonthNum)
-  const { cardReceipts, cardExpenses, loading: cardLoading, error: cardError, addCardReceiptGroup, updateCardExpense, deleteCardReceipt, updateCardReceipt } = useCardExpenses(year, month)
+  const { receipts, loading: expensesLoading, error: expensesError, addReceiptGroup, updateExpense, deleteReceipt, updateReceipt } = useReceipts(year, month)
+  const { receipts: prevMonthReceipts, loading: prevMonthLoading } = useReceipts(prevYear, prevMonthNum)
+
+  const advanceReceipts = receipts.filter(r => r.kind === 'advance')
+  const cardReceipts = receipts.filter(r => r.kind === 'card')
+  const expenses = advanceReceipts.flatMap(r => r.expenses)
+  const cardExpenses = cardReceipts.flatMap(r => r.expenses)
+  const prevMonthExpenses = prevMonthReceipts.filter(r => r.kind === 'advance').flatMap(r => r.expenses)
 
   const memberNames = members.map((m) => m.name)
 
   const prevMonthMemberTotals: Record<string, number> = {}
-  prevMonthExpenses.forEach(e => { prevMonthMemberTotals[e.paid_by] = (prevMonthMemberTotals[e.paid_by] ?? 0) + e.amount })
+  prevMonthExpenses.forEach(e => { if (e.paid_by) prevMonthMemberTotals[e.paid_by] = (prevMonthMemberTotals[e.paid_by] ?? 0) + e.amount })
 
   const expenseTotal = expenses.reduce((s, e) => s + e.amount, 0)
   const memberTotals: Record<string, number> = Object.fromEntries(memberNames.map(n => [n, 0]))
-  expenses.forEach(e => { if (e.paid_by in memberTotals) memberTotals[e.paid_by] += e.amount })
+  expenses.forEach(e => { if (e.paid_by && e.paid_by in memberTotals) memberTotals[e.paid_by] += e.amount })
 
   const cardTotal = cardExpenses.reduce((s, e) => s + e.amount, 0)
 
@@ -195,7 +195,7 @@ function AppMain() {
           expenses={expenses}
           cardExpenses={cardExpenses}
           categories={categories}
-          loading={expensesLoading || cardLoading}
+          loading={expensesLoading}
         />
 
         {/* 立替セクション */}
@@ -231,12 +231,13 @@ function AppMain() {
               <div className="text-center text-red-400 py-8 text-sm">エラー: {expensesError}</div>
             ) : (
               <ExpenseList
-                receipts={receipts}
+                kind="advance"
+                receipts={advanceReceipts}
                 categories={categories}
                 onEdit={setEditingExpense}
                 onDeleteReceipt={deleteReceipt}
                 onEditReceipt={receiptId => {
-                  const r = receipts.find(r => r.id === receiptId)
+                  const r = advanceReceipts.find(r => r.id === receiptId)
                   if (r) setEditingReceipt({ id: r.id, description: r.description, date: r.date })
                 }}
               />
@@ -262,16 +263,17 @@ function AppMain() {
           </div>
 
           <div className="card px-5 py-4">
-            {cardLoading ? (
+            {expensesLoading ? (
               <div className="text-center text-ink-4 py-8 text-sm">読み込み中…</div>
-            ) : cardError ? (
-              <div className="text-center text-red-400 py-8 text-sm">エラー: {cardError}</div>
+            ) : expensesError ? (
+              <div className="text-center text-red-400 py-8 text-sm">エラー: {expensesError}</div>
             ) : (
-              <CardExpenseList
+              <ExpenseList
+                kind="card"
                 receipts={cardReceipts}
                 categories={categories}
-                onEdit={setEditingCardExpense}
-                onDeleteReceipt={deleteCardReceipt}
+                onEdit={setEditingExpense}
+                onDeleteReceipt={deleteReceipt}
                 onEditReceipt={receiptId => {
                   const r = cardReceipts.find(r => r.id === receiptId)
                   if (r) setEditingReceipt({ id: r.id, description: r.description, date: r.date })
@@ -279,7 +281,7 @@ function AppMain() {
               />
             )}
           </div>
-          {cardLoading || cardTotal === 0 ? null : (
+          {expensesLoading || cardTotal === 0 ? null : (
             <p className="text-xs text-ink-4 text-right mt-1 tabular-nums">合計 ¥{cardTotal.toLocaleString()}</p>
           )}
             </div>
@@ -290,6 +292,7 @@ function AppMain() {
 
       {showAdd && (
         <AddExpenseModal
+          kind="advance"
           members={memberNames}
           categories={categories}
           defaultDate={todayYYYYMMDD()}
@@ -298,7 +301,7 @@ function AppMain() {
           onDeleteRule={deleteRule}
           onAddGroup={(parent, children) =>
             addReceiptGroup(
-              { date: parent.date, description: parent.description },
+              { date: parent.date, description: parent.description, kind: 'advance' },
               children.map(c => ({
                 paid_by: parent.paidBy,
                 description: c.description,
@@ -312,16 +315,19 @@ function AppMain() {
       )}
 
       {showAddCard && (
-        <AddCardExpenseModal
+        <AddExpenseModal
+          kind="card"
+          members={memberNames}
           categories={categories}
           defaultDate={todayYYYYMMDD()}
           rulesMap={rulesMap}
           onUpsertRule={upsertRule}
           onDeleteRule={deleteRule}
           onAddGroup={(parent, children) =>
-            addCardReceiptGroup(
-              { date: parent.date, description: parent.description },
+            addReceiptGroup(
+              { date: parent.date, description: parent.description, kind: 'card' },
               children.map(c => ({
+                paid_by: parent.paidBy,
                 description: c.description,
                 amount: applyTax(c.amount, c.taxRate),
                 category_id: c.categoryId,
@@ -334,6 +340,7 @@ function AppMain() {
 
       {editingExpense && (
         <EditExpenseModal
+          kind={receipts.find(r => r.id === editingExpense.receipt_id)?.kind ?? 'advance'}
           expense={editingExpense}
           members={memberNames}
           categories={categories}
@@ -344,26 +351,12 @@ function AppMain() {
         />
       )}
 
-      {editingCardExpense && (
-        <EditCardExpenseModal
-          cardExpense={editingCardExpense}
-          categories={categories}
-          onUpdate={updateCardExpense}
-          onUpsertRule={upsertRule}
-          onDeleteRule={deleteRule}
-          onClose={() => setEditingCardExpense(null)}
-        />
-      )}
-
       {editingReceipt && (
         <EditReceiptModal
           receiptId={editingReceipt.id}
           initialDescription={editingReceipt.description}
           initialDate={editingReceipt.date}
-          onUpdate={(id, input) => {
-            const isCard = cardReceipts.some(r => r.id === id)
-            return isCard ? updateCardReceipt(id, input) : updateReceipt(id, input)
-          }}
+          onUpdate={updateReceipt}
           onClose={() => setEditingReceipt(null)}
         />
       )}

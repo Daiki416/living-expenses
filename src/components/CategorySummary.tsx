@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import type { Expense, CardExpense, Category } from '../lib/supabase'
+import type { Expense, Category } from '../lib/supabase'
 import { parentCategoryColor, childCategoryColor, generalCategoryColor } from '../lib/categoryColors'
 
 type Props = {
   expenses: Expense[]
-  cardExpenses: CardExpense[]
+  cardExpenses: Expense[]
   categories: Category[]
   loading?: boolean
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Category } from '../lib/supabase'
+import type { Category, ReceiptKind } from '../lib/supabase'
 import type { TaxRate } from '../lib/ocr'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { useReceiptScan } from '../hooks/useReceiptScan'
@@ -10,7 +10,7 @@ import { ScanItemRow } from './ScanItemRow'
 type OnAddGroupParent = {
   date: string
   description: string
-  paidBy: string
+  paidBy: string | null
 }
 
 type OnAddGroupChild = {
@@ -21,6 +21,7 @@ type OnAddGroupChild = {
 }
 
 type Props = {
+  kind: ReceiptKind
   members: string[]
   categories: Category[]
   defaultDate: string
@@ -31,7 +32,7 @@ type Props = {
   onClose: () => void
 }
 
-export function AddExpenseModal({ members, categories, defaultDate, rulesMap, onUpsertRule, onDeleteRule, onAddGroup, onClose }: Props) {
+export function AddExpenseModal({ kind, members, categories, defaultDate, rulesMap, onUpsertRule, onDeleteRule, onAddGroup, onClose }: Props) {
   const [paidBy, setPaidBy] = useState(members[0] ?? '')
 
   useEscapeKey(onClose)
@@ -49,7 +50,7 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
     onUpsertRule,
     onDeleteRule,
     onAddGroup: (parent, children) =>
-      onAddGroup({ ...parent, paidBy }, children),
+      onAddGroup({ ...parent, paidBy: kind === 'advance' ? paidBy : null }, children),
     onClose,
   })
 
@@ -58,7 +59,7 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
   return (
     <ModalShell onClose={onClose} className="max-h-[90dvh] flex flex-col">
       <div className="shrink-0">
-        <h2 className="text-lg font-semibold text-ink mb-5">立て替え追加</h2>
+        <h2 className="text-lg font-semibold text-ink mb-5">{kind === 'advance' ? '立て替え追加' : 'クレカ明細追加'}</h2>
 
         <input
           ref={fileInputRef}
@@ -95,31 +96,33 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-ink-2 mb-2">支払者</label>
-          <div className="flex flex-wrap gap-2">
-            {members.map((m) => (
-              <label
-                key={m}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-indigo-400 ${
-                  paidBy === m
-                    ? 'bg-indigo-500 border-indigo-500 text-white'
-                    : 'border-line-strong text-ink-2 hover:bg-inset'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="paidBy"
-                  value={m}
-                  checked={paidBy === m}
-                  onChange={() => setPaidBy(m)}
-                  className="sr-only"
-                />
-                {m}
-              </label>
-            ))}
+        {kind === 'advance' && (
+          <div>
+            <label className="block text-sm font-medium text-ink-2 mb-2">支払者</label>
+            <div className="flex flex-wrap gap-2">
+              {members.map((m) => (
+                <label
+                  key={m}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-indigo-400 ${
+                    paidBy === m
+                      ? 'bg-indigo-500 border-indigo-500 text-white'
+                      : 'border-line-strong text-ink-2 hover:bg-inset'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paidBy"
+                    value={m}
+                    checked={paidBy === m}
+                    onChange={() => setPaidBy(m)}
+                    className="sr-only"
+                  />
+                  {m}
+                </label>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-ink-2 mb-1">カテゴリー（全明細に適用）</label>
