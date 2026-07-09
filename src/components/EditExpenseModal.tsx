@@ -56,11 +56,11 @@ export function EditExpenseModal({ expense, members, categories, onUpdate, onUps
 
   return (
     <ModalShell onClose={onClose} className="overflow-hidden">
-      <h2 className="text-lg font-semibold text-gray-800 mb-5">立替を編集</h2>
+      <h2 className="text-lg font-semibold text-ink mb-5">立替を編集</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">支払者</label>
+          <label className="block text-sm font-medium text-ink-2 mb-2">支払者</label>
           <div className="flex gap-4">
             {members.map((m) => (
               <label key={m} className="flex items-center gap-2 cursor-pointer">
@@ -72,14 +72,14 @@ export function EditExpenseModal({ expense, members, categories, onUpdate, onUps
                   onChange={() => setPaidBy(m)}
                   className="accent-indigo-500"
                 />
-                <span className="text-sm text-gray-700">{m}</span>
+                <span className="text-sm text-ink-2">{m}</span>
               </label>
             ))}
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">内容</label>
+          <label className="block text-sm font-medium text-ink-2 mb-1">内容</label>
           <input
             type="text"
             value={description}
@@ -90,7 +90,7 @@ export function EditExpenseModal({ expense, members, categories, onUpdate, onUps
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">金額（円）</label>
+          <label className="block text-sm font-medium text-ink-2 mb-1">金額（円）</label>
           <input
             type="number"
             value={amount}
@@ -103,7 +103,7 @@ export function EditExpenseModal({ expense, members, categories, onUpdate, onUps
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">カテゴリー</label>
+          <label className="block text-sm font-medium text-ink-2 mb-1">カテゴリー</label>
           <CategorySelect
             categories={categories}
             parentCategoryId={parentCategoryId}

@@ -116,7 +116,7 @@ export function MonthlyTrendView({ categories, onClose }: Props) {
           >
             ← 戻る
           </button>
-          <h2 className="text-lg font-bold text-gray-800">支出推移</h2>
+          <h2 className="text-lg font-bold text-ink">支出推移</h2>
           <div className="w-12" />
         </div>
 
@@ -129,7 +129,7 @@ export function MonthlyTrendView({ categories, onClose }: Props) {
             max={endYM}
             className="field-input w-auto px-2 py-1 text-sm"
           />
-          <span className="text-gray-400">〜</span>
+          <span className="text-ink-4">〜</span>
           <input
             type="month"
             value={endYM}
@@ -183,7 +183,7 @@ export function MonthlyTrendView({ categories, onClose }: Props) {
         {/* グラフ */}
         <div className="card px-4 py-4">
           {loading ? (
-            <div className="text-center text-gray-400 py-8 text-sm">読み込み中…</div>
+            <div className="text-center text-ink-4 py-8 text-sm">読み込み中…</div>
           ) : error ? (
             <div className="text-center text-red-400 py-8 text-sm">エラー: {error}</div>
           ) : (() => {
@@ -212,7 +212,7 @@ export function MonthlyTrendView({ categories, onClose }: Props) {
             }
             return (
               <>
-                <p className="text-xs text-gray-400 mb-1">単位: 円</p>
+                <p className="text-xs text-ink-4 mb-1">単位: 円</p>
                 <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                     <XAxis dataKey="label" tick={{ fontSize: 12 }} />

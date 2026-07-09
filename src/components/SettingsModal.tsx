@@ -33,7 +33,7 @@ function SortableRow({ id, className, children }: { id: string; className?: stri
     <button
       type="button"
       aria-label="並べ替え"
-      className="text-gray-400 hover:text-gray-500 cursor-grab touch-none select-none px-1 leading-none"
+      className="text-ink-4 hover:text-ink-3 cursor-grab touch-none select-none px-1 leading-none"
       {...attributes}
       {...listeners}
     >
@@ -320,25 +320,25 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
       {/* ヘッダー・タブ：常に表示 */}
       <div className="shrink-0">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800">設定</h2>
+          <h2 className="text-lg font-semibold text-ink">設定</h2>
           <button onClick={onClose} className="icon-btn text-xl leading-none">×</button>
         </div>
-        <div className="flex border-b border-gray-200 mb-4">
+        <div className="flex border-b border-line mb-4">
           <button
             onClick={() => setTab('members')}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === 'members' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === 'members' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-300' : 'text-ink-3 hover:text-ink-2'}`}
           >
             メンバー
           </button>
           <button
             onClick={() => setTab('categories')}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === 'categories' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === 'categories' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-300' : 'text-ink-3 hover:text-ink-2'}`}
           >
             カテゴリー
           </button>
           <button
             onClick={() => setTab('password')}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === 'password' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === 'password' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-300' : 'text-ink-3 hover:text-ink-2'}`}
           >
             パスワード
           </button>
@@ -349,10 +349,10 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
         <div className="flex-1 flex flex-col min-h-0">
           {/* リスト：スクロール */}
           <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden mb-3">
+            <div className="divide-y divide-line border border-line rounded-lg overflow-hidden mb-3">
               {members.map((m) => (
                 <div key={m.id} className="flex items-center justify-between px-3 py-2 gap-2">
-                  <span className="text-sm text-gray-700 shrink-0">{m.name}</span>
+                  <span className="text-sm text-ink-2 shrink-0">{m.name}</span>
                   <div className="flex items-center gap-1 flex-1 justify-end">
                     <input
                       type="number"
@@ -366,7 +366,7 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                       placeholder="振込額"
                       className="field-input w-24 px-2 py-1 text-sm text-right disabled:opacity-50"
                     />
-                    <span className="text-xs text-gray-500 shrink-0">円</span>
+                    <span className="text-xs text-ink-3 shrink-0">円</span>
                     <button
                       onClick={() => handleDeleteMember(m.id, m.name)}
                       disabled={deletingMemberId === m.id}
@@ -378,7 +378,7 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                 </div>
               ))}
               {members.length === 0 && (
-                <div className="px-3 py-3 text-sm text-gray-400 text-center">メンバーがいません</div>
+                <div className="px-3 py-3 text-sm text-ink-4 text-center">メンバーがいません</div>
               )}
             </div>
           </div>
@@ -410,9 +410,9 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
         <div className="flex-1 flex flex-col min-h-0">
           {/* リスト：スクロール */}
           <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden mb-3">
+            <div className="divide-y divide-line border border-line rounded-lg overflow-hidden mb-3">
               {parentCategories.length === 0 && (
-                <div className="px-3 py-3 text-sm text-gray-400 text-center">カテゴリーがありません</div>
+                <div className="px-3 py-3 text-sm text-ink-4 text-center">カテゴリーがありません</div>
               )}
               {/* 親リスト：親同士のみ並べ替え可能 */}
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleParentDragEnd}>
@@ -422,7 +422,7 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                     if (!parent) return null
                     const childIds = childOrder[parent.id] ?? []
                     return (
-                      <SortableRow key={parent.id} id={parent.id} className="bg-white">
+                      <SortableRow key={parent.id} id={parent.id} className="bg-surface">
                         {(handle) => (
                           <>
                             <div className="flex items-center justify-between px-3 py-2 gap-2">
@@ -445,7 +445,7 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                                   <button
                                     type="button"
                                     onClick={() => startEditCategory(parent.id, parent.name)}
-                                    className="text-sm font-medium text-gray-700 text-left truncate hover:text-indigo-600 transition-colors"
+                                    className="text-sm font-medium text-ink-2 text-left truncate hover:text-indigo-600 transition-colors"
                                   >
                                     {parent.name}
                                   </button>
@@ -466,12 +466,12 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                                   const child = categoryById.get(childId)
                                   if (!child) return null
                                   return (
-                                    <SortableRow key={child.id} id={child.id} className="flex items-center justify-between pl-7 pr-3 py-1.5 bg-gray-50 border-t border-gray-100 gap-2">
+                                    <SortableRow key={child.id} id={child.id} className="flex items-center justify-between pl-7 pr-3 py-1.5 bg-inset border-t border-line gap-2">
                                       {(childHandle) => (
                                         <>
                                           <div className="flex items-center gap-1 flex-1 min-w-0">
                                             {childHandle}
-                                            <span className="text-gray-400 text-xs">└</span>
+                                            <span className="text-ink-4 text-xs">└</span>
                                             {editingCategoryId === child.id ? (
                                               <input
                                                 type="text"
@@ -489,7 +489,7 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                                               <button
                                                 type="button"
                                                 onClick={() => startEditCategory(child.id, child.name)}
-                                                className="text-sm text-gray-600 text-left truncate hover:text-indigo-600 transition-colors"
+                                                className="text-sm text-ink-2 text-left truncate hover:text-indigo-600 transition-colors"
                                               >
                                                 {child.name}
                                               </button>
@@ -606,7 +606,7 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
               {passwordChanging ? '変更中…' : '変更する'}
             </button>
             {passwordError && <p className="text-red-500 text-xs mt-2">{passwordError}</p>}
-            {passwordSuccess && <p className="text-green-600 text-xs mt-2">パスワードを変更しました</p>}
+            {passwordSuccess && <p className="text-green-600 dark:text-emerald-400 text-xs mt-2">パスワードを変更しました</p>}
           </div>
         </div>
       )}

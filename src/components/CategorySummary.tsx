@@ -68,9 +68,9 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
   return (
     <div className="card px-5 py-4 mt-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-gray-600">カテゴリー別合計</h2>
+        <h2 className="text-sm font-semibold text-ink-2">カテゴリー別合計</h2>
         <button
-          className="text-xs text-gray-500 border border-gray-200 rounded px-2 py-1"
+          className="text-xs text-ink-3 border border-line rounded px-2 py-1"
           onClick={() => setView(v => v === 'table' ? 'chart' : 'table')}
         >
           {view === 'table' ? '円グラフ' : '内訳'}
@@ -78,7 +78,7 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
       </div>
       {view === 'table' && (
         <div>
-          <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-4 pb-4 border-b border-line">
             <svg viewBox="0 0 200 200" className="w-28 h-28 flex-shrink-0">
               {sortedParentIds.length === 1 ? (
                 <circle cx={cx} cy={cy} r={r} fill={CHART_COLORS[0]} />
@@ -108,18 +108,18 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
                   })
                 })()
               )}
-              <circle cx={100} cy={100} r={52} fill="#fff" />
-              <text x={100} y={96} textAnchor="middle" className="fill-gray-800" style={{ fontSize: '26px', fontWeight: 700 }}>{count}</text>
-              <text x={100} y={120} textAnchor="middle" className="fill-gray-400" style={{ fontSize: '13px' }}>件</text>
+              <circle cx={100} cy={100} r={52} className="fill-surface" />
+              <text x={100} y={96} textAnchor="middle" className="fill-ink" style={{ fontSize: '26px', fontWeight: 700 }}>{count}</text>
+              <text x={100} y={120} textAnchor="middle" className="fill-ink-4" style={{ fontSize: '13px' }}>件</text>
             </svg>
             <div className="flex-1 min-w-0">
-              <div className="text-xs text-gray-400">今月合計</div>
-              <div className="text-2xl font-bold text-gray-900 tabular-nums">¥{grandTotal.toLocaleString()}</div>
-              <div className="mt-2 h-2 rounded-full overflow-hidden flex bg-gray-100">
+              <div className="text-xs text-ink-4">今月合計</div>
+              <div className="text-2xl font-bold text-ink tabular-nums">¥{grandTotal.toLocaleString()}</div>
+              <div className="mt-2 h-2 rounded-full overflow-hidden flex bg-inset">
                 <div style={{ width: `${(expenseTotal / grandTotal) * 100}%`, backgroundColor: '#6366f1' }} />
                 <div style={{ width: `${(cardTotal / grandTotal) * 100}%`, backgroundColor: '#f59e0b' }} />
               </div>
-              <div className="mt-1 flex items-center gap-3 text-xs text-gray-400 tabular-nums">
+              <div className="mt-1 flex items-center gap-3 text-xs text-ink-4 tabular-nums">
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#6366f1' }} />
                   立替 ¥{expenseTotal.toLocaleString()}
@@ -148,7 +148,7 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
               const sharePct = ((parentTotals[parentId] / grandTotal) * 100).toFixed(1)
 
               return (
-                <div key={parentId} className="border-b border-gray-50 last:border-0">
+                <div key={parentId} className="border-b border-gray-50 dark:border-white/5 last:border-0">
                   <button
                     type="button"
                     onClick={() => hasChildren && toggleExpand(parentId)}
@@ -157,18 +157,18 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-700 truncate">{parentName}</span>
-                        <span className="text-sm font-medium text-gray-800 tabular-nums ml-2">¥{parentTotals[parentId].toLocaleString()}</span>
+                        <span className="text-sm font-medium text-ink-2 truncate">{parentName}</span>
+                        <span className="text-sm font-medium text-ink tabular-nums ml-2">¥{parentTotals[parentId].toLocaleString()}</span>
                       </div>
-                      <div className="mt-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                      <div className="mt-1 h-1.5 rounded-full bg-inset overflow-hidden">
                         <div className="h-full rounded-full" style={{ width: `${barPct}%`, backgroundColor: color }} />
                       </div>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0 justify-end">
-                      <span className="text-xs text-gray-400 tabular-nums w-10 text-right">{sharePct}%</span>
+                      <span className="text-xs text-ink-4 tabular-nums w-10 text-right">{sharePct}%</span>
                       {hasChildren ? (
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                          className={`w-3 h-3 text-gray-300 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                          className={`w-3 h-3 text-ink-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
                           <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       ) : <span className="w-3" />}
@@ -178,14 +178,14 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
                     <div className="pl-6 pb-1 space-y-0.5">
                       {activeChildren.map(child => (
                         <div key={child.id} className="flex items-center justify-between text-sm py-0.5">
-                          <span className="text-gray-500">{child.name}</span>
-                          <span className="text-gray-600 tabular-nums">¥{childTotals[child.id].toLocaleString()}</span>
+                          <span className="text-ink-3">{child.name}</span>
+                          <span className="text-ink-2 tabular-nums">¥{childTotals[child.id].toLocaleString()}</span>
                         </div>
                       ))}
                       {directAmount > 0 && (
                         <div className="flex items-center justify-between text-sm py-0.5">
-                          <span className="text-gray-400">{parentName}（全般）</span>
-                          <span className="text-gray-500 tabular-nums">¥{directAmount.toLocaleString()}</span>
+                          <span className="text-ink-4">{parentName}（全般）</span>
+                          <span className="text-ink-3 tabular-nums">¥{directAmount.toLocaleString()}</span>
                         </div>
                       )}
                     </div>
@@ -200,13 +200,13 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
         <div>
           <div className="flex gap-1 mb-3">
             <button
-              className={`text-xs px-3 py-1 rounded border ${chartMode === 'parent' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'text-gray-500 border-gray-200'}`}
+              className={`text-xs px-3 py-1 rounded border ${chartMode === 'parent' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-400/30' : 'text-ink-3 border-line'}`}
               onClick={() => setChartMode('parent')}
             >
               大分類
             </button>
             <button
-              className={`text-xs px-3 py-1 rounded border ${chartMode === 'child' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'text-gray-500 border-gray-200'}`}
+              className={`text-xs px-3 py-1 rounded border ${chartMode === 'child' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-400/30' : 'text-ink-3 border-line'}`}
               onClick={() => setChartMode('child')}
             >
               小分類
@@ -286,8 +286,8 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
                     return (
                       <div key={entry.id} className="flex items-center gap-2 text-sm">
                         <span className="inline-block rounded-sm flex-shrink-0" style={{ width: 12, height: 12, backgroundColor: color }} />
-                        <span className="text-gray-700">{entry.name}</span>
-                        <span className="text-gray-400 ml-auto tabular-nums">¥{entry.amount.toLocaleString()} ({pct}%)</span>
+                        <span className="text-ink-2">{entry.name}</span>
+                        <span className="text-ink-4 ml-auto tabular-nums">¥{entry.amount.toLocaleString()} ({pct}%)</span>
                       </div>
                     )
                   })}

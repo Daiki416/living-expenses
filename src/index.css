@@ -1,25 +1,64 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
 body {
   min-height: 100vh;
   background: linear-gradient(to bottom, #f8fafc 0%, #eef2ff 100%);
   background-attachment: fixed;
 }
 
+[data-theme="dark"] body {
+  background: linear-gradient(to bottom, #0d0f18 0%, #0a0b10 100%);
+}
+
 @theme {
   --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 12px rgb(15 23 42 / 0.07);
   --shadow-card-hover: 0 6px 20px rgb(15 23 42 / 0.12);
   --shadow-modal: 0 20px 60px rgb(15 23 42 / 0.22), 0 4px 12px rgb(15 23 42 / 0.10);
+
+  --color-surface: #ffffff;
+  --color-inset: #f9fafb;
+  --color-line: rgb(226 232 240 / 0.7);
+  --color-line-strong: #d1d5db;
+  --color-ink: #1f2937;
+  --color-ink-2: #4b5563;
+  --color-ink-3: #6b7280;
+  --color-ink-4: #9ca3af;
+}
+
+[data-theme="dark"] {
+  --color-surface: #161824;
+  --color-inset: #1e2130;
+  --color-line: rgb(255 255 255 / 0.08);
+  --color-line-strong: rgb(255 255 255 / 0.14);
+  --color-ink: #eceef4;
+  --color-ink-2: #b8bdcc;
+  --color-ink-3: #9298a8;
+  --color-ink-4: #6b7180;
+
+  /* 影はダークで強すぎるので抑える */
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.35);
+  --shadow-card-hover: 0 6px 20px rgb(0 0 0 / 0.5);
+  --shadow-modal: 0 20px 60px rgb(0 0 0 / 0.6), 0 4px 12px rgb(0 0 0 / 0.4);
 }
 
 @layer components {
   .card {
-    @apply bg-white rounded-2xl border border-slate-200/70;
+    @apply bg-surface rounded-2xl border border-line;
     box-shadow: var(--shadow-card);
   }
 
   .field-input {
-    @apply w-full border border-gray-300 rounded-lg px-3 py-2 text-base bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400;
+    @apply w-full border border-line-strong rounded-lg px-3 py-2 text-base bg-surface text-ink transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400;
   }
 
   .btn {
@@ -31,7 +70,7 @@ body {
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 text-gray-600 hover:bg-gray-50 active:bg-gray-100;
+    @apply inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-line-strong text-ink-2 hover:bg-inset active:bg-inset;
   }
 
   .btn-danger {
@@ -39,14 +78,14 @@ body {
   }
 
   .icon-btn {
-    @apply text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40;
+    @apply text-ink-4 hover:text-ink-2 transition-colors disabled:opacity-40;
   }
 
   .chip {
-    @apply rounded-full transition-colors text-gray-500 hover:bg-gray-100;
+    @apply rounded-full transition-colors text-ink-3 hover:bg-inset;
   }
 
   .chip-active {
-    @apply rounded-full bg-indigo-100 text-indigo-700;
+    @apply rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300;
   }
 }

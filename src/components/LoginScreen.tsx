@@ -79,12 +79,12 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
   if (view === 'forgot') {
     return (
       <div className="min-h-screen bg-transparent flex items-center justify-center px-4">
-        <div className="bg-white rounded-xl shadow-sm w-full max-w-sm px-6 py-8">
-          <h1 className="text-xl font-bold text-gray-800 mb-6 text-center">パスワードリセット</h1>
+        <div className="bg-surface rounded-xl shadow-sm w-full max-w-sm px-6 py-8">
+          <h1 className="text-xl font-bold text-ink mb-6 text-center">パスワードリセット</h1>
 
           <form onSubmit={handleForgot} className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="email">
+              <label className="block text-sm font-medium text-ink-2 mb-1" htmlFor="email">
                 メールアドレス
               </label>
               <input
@@ -128,10 +128,10 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
   if (view === 'sent') {
     return (
       <div className="min-h-screen bg-transparent flex items-center justify-center px-4">
-        <div className="bg-white rounded-xl shadow-sm w-full max-w-sm px-6 py-8">
-          <h1 className="text-xl font-bold text-gray-800 mb-6 text-center">メールを送信しました</h1>
+        <div className="bg-surface rounded-xl shadow-sm w-full max-w-sm px-6 py-8">
+          <h1 className="text-xl font-bold text-ink mb-6 text-center">メールを送信しました</h1>
 
-          <p className="text-sm text-gray-600 text-center mb-6">
+          <p className="text-sm text-ink-2 text-center mb-6">
             確認メールを送信しました。メール内のリンクからパスワードをリセットしてください。
           </p>
 
@@ -152,12 +152,12 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
   if (view === 'reset') {
     return (
       <div className="min-h-screen bg-transparent flex items-center justify-center px-4">
-        <div className="bg-white rounded-xl shadow-sm w-full max-w-sm px-6 py-8">
-          <h1 className="text-xl font-bold text-gray-800 mb-6 text-center">新しいパスワードを設定</h1>
+        <div className="bg-surface rounded-xl shadow-sm w-full max-w-sm px-6 py-8">
+          <h1 className="text-xl font-bold text-ink mb-6 text-center">新しいパスワードを設定</h1>
 
           <form onSubmit={handleReset} className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="new-password">
+              <label className="block text-sm font-medium text-ink-2 mb-1" htmlFor="new-password">
                 新しいパスワード
               </label>
               <input
@@ -172,7 +172,7 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="confirm-password">
+              <label className="block text-sm font-medium text-ink-2 mb-1" htmlFor="confirm-password">
                 パスワード（確認）
               </label>
               <input
@@ -205,12 +205,12 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
 
   return (
     <div className="min-h-screen bg-transparent flex items-center justify-center px-4">
-      <div className="bg-white rounded-xl shadow-sm w-full max-w-sm px-6 py-8">
-        <h1 className="text-xl font-bold text-gray-800 mb-6 text-center">家計管理</h1>
+      <div className="bg-surface rounded-xl shadow-sm w-full max-w-sm px-6 py-8">
+        <h1 className="text-xl font-bold text-ink mb-6 text-center">家計管理</h1>
 
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="email">
+            <label className="block text-sm font-medium text-ink-2 mb-1" htmlFor="email">
               メールアドレス
             </label>
             <input
@@ -225,7 +225,7 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="password">
+            <label className="block text-sm font-medium text-ink-2 mb-1" htmlFor="password">
               パスワード
             </label>
             <input

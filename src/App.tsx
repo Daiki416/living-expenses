@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTheme } from './hooks/useTheme'
 import { useExpenses } from './hooks/useExpenses'
 import { useMembers } from './hooks/useMembers'
 import { useCategories } from './hooks/useCategories'
@@ -31,7 +32,7 @@ export default function App() {
   if (initializing) {
     return (
       <div className="min-h-screen bg-transparent flex items-center justify-center">
-        <p className="text-gray-400 text-sm">読み込み中…</p>
+        <p className="text-ink-4 text-sm">読み込み中…</p>
       </div>
     )
   }
@@ -44,6 +45,7 @@ export default function App() {
 }
 
 function AppMain() {
+  const { theme, toggleTheme } = useTheme()
   const now = new Date()
   const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const [year, setYear] = useState(now.getFullYear())
@@ -101,7 +103,7 @@ function AppMain() {
 
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold text-gray-800">家計管理</h1>
+          <h1 className="text-xl font-bold text-ink">家計管理</h1>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowTrend(true)}
@@ -119,8 +121,16 @@ function AppMain() {
               ⚙
             </button>
             <button
+              onClick={toggleTheme}
+              className="icon-btn text-xl"
+              title={theme === 'dark' ? 'ライトモード' : 'ダークモード'}
+              aria-label={theme === 'dark' ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}
+            >
+              {theme === 'dark' ? '☀' : '☾'}
+            </button>
+            <button
               onClick={() => supabase.auth.signOut()}
-              className="icon-btn text-xs px-2 py-1 rounded border border-gray-200 hover:border-gray-300"
+              className="icon-btn text-xs px-2 py-1 rounded border border-line hover:border-line-strong"
               title="ログアウト"
             >
               ログアウト
@@ -137,7 +147,7 @@ function AppMain() {
 
         {/* 月初清算リマインダー */}
         {now.getDate() <= 3 && !reminderDismissed && (
-          <div className="bg-amber-50 border border-amber-300 text-amber-700 rounded-xl px-4 py-2.5 mb-3">
+          <div className="bg-amber-50 border border-amber-300 text-amber-700 dark:bg-amber-400/10 dark:border-amber-400/30 dark:text-amber-200 rounded-xl px-4 py-2.5 mb-3">
             {reminderConfirming ? (
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">生活費の振り込みは済ませましたか？</span>
@@ -150,7 +160,7 @@ function AppMain() {
                   </button>
                   <button
                     onClick={() => setReminderConfirming(false)}
-                    className="text-xs font-medium border border-amber-400 text-amber-700 px-3 py-1 rounded-lg hover:bg-amber-100 transition-colors"
+                    className="text-xs font-medium border border-amber-400 text-amber-700 dark:text-amber-200 px-3 py-1 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-400/10 transition-colors"
                   >
                     いいえ
                   </button>
@@ -161,7 +171,7 @@ function AppMain() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium mb-1">月初になりました。今月の生活費振込をお忘れなく。</p>
                   {prevMonthLoading ? (
-                    <p className="text-xs text-amber-600">計算中…</p>
+                    <p className="text-xs text-amber-600 dark:text-amber-300">計算中…</p>
                   ) : (
                     <ul className="space-y-0.5">
                       {members
@@ -170,9 +180,9 @@ function AppMain() {
                           const prev = prevMonthMemberTotals[m.name] ?? 0
                           const due = Math.max(0, m.monthly_budget - prev)
                           return (
-                            <li key={m.id} className="text-xs text-amber-700">
+                            <li key={m.id} className="text-xs text-amber-700 dark:text-amber-200">
                               {m.name}: ¥{due.toLocaleString()}
-                              {m.monthly_budget - prev < 0 && <span className="ml-1 text-amber-500">（立替超過）</span>}
+                              {m.monthly_budget - prev < 0 && <span className="ml-1 text-amber-500 dark:text-amber-300">（立替超過）</span>}
                             </li>
                           )
                         })
@@ -182,7 +192,7 @@ function AppMain() {
                 </div>
                 <button
                   onClick={() => setReminderConfirming(true)}
-                  className="text-amber-500 hover:text-amber-700 text-lg leading-none shrink-0 transition-colors"
+                  className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-300 text-lg leading-none shrink-0 transition-colors"
                   aria-label="閉じる"
                 >
                   ×
@@ -194,9 +204,9 @@ function AppMain() {
 
         {/* Month nav */}
         <div className="flex items-center justify-between card px-4 py-2.5 mb-4">
-          <button onClick={prevMonth} className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors text-xl leading-none">‹</button>
-          <span className="text-base font-semibold text-gray-800 tabular-nums">{year}年{month}月</span>
-          <button onClick={nextMonth} className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors text-xl leading-none">›</button>
+          <button onClick={prevMonth} className="w-9 h-9 flex items-center justify-center rounded-lg text-ink-4 hover:text-indigo-500 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/15 transition-colors text-xl leading-none">‹</button>
+          <span className="text-base font-semibold text-ink tabular-nums">{year}年{month}月</span>
+          <button onClick={nextMonth} className="w-9 h-9 flex items-center justify-center rounded-lg text-ink-4 hover:text-indigo-500 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/15 transition-colors text-xl leading-none">›</button>
         </div>
 
         {/* Category summary */}
@@ -210,7 +220,7 @@ function AppMain() {
         {/* 立替セクション */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-2 uppercase tracking-wide">
               <span className="w-1 h-4 rounded-full bg-indigo-500"></span>立替
             </h2>
             <button
@@ -225,9 +235,9 @@ function AppMain() {
           {memberNames.length > 0 && (
             <div className="grid grid-cols-2 gap-3 mb-3">
               {memberNames.map(name => (
-                <div key={name} className="bg-gradient-to-br from-indigo-50 to-indigo-100/70 border border-indigo-100 rounded-2xl px-4 py-3.5 text-center">
-                  <div className="text-xs text-indigo-500 font-medium mb-1">{name}</div>
-                  <div className="text-2xl font-bold text-indigo-700 tabular-nums tracking-tight">¥{memberTotals[name].toLocaleString()}</div>
+                <div key={name} className="bg-gradient-to-br from-indigo-50 to-indigo-100/70 border border-indigo-100 dark:from-indigo-500/10 dark:to-violet-500/10 dark:border-indigo-400/20 rounded-2xl px-4 py-3.5 text-center">
+                  <div className="text-xs text-indigo-500 dark:text-indigo-300 font-medium mb-1">{name}</div>
+                  <div className="text-2xl font-bold text-indigo-700 dark:text-indigo-200 tabular-nums tracking-tight">¥{memberTotals[name].toLocaleString()}</div>
                 </div>
               ))}
             </div>
@@ -235,7 +245,7 @@ function AppMain() {
 
           <div className="card px-5 py-4">
             {expensesLoading ? (
-              <div className="text-center text-gray-400 py-8 text-sm">読み込み中…</div>
+              <div className="text-center text-ink-4 py-8 text-sm">読み込み中…</div>
             ) : expensesError ? (
               <div className="text-center text-red-400 py-8 text-sm">エラー: {expensesError}</div>
             ) : (
@@ -252,14 +262,14 @@ function AppMain() {
             )}
           </div>
           {expensesLoading || expenseTotal === 0 ? null : (
-            <p className="text-xs text-gray-400 text-right mt-1 tabular-nums">合計 ¥{expenseTotal.toLocaleString()}</p>
+            <p className="text-xs text-ink-4 text-right mt-1 tabular-nums">合計 ¥{expenseTotal.toLocaleString()}</p>
           )}
         </div>
 
         {/* クレカセクション */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-2 uppercase tracking-wide">
               <span className="w-1 h-4 rounded-full bg-indigo-500"></span>クレカ
             </h2>
             <button
@@ -272,7 +282,7 @@ function AppMain() {
 
           <div className="card px-5 py-4">
             {cardLoading ? (
-              <div className="text-center text-gray-400 py-8 text-sm">読み込み中…</div>
+              <div className="text-center text-ink-4 py-8 text-sm">読み込み中…</div>
             ) : cardError ? (
               <div className="text-center text-red-400 py-8 text-sm">エラー: {cardError}</div>
             ) : (
@@ -289,7 +299,7 @@ function AppMain() {
             )}
           </div>
           {cardLoading || cardTotal === 0 ? null : (
-            <p className="text-xs text-gray-400 text-right mt-1 tabular-nums">合計 ¥{cardTotal.toLocaleString()}</p>
+            <p className="text-xs text-ink-4 text-right mt-1 tabular-nums">合計 ¥{cardTotal.toLocaleString()}</p>
           )}
         </div>
 

@@ -53,11 +53,11 @@ export function EditCardExpenseModal({ cardExpense, categories, onUpdate, onUpse
 
   return (
     <ModalShell onClose={onClose} className="overflow-hidden">
-      <h2 className="text-lg font-semibold text-gray-800 mb-5">クレカ明細を編集</h2>
+      <h2 className="text-lg font-semibold text-ink mb-5">クレカ明細を編集</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">内容</label>
+          <label className="block text-sm font-medium text-ink-2 mb-1">内容</label>
           <input
             type="text"
             value={description}
@@ -68,7 +68,7 @@ export function EditCardExpenseModal({ cardExpense, categories, onUpdate, onUpse
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">金額（円）</label>
+          <label className="block text-sm font-medium text-ink-2 mb-1">金額（円）</label>
           <input
             type="number"
             value={amount}
@@ -81,7 +81,7 @@ export function EditCardExpenseModal({ cardExpense, categories, onUpdate, onUpse
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">カテゴリー</label>
+          <label className="block text-sm font-medium text-ink-2 mb-1">カテゴリー</label>
           <CategorySelect
             categories={categories}
             parentCategoryId={parentCategoryId}

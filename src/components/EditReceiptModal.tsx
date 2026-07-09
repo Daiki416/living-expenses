@@ -34,10 +34,10 @@ export function EditReceiptModal({ receiptId, initialDescription, initialDate, o
 
   return (
     <ModalShell onClose={onClose}>
-      <h2 className="text-lg font-semibold text-gray-800 mb-5">レシート編集</h2>
+      <h2 className="text-lg font-semibold text-ink mb-5">レシート編集</h2>
       <div className="space-y-3">
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">日付</label>
+          <label className="block text-sm font-medium text-ink-2 mb-1">日付</label>
           <div className="w-full overflow-hidden rounded-lg">
             <input
               type="date"
@@ -48,7 +48,7 @@ export function EditReceiptModal({ receiptId, initialDescription, initialDate, o
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">店舗名</label>
+          <label className="block text-sm font-medium text-ink-2 mb-1">店舗名</label>
           <input
             type="text"
             value={description}

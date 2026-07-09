@@ -23,7 +23,7 @@ export function CardExpenseList({ receipts, categories, onEdit, onDeleteReceipt,
 
   if (receipts.length === 0) {
     return (
-      <div className="text-center text-gray-400 py-8 text-sm">
+      <div className="text-center text-ink-4 py-8 text-sm">
         この月のクレカ明細はありません
       </div>
     )
@@ -48,10 +48,10 @@ export function CardExpenseList({ receipts, categories, onEdit, onDeleteReceipt,
   return (
     <div>
       <div className="max-h-96 overflow-y-auto">
-        <div className="flex items-center justify-end px-1 pb-2 sticky top-0 bg-white z-10">
+        <div className="flex items-center justify-end px-1 pb-2 sticky top-0 bg-surface z-10">
           <button
             onClick={() => setSortAsc(v => !v)}
-            className="text-xs text-gray-500 hover:text-indigo-500 transition-colors"
+            className="text-xs text-ink-3 hover:text-indigo-500 transition-colors"
           >
             日付 {sortAsc ? '↑' : '↓'}
           </button>
@@ -65,13 +65,13 @@ export function CardExpenseList({ receipts, categories, onEdit, onDeleteReceipt,
             const metaLabel = `${count}件`
 
             return (
-              <div key={receipt.id} className="border-b border-gray-100">
+              <div key={receipt.id} className="border-b border-line">
                 <div className="flex items-center gap-3 py-3">
                   <button
                     type="button"
                     onClick={() => toggleExpand(receipt.id)}
                     title={isExpanded ? '閉じる' : '展開'}
-                    className="flex flex-col items-center justify-center shrink-0 w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors leading-none"
+                    className="flex flex-col items-center justify-center shrink-0 w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-500/25 transition-colors leading-none"
                   >
                     <span className="text-[10px] tabular-nums">{month}</span>
                     <span className="text-base font-semibold tabular-nums">{day}</span>
@@ -81,8 +81,8 @@ export function CardExpenseList({ receipts, categories, onEdit, onDeleteReceipt,
                     onClick={() => onEditReceipt(receipt.id)}
                     className="flex-1 min-w-0 text-left"
                   >
-                    <div className="font-semibold text-gray-800 text-sm truncate">{receipt.description}</div>
-                    <div className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-400">
+                    <div className="font-semibold text-ink text-sm truncate">{receipt.description}</div>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-4">
                       {metaLabel && <span>{metaLabel}</span>}
                     </div>
                   </button>
@@ -91,9 +91,9 @@ export function CardExpenseList({ receipts, categories, onEdit, onDeleteReceipt,
                     onClick={() => toggleExpand(receipt.id)}
                     className="flex items-center gap-1.5 shrink-0"
                   >
-                    <span className="text-base font-semibold text-gray-800 tabular-nums">¥{total.toLocaleString()}</span>
+                    <span className="text-base font-semibold text-ink tabular-nums">¥{total.toLocaleString()}</span>
                     <svg
-                      className={`w-4 h-4 text-gray-300 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                      className={`w-4 h-4 text-ink-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                       viewBox="0 0 20 20"
                       fill="currentColor"
                       aria-hidden="true"
@@ -116,7 +116,7 @@ export function CardExpenseList({ receipts, categories, onEdit, onDeleteReceipt,
                       }
                     }}
                     disabled={deletingId === receipt.id}
-                    className="shrink-0 text-gray-300 hover:text-red-400 disabled:opacity-40 transition-colors text-base leading-none"
+                    className="shrink-0 text-ink-4 hover:text-red-400 disabled:opacity-40 transition-colors text-base leading-none"
                     title="削除"
                   >
                     ×
@@ -131,17 +131,17 @@ export function CardExpenseList({ receipts, categories, onEdit, onDeleteReceipt,
                           type="button"
                           key={expense.id}
                           onClick={() => onEdit(expense)}
-                          className="w-full flex items-center gap-2.5 py-1.5 text-left rounded-lg hover:bg-gray-50 transition-colors"
+                          className="w-full flex items-center gap-2.5 py-1.5 text-left rounded-lg hover:bg-inset transition-colors"
                         >
                           <span
                             className="w-2 h-2 rounded-full shrink-0 self-start mt-1.5"
                             style={{ backgroundColor: resolveCategoryColor(expense.category_id, categories) ?? '#d1d5db' }}
                           />
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm text-gray-600 truncate">{expense.description}</div>
-                            {catName && <div className="text-xs text-gray-400 truncate">{catName}</div>}
+                            <div className="text-sm text-ink-2 truncate">{expense.description}</div>
+                            {catName && <div className="text-xs text-ink-4 truncate">{catName}</div>}
                           </div>
-                          <span className="shrink-0 text-sm text-gray-600 tabular-nums">¥{expense.amount.toLocaleString()}</span>
+                          <span className="shrink-0 text-sm text-ink-2 tabular-nums">¥{expense.amount.toLocaleString()}</span>
                         </button>
                       )
                     })}

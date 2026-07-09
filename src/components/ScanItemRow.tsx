@@ -57,7 +57,7 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
 
   return (
     <div className={`rounded-xl border p-2.5 flex flex-col gap-1.5 transition-colors ${
-      item.selected ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50'
+      item.selected ? 'border-line bg-surface' : 'border-line bg-inset'
     }`}>
       <div className={`flex items-baseline gap-2 ${item.selected ? '' : 'opacity-50'}`}>
         <input
@@ -72,10 +72,10 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
           onChange={(e) => onUpdate(index, { description: e.target.value })}
           placeholder="品目名"
           disabled={!item.selected}
-          className="flex-1 min-w-0 bg-transparent px-1 py-1 text-sm text-gray-800 border-b border-transparent focus:outline-none focus:border-indigo-400 disabled:text-gray-400 placeholder:text-gray-300"
+          className="flex-1 min-w-0 bg-transparent px-1 py-1 text-sm text-ink border-b border-transparent focus:outline-none focus:border-indigo-400 disabled:text-ink-4 placeholder:text-ink-4"
         />
         <div className="shrink-0 flex items-baseline justify-end gap-0.5">
-          <span className={`text-sm ${amountInvalid ? 'text-red-500' : 'text-gray-400'}`}>¥</span>
+          <span className={`text-sm ${amountInvalid ? 'text-red-500' : 'text-ink-4'}`}>¥</span>
           <input
             type="text"
             inputMode="numeric"
@@ -87,10 +87,10 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
             }}
             placeholder="金額"
             disabled={!item.selected}
-            className={`[field-sizing:content] min-w-[2.5rem] max-w-[7rem] bg-transparent text-right text-base font-bold tabular-nums px-0.5 py-1 border-b focus:outline-none placeholder:font-normal placeholder:text-sm placeholder:text-gray-300 ${
+            className={`[field-sizing:content] min-w-[2.5rem] max-w-[7rem] bg-transparent text-right text-base font-bold tabular-nums px-0.5 py-1 border-b focus:outline-none placeholder:font-normal placeholder:text-sm placeholder:text-ink-4 ${
               amountInvalid
                 ? 'text-red-600 border-red-400 focus:border-red-500'
-                : 'text-gray-800 border-transparent focus:border-indigo-400'
+                : 'text-ink border-transparent focus:border-indigo-400'
             }`}
           />
         </div>
@@ -101,7 +101,7 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
           value={item.taxRate}
           onChange={(e) => onUpdate(index, { taxRate: toTaxRate(Number(e.target.value)) })}
           disabled={!item.selected}
-          className="appearance-none rounded-full bg-gray-100 text-gray-600 text-xs px-2.5 py-0.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-60 shrink-0"
+          className="appearance-none rounded-full bg-inset text-ink-2 text-xs px-2.5 py-0.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-60 shrink-0"
         >
           <option value={8}>8%</option>
           <option value={10}>10%</option>
@@ -111,15 +111,15 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
           type="button"
           onClick={() => setPickerOpen(o => !o)}
           disabled={!item.selected}
-          className={`inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2.5 py-0.5 text-xs disabled:opacity-60 ${
-            categoryLabel ? 'text-gray-700' : 'text-gray-400'
+          className={`inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-0.5 text-xs disabled:opacity-60 ${
+            categoryLabel ? 'text-ink-2' : 'text-ink-4'
           }`}
         >
           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: categoryColor ?? '#d1d5db' }} />
           {categoryLabel ?? '未分類'}
         </button>
         {showTaxedAmount && (
-          <span className="ml-auto text-xs font-medium text-emerald-600 tabular-nums">
+          <span className="ml-auto text-xs font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">
             → ¥{applyTax(item.amount!, item.taxRate).toLocaleString()}
           </span>
         )}
