@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Expense, CardExpense, Category } from '../lib/supabase'
-import { CHART_COLORS } from '../lib/chartColors'
+import { parentCategoryColor, childCategoryColor, generalCategoryColor } from '../lib/categoryColors'
 
 type Props = {
   expenses: Expense[]
@@ -8,6 +8,9 @@ type Props = {
   categories: Category[]
   loading?: boolean
 }
+
+const EXPENSE_BAR_COLOR = '#6366f1' // 立替（インディゴ）
+const CARD_BAR_COLOR = '#a78bfa'    // クレカ（バイオレット・同系色）
 
 function getEffectiveParentId(categoryId: string | null, categories: Category[]): string | null {
   if (!categoryId) return null
@@ -81,11 +84,11 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
           <div className="flex items-center gap-4 pb-4 border-b border-line">
             <svg viewBox="0 0 200 200" className="w-28 h-28 flex-shrink-0">
               {sortedParentIds.length === 1 ? (
-                <circle cx={cx} cy={cy} r={r} fill={CHART_COLORS[0]} />
+                <circle cx={cx} cy={cy} r={r} fill={parentCategoryColor(sortedParentIds[0], categories)} />
               ) : (
                 (() => {
                   let cumAngle = -Math.PI / 2
-                  return sortedParentIds.map((parentId, index) => {
+                  return sortedParentIds.map((parentId) => {
                     const sliceAngle = (parentTotals[parentId] / grandTotal) * 2 * Math.PI
                     const startAngle = cumAngle
                     const endAngle = cumAngle + sliceAngle
@@ -96,7 +99,7 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
                     const x2 = cx + r * Math.cos(endAngle)
                     const y2 = cy + r * Math.sin(endAngle)
                     const largeArcFlag = endAngle - startAngle > Math.PI ? 1 : 0
-                    const color = CHART_COLORS[index % CHART_COLORS.length]
+                    const color = parentCategoryColor(parentId, categories)
 
                     return (
                       <path
@@ -116,23 +119,23 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
               <div className="text-xs text-ink-4">今月合計</div>
               <div className="text-2xl font-bold text-ink tabular-nums">¥{grandTotal.toLocaleString()}</div>
               <div className="mt-2 h-2 rounded-full overflow-hidden flex bg-inset">
-                <div style={{ width: `${(expenseTotal / grandTotal) * 100}%`, backgroundColor: '#6366f1' }} />
-                <div style={{ width: `${(cardTotal / grandTotal) * 100}%`, backgroundColor: '#f59e0b' }} />
+                <div style={{ width: `${(expenseTotal / grandTotal) * 100}%`, backgroundColor: EXPENSE_BAR_COLOR }} />
+                <div style={{ width: `${(cardTotal / grandTotal) * 100}%`, backgroundColor: CARD_BAR_COLOR }} />
               </div>
               <div className="mt-1 flex items-center gap-3 text-xs text-ink-4 tabular-nums">
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#6366f1' }} />
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: EXPENSE_BAR_COLOR }} />
                   立替 ¥{expenseTotal.toLocaleString()}
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#f59e0b' }} />
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CARD_BAR_COLOR }} />
                   クレカ ¥{cardTotal.toLocaleString()}
                 </span>
               </div>
             </div>
           </div>
           <div className="mt-2">
-            {sortedParentIds.map((parentId, index) => {
+            {sortedParentIds.map((parentId) => {
               const parentName = parentId === '__uncategorized__'
                 ? '未分類'
                 : (parentCategories.find(c => c.id === parentId)?.name ?? '未分類')
@@ -143,7 +146,7 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
                 .reduce((s, [, v]) => s + v, 0)
               const hasChildren = activeChildren.length > 0
               const isExpanded = expandedIds.has(parentId)
-              const color = CHART_COLORS[index % CHART_COLORS.length]
+              const color = parentCategoryColor(parentId, categories)
               const barPct = (parentTotals[parentId] / maxParentAmount) * 100
               const sharePct = ((parentTotals[parentId] / grandTotal) * 100).toFixed(1)
 
@@ -213,7 +216,7 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
             </button>
           </div>
           {(() => {
-            const childEntries: { id: string; name: string; amount: number }[] = []
+            const childEntries: { id: string; name: string; amount: number; color: string }[] = []
             for (const parentId of sortedParentIds) {
               const parentName = parentId === '__uncategorized__'
                 ? '未分類'
@@ -222,15 +225,15 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
               const activeChildren = children.filter(c => childTotals[c.id])
               if (activeChildren.length > 0) {
                 for (const child of activeChildren) {
-                  childEntries.push({ id: child.id, name: child.name, amount: childTotals[child.id] })
+                  childEntries.push({ id: child.id, name: child.name, amount: childTotals[child.id], color: childCategoryColor(child.id, categories) })
                 }
                 const childSum = activeChildren.reduce((s, c) => s + childTotals[c.id], 0)
                 const direct = parentTotals[parentId] - childSum
                 if (direct > 0) {
-                  childEntries.push({ id: `${parentId}__direct`, name: `${parentName}（全般）`, amount: direct })
+                  childEntries.push({ id: `${parentId}__direct`, name: `${parentName}（全般）`, amount: direct, color: generalCategoryColor(parentId, categories) })
                 }
               } else {
-                childEntries.push({ id: parentId, name: parentName, amount: parentTotals[parentId] })
+                childEntries.push({ id: parentId, name: parentName, amount: parentTotals[parentId], color: parentCategoryColor(parentId, categories) })
               }
             }
             childEntries.sort((a, b) => b.amount - a.amount)
@@ -242,6 +245,7 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
                     ? '未分類'
                     : (parentCategories.find(c => c.id === parentId)?.name ?? '未分類'),
                   amount: parentTotals[parentId],
+                  color: parentCategoryColor(parentId, categories),
                 }))
               : childEntries
 
@@ -249,13 +253,13 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
               <>
                 {entries.length === 1 ? (
                   <svg viewBox="0 0 200 200" width="100%" height="auto">
-                    <circle cx={cx} cy={cy} r={r} fill={CHART_COLORS[0]} />
+                    <circle cx={cx} cy={cy} r={r} fill={entries[0].color} />
                   </svg>
                 ) : (
                   <svg viewBox="0 0 200 200" width="100%" height="auto">
                     {(() => {
                       let cumAngle = -Math.PI / 2
-                      return entries.map((entry, index) => {
+                      return entries.map((entry) => {
                         const sliceAngle = (entry.amount / grandTotal) * 2 * Math.PI
                         const startAngle = cumAngle
                         const endAngle = cumAngle + sliceAngle
@@ -266,7 +270,7 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
                         const x2 = cx + r * Math.cos(endAngle)
                         const y2 = cy + r * Math.sin(endAngle)
                         const largeArcFlag = endAngle - startAngle > Math.PI ? 1 : 0
-                        const color = CHART_COLORS[index % CHART_COLORS.length]
+                        const color = entry.color
 
                         return (
                           <path
@@ -280,8 +284,8 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
                   </svg>
                 )}
                 <div className="mt-3 space-y-1">
-                  {entries.map((entry, index) => {
-                    const color = CHART_COLORS[index % CHART_COLORS.length]
+                  {entries.map((entry) => {
+                    const color = entry.color
                     const pct = ((entry.amount / grandTotal) * 100).toFixed(1)
                     return (
                       <div key={entry.id} className="flex items-center gap-2 text-sm">

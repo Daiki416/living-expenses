@@ -2,11 +2,15 @@ import { useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { useMonthlyTrend } from '../hooks/useMonthlyTrend'
 import type { Category } from '../lib/supabase'
-import { CHART_COLORS } from '../lib/chartColors'
+import { parentCategoryColor, childCategoryColor } from '../lib/categoryColors'
+import { HeaderActions } from './HeaderActions'
 
 type Props = {
   categories: Category[]
   onClose: () => void
+  theme: 'light' | 'dark'
+  onToggleTheme: () => void
+  onOpenSettings: () => void
 }
 
 function calcDefaultStartYM(currentYM: string): string {
@@ -18,7 +22,7 @@ function calcDefaultStartYM(currentYM: string): string {
   return `${y}-${String(prevM).padStart(2, '0')}`
 }
 
-export function MonthlyTrendView({ categories, onClose }: Props) {
+export function MonthlyTrendView({ categories, onClose, theme, onToggleTheme, onOpenSettings }: Props) {
   const now = new Date()
   const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const defaultStartYM = calcDefaultStartYM(currentYM)
@@ -33,6 +37,12 @@ export function MonthlyTrendView({ categories, onClose }: Props) {
   const parentCategories = categories.filter(c => c.parent_id === null)
   const childCategories = (parentId: string) => categories.filter(c => c.parent_id === parentId)
   const categoryName = (id: string) => categories.find(c => c.id === id)?.name ?? '未分類'
+  const barColor = (id: string) => {
+    const cat = categories.find(c => c.id === id)
+    return cat && cat.parent_id !== null
+      ? childCategoryColor(id, categories)
+      : parentCategoryColor(id, categories)
+  }
 
   // 表示モード別の集計
   let activeIds: string[] = []
@@ -109,15 +119,14 @@ export function MonthlyTrendView({ categories, onClose }: Props) {
       <div className="max-w-xl mx-auto px-4 py-6">
 
         {/* ヘッダー */}
-        <div className="flex items-center justify-between mb-5">
-          <button
-            onClick={onClose}
-            className="text-indigo-500 hover:text-indigo-700 text-sm font-medium transition-colors"
-          >
-            ← 戻る
-          </button>
-          <h2 className="text-lg font-bold text-ink">支出推移</h2>
-          <div className="w-12" />
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl font-bold text-ink">支出推移</h1>
+          <HeaderActions
+            onOpenHome={onClose}
+            onOpenSettings={onOpenSettings}
+            theme={theme}
+            onToggleTheme={onToggleTheme}
+          />
         </div>
 
         {/* 月範囲セレクター */}
@@ -225,12 +234,12 @@ export function MonthlyTrendView({ categories, onClose }: Props) {
                     />
                     <Tooltip formatter={(v) => typeof v === 'number' ? `¥${v.toLocaleString()}` : ''} />
                     <Legend />
-                    {activeIds.map((id, i) => (
+                    {activeIds.map((id) => (
                       <Bar
                         key={id}
                         dataKey={id}
                         stackId="a"
-                        fill={CHART_COLORS[i % CHART_COLORS.length]}
+                        fill={barColor(id)}
                         name={id === '__uncategorized__' ? '未分類' : categoryName(id)}
                       />
                     ))}

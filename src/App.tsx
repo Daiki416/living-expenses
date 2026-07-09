@@ -17,8 +17,8 @@ import { ExpenseList } from './components/ExpenseList'
 import { CardExpenseList } from './components/CardExpenseList'
 import { CategorySummary } from './components/CategorySummary'
 import { MonthlyTrendView } from './components/MonthlyTrendView'
+import { HeaderActions } from './components/HeaderActions'
 import type { Expense, CardExpense } from './lib/supabase'
-import { supabase } from './lib/supabase'
 import { applyTax } from './lib/ocr'
 
 function todayYYYYMMDD() {
@@ -93,50 +93,31 @@ function AppMain() {
     else setMonth(m => m + 1)
   }
 
-  if (showTrend) {
-    return <MonthlyTrendView categories={categories} onClose={() => setShowTrend(false)} />
-  }
-
   return (
-    <div className="min-h-screen bg-transparent">
-      <div className="max-w-xl mx-auto px-4 py-6">
+    <>
+      {showTrend ? (
+        <MonthlyTrendView
+          categories={categories}
+          onClose={() => setShowTrend(false)}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onOpenSettings={() => setShowSettings(true)}
+        />
+      ) : (
+        <div className="min-h-screen bg-transparent">
+          <div className="max-w-xl mx-auto px-4 py-6">
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold text-ink">家計管理</h1>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowTrend(true)}
-              className="icon-btn text-xl"
-              title="支出推移"
-            >
-              📊
-            </button>
-            <button
-              onClick={() => setShowSettings(true)}
-              disabled={membersLoading}
-              className="icon-btn text-xl"
-              title="設定"
-            >
-              ⚙
-            </button>
-            <button
-              onClick={toggleTheme}
-              className="icon-btn text-xl"
-              title={theme === 'dark' ? 'ライトモード' : 'ダークモード'}
-              aria-label={theme === 'dark' ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}
-            >
-              {theme === 'dark' ? '☀' : '☾'}
-            </button>
-            <button
-              onClick={() => supabase.auth.signOut()}
-              className="icon-btn text-xs px-2 py-1 rounded border border-line hover:border-line-strong"
-              title="ログアウト"
-            >
-              ログアウト
-            </button>
-          </div>
-        </div>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-xl font-bold text-ink">家計管理</h1>
+              <HeaderActions
+                onOpenTrend={() => setShowTrend(true)}
+                onOpenSettings={() => setShowSettings(true)}
+                settingsDisabled={membersLoading}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+              />
+            </div>
 
         {membersError && (
           <p className="text-red-400 text-xs text-center mb-2">{membersError}</p>
@@ -301,9 +282,11 @@ function AppMain() {
           {cardLoading || cardTotal === 0 ? null : (
             <p className="text-xs text-ink-4 text-right mt-1 tabular-nums">合計 ¥{cardTotal.toLocaleString()}</p>
           )}
-        </div>
+            </div>
 
-      </div>
+          </div>
+        </div>
+      )}
 
       {showAdd && (
         <AddExpenseModal
@@ -399,6 +382,6 @@ function AppMain() {
           onClose={() => setShowSettings(false)}
         />
       )}
-    </div>
+    </>
   )
 }
