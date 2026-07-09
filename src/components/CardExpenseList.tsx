@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { CardExpense, Category, CardExpenseReceiptWithCardExpenses } from '../lib/supabase'
 import { resolveCategoryLabel, splitDateChip } from '../lib/format'
+import { resolveCategoryColor } from '../lib/categoryColors'
 
 type Props = {
   receipts: CardExpenseReceiptWithCardExpenses[]
@@ -11,7 +12,10 @@ type Props = {
 }
 
 export function CardExpenseList({ receipts, categories, onEdit, onDeleteReceipt, onEditReceipt }: Props) {
-  const categoryName = (id: string | null) => resolveCategoryLabel(id, categories) || null
+  const categoryName = (id: string | null) => {
+    const label = resolveCategoryLabel(id, categories)
+    return label ? label.replace(' > ', ' › ') : null
+  }
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [sortAsc, setSortAsc] = useState(false)
@@ -58,7 +62,7 @@ export function CardExpenseList({ receipts, categories, onEdit, onDeleteReceipt,
             const isExpanded = expandedIds.has(receipt.id)
             const { month, day } = splitDateChip(receipt.date)
             const count = receipt.card_expenses.length
-            const metaLabel = count > 1 ? `${count}件` : (categoryName(receipt.card_expenses[0]?.category_id ?? null) ?? '')
+            const metaLabel = `${count}件`
 
             return (
               <div key={receipt.id} className="border-b border-gray-100">
@@ -127,8 +131,12 @@ export function CardExpenseList({ receipts, categories, onEdit, onDeleteReceipt,
                           type="button"
                           key={expense.id}
                           onClick={() => onEdit(expense)}
-                          className="w-full flex items-center gap-2 py-1.5 text-left rounded-lg hover:bg-gray-50 transition-colors"
+                          className="w-full flex items-center gap-2.5 py-1.5 text-left rounded-lg hover:bg-gray-50 transition-colors"
                         >
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0 self-start mt-1.5"
+                            style={{ backgroundColor: resolveCategoryColor(expense.category_id, categories) ?? '#d1d5db' }}
+                          />
                           <div className="flex-1 min-w-0">
                             <div className="text-sm text-gray-600 truncate">{expense.description}</div>
                             {catName && <div className="text-xs text-gray-400 truncate">{catName}</div>}

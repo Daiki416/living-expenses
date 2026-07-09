@@ -2,6 +2,7 @@ import { memo, useMemo, useState } from 'react'
 import { toTaxRate, applyTax } from '../lib/ocr'
 import type { ScanItem } from '../lib/ocr'
 import type { Category } from '../lib/supabase'
+import { resolveCategoryColor } from '../lib/categoryColors'
 import { CategorySelect } from './CategorySelect'
 
 type Props = {
@@ -12,18 +13,16 @@ type Props = {
   onSetCategory: (index: number, categoryId: string | null) => void
 }
 
-// categoryId から表示ラベル（親のみ or `親 > 子`）を算出する。未分類は null を返す。
+// categoryId から表示ラベル（子名、無ければ親名）を算出する。未分類は null を返す。
 function resolveCategoryLabel(categoryId: string | null, categories: Category[]): string | null {
   if (!categoryId) return null
   const category = categories.find(c => c.id === categoryId)
   if (!category) return null
-  if (category.parent_id === null) return category.name
-  const parent = categories.find(c => c.id === category.parent_id)
-  return parent ? `${parent.name} > ${category.name}` : category.name
+  return category.name
 }
 
 export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, onUpdate, onSetCategory }: Props) {
-  const amountInvalid = item.selected && (item.amount === null || item.amount <= 0)
+  const amountInvalid = item.selected && item.amount !== null && item.amount <= 0
   const [pickerOpen, setPickerOpen] = useState(false)
 
   // categoryId から CategorySelect 用の parent/child 選択状態を導出する。
@@ -40,6 +39,11 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
     [item.categoryId, categories]
   )
 
+  const categoryColor = useMemo(
+    () => resolveCategoryColor(item.categoryId, categories),
+    [item.categoryId, categories]
+  )
+
   function handleParentChange(parentId: string, firstChildId: string) {
     onSetCategory(index, firstChildId || parentId || null)
   }
@@ -52,70 +56,77 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
     item.selected && item.amount !== null && Number.isInteger(item.amount) && item.amount > 0
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className={`flex items-center gap-2 ${item.selected ? '' : 'opacity-50'}`}>
+    <div className={`rounded-xl border p-2.5 flex flex-col gap-1.5 transition-colors ${
+      item.selected ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50'
+    }`}>
+      <div className={`flex items-baseline gap-2 ${item.selected ? '' : 'opacity-50'}`}>
         <input
           type="checkbox"
           checked={item.selected}
           onChange={(e) => onUpdate(index, { selected: e.target.checked })}
-          className="accent-indigo-500 shrink-0"
+          className="accent-indigo-500 shrink-0 self-center"
         />
         <input
           type="text"
           value={item.description}
           onChange={(e) => onUpdate(index, { description: e.target.value })}
           disabled={!item.selected}
-          className="field-input flex-1 min-w-0 px-2 py-1.5 text-sm"
+          className="flex-1 min-w-0 bg-transparent px-1 py-1 text-sm text-gray-800 border-b border-transparent focus:outline-none focus:border-indigo-400 disabled:text-gray-400"
         />
-        <input
-          type="number"
-          value={item.amount ?? ''}
-          onChange={(e) => {
-            const v = e.target.value
-            const parsed = parseInt(v, 10)
-            onUpdate(index, { amount: v === '' || isNaN(parsed) ? null : parsed })
-          }}
-          min={1}
-          placeholder="金額"
-          disabled={!item.selected}
-          className={`w-20 shrink-0 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 ${
-            amountInvalid
-              ? 'border-red-400 focus:ring-red-400'
-              : 'border-gray-300 focus:ring-indigo-400'
-          }`}
-        />
+        <div className="shrink-0 flex items-baseline justify-end gap-0.5">
+          <span className={`text-sm ${amountInvalid ? 'text-red-500' : 'text-gray-400'}`}>¥</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={item.amount === null ? '' : item.amount.toLocaleString()}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/[^\d]/g, '')
+              const parsed = parseInt(digits, 10)
+              onUpdate(index, { amount: digits === '' || isNaN(parsed) ? null : parsed })
+            }}
+            placeholder="金額"
+            disabled={!item.selected}
+            className={`[field-sizing:content] min-w-[2.5rem] max-w-[7rem] bg-transparent text-right text-base font-bold tabular-nums px-0.5 py-1 border-b focus:outline-none placeholder:font-normal placeholder:text-sm placeholder:text-gray-300 ${
+              amountInvalid
+                ? 'text-red-600 border-red-400 focus:border-red-500'
+                : 'text-gray-800 border-transparent focus:border-indigo-400'
+            }`}
+          />
+        </div>
+      </div>
+
+      <div className={`pl-6 flex items-center gap-2 ${item.selected ? '' : 'opacity-50'}`}>
         <select
           value={item.taxRate}
           onChange={(e) => onUpdate(index, { taxRate: toTaxRate(Number(e.target.value)) })}
           disabled={!item.selected}
-          className="field-input w-20 shrink-0 px-1 py-1.5 text-sm"
+          className="appearance-none rounded-full bg-gray-100 text-gray-600 text-xs px-2.5 py-0.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-60 shrink-0"
         >
           <option value={8}>8%</option>
           <option value={10}>10%</option>
           <option value={0}>税込</option>
         </select>
+        <button
+          type="button"
+          onClick={() => setPickerOpen(o => !o)}
+          disabled={!item.selected}
+          className={`inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2.5 py-0.5 text-xs disabled:opacity-60 ${
+            categoryLabel ? 'text-gray-700' : 'text-gray-400'
+          }`}
+        >
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: categoryColor ?? '#d1d5db' }} />
+          {categoryLabel ?? '未分類'}
+        </button>
+        {showTaxedAmount && (
+          <span className="ml-auto text-xs font-medium text-emerald-600 tabular-nums">
+            → ¥{applyTax(item.amount!, item.taxRate).toLocaleString()}
+          </span>
+        )}
       </div>
 
-      <div className={`pl-6 ${item.selected ? '' : 'opacity-50'}`}>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setPickerOpen(o => !o)}
-            disabled={!item.selected}
-            className={`chip inline-flex items-center gap-1 border border-gray-300 px-2.5 py-0.5 text-xs ${
-              categoryLabel ? 'text-gray-600' : 'text-gray-400'
-            }`}
-          >
-            {categoryLabel ?? '未分類'}
-          </button>
-          {showTaxedAmount && (
-            <span className="ml-auto text-xs text-gray-400 tabular-nums">
-              → ¥{applyTax(item.amount!, item.taxRate).toLocaleString()}
-            </span>
-          )}
-        </div>
-        {pickerOpen && (
-          <div className="mt-1.5 space-y-2">
+      {pickerOpen && (
+        <div className={`pl-6 ${item.selected ? '' : 'opacity-50'}`}>
+          <div className="space-y-2">
             <CategorySelect
               categories={categories}
               parentCategoryId={parentCategoryId}
@@ -124,8 +135,8 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
               onChildChange={handleChildChange}
             />
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 })
