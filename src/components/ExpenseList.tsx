@@ -113,6 +113,7 @@ export function ExpenseList({ kind, receipts, categories, onEdit, onDeleteReceip
                     type="button"
                     onClick={async (e) => {
                       e.stopPropagation()
+                      if (!window.confirm(`「${receipt.description || 'このレシート'}」を削除しますか？\nこの${count}件の明細も削除されます。`)) return
                       setDeleteError(null)
                       setDeletingId(receipt.id)
                       try {
