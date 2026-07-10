@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
+import { MESSAGES } from '../config/messages'
 
 type Props = {
   receiptId: string
@@ -26,7 +27,7 @@ export function EditReceiptModal({ receiptId, initialDescription, initialDate, o
       await onUpdate(receiptId, { description: description.trim(), date })
       onClose()
     } catch (e) {
-      setError(e instanceof Error ? e.message : '更新に失敗しました')
+      setError(e instanceof Error ? e.message : MESSAGES.receipt.updateFailed)
     } finally {
       setSubmitting(false)
     }

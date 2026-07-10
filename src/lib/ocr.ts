@@ -1,6 +1,8 @@
 import { supabase } from './supabase'
 import type { Category } from './supabase'
 import { TAX_RATE, MEDIA_TYPE, MEDIA_TYPE_VALUES } from '../config/classifications'
+import { MESSAGES } from '../config/messages'
+import { SETTINGS } from '../config/settings'
 
 export type TaxRate = 8 | 10 | 0
 
@@ -28,8 +30,6 @@ type ReceiptData = {
   items: ReceiptItem[]
 }
 
-const MAX_CATEGORY_OPTIONS = 50
-
 // カテゴリー一覧を親→その子らの自然な順でフラット化し、Haiku 送信用の index 付きリストにする。
 // 親は label=name、子は label=`親名 > 子名`。件数は 50 件で打ち切る。
 export function buildCategoryOptions(categories: Category[]): { index: number; label: string; id: string }[] {
@@ -41,7 +41,7 @@ export function buildCategoryOptions(categories: Category[]): { index: number; l
       options.push({ label: `${parent.name} > ${child.name}`, id: child.id })
     }
   }
-  return options.slice(0, MAX_CATEGORY_OPTIONS).map((o, index) => ({ index, label: o.label, id: o.id }))
+  return options.slice(0, SETTINGS.maxCategoryOptions).map((o, index) => ({ index, label: o.label, id: o.id }))
 }
 
 // Haiku が返した index を options 上の id に解決する。整数かつ範囲内のときのみ id、それ以外は null。
@@ -61,7 +61,7 @@ export function toMediaType(rawType: string): AllowedMediaType {
   if (MEDIA_TYPE_VALUES.includes(rawType)) {
     return rawType as AllowedMediaType
   }
-  throw new Error(`サポートされていない画像形式です: ${rawType}`)
+  throw new Error(MESSAGES.ocr.unsupportedImageType(rawType))
 }
 
 export function applyTax(amount: number, taxRate: TaxRate): number {
@@ -79,15 +79,17 @@ export function resolveTaxRate(value: unknown): TaxRate {
   return value === TAX_RATE.REDUCED || value === TAX_RATE.STANDARD || value === TAX_RATE.INCLUSIVE ? value : TAX_RATE.REDUCED
 }
 
-export function isValidScanItem(item: ScanItem): boolean {
-  return item.selected && item.description.trim() !== '' && item.amount !== null && Number.isInteger(item.amount) && item.amount > 0
+export function hasValidAmount(amount: number | null): boolean {
+  return amount !== null && Number.isInteger(amount) && amount > 0
 }
 
-const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
+export function isValidScanItem(item: ScanItem): boolean {
+  return item.selected && item.description.trim() !== '' && hasValidAmount(item.amount)
+}
 
 export function fileToBase64(file: File): Promise<string> {
-  if (file.size > MAX_FILE_SIZE_BYTES) {
-    return Promise.reject(new Error('画像ファイルは5MB以下にしてください'))
+  if (file.size > SETTINGS.maxFileSizeBytes) {
+    return Promise.reject(new Error(MESSAGES.ocr.fileTooLarge(SETTINGS.maxFileSizeBytes / 1024 / 1024)))
   }
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -125,8 +127,8 @@ export async function extractReceiptData(imageFile: File, categories: Category[]
     body: { base64, mediaType, categories: sendList },
   })
 
-  if (error) throw new Error(error.message ?? 'OCR Edge Function の呼び出しに失敗しました')
-  if (data == null) throw new Error('OCR Edge Function のレスポンスが不正です')
+  if (error) throw new Error(error.message ?? MESSAGES.ocr.edgeCallFailed)
+  if (data == null) throw new Error(MESSAGES.ocr.edgeBadResponse)
 
   const rawItems: unknown[] = Array.isArray(data.items) ? data.items : []
   const items = rawItems

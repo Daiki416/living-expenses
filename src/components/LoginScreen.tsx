@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { MESSAGES } from '../config/messages'
 
 type View = 'login' | 'forgot' | 'sent' | 'reset'
 
@@ -58,7 +59,7 @@ export function LoginScreen({ isRecovery }: LoginScreenProps) {
     setError(null)
 
     if (password !== confirmPassword) {
-      setError('パスワードが一致しません')
+      setError(MESSAGES.auth.passwordMismatch)
       return
     }
 

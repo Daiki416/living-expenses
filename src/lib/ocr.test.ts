@@ -4,7 +4,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 // テストを環境変数・ネットワーク・Node の WebSocket 実装に依存させない
 vi.mock('./supabase', () => ({ supabase: { functions: { invoke: vi.fn() } } }))
 
-import { toTaxRate, resolveTaxRate, isValidScanItem, toMediaType, applyTax, fileToBase64, isReceiptItem, buildCategoryOptions, resolveCategoryIndex } from './ocr'
+import { toTaxRate, resolveTaxRate, isValidScanItem, hasValidAmount, toMediaType, applyTax, fileToBase64, isReceiptItem, buildCategoryOptions, resolveCategoryIndex } from './ocr'
 import type { ScanItem } from './ocr'
 import type { Category } from './supabase'
 
@@ -157,6 +157,25 @@ describe('isValidScanItem', () => {
   })
   it('amount が小数なら false', () => {
     expect(isValidScanItem({ ...base, amount: 1.5 })).toBe(false)
+  })
+})
+
+describe('hasValidAmount', () => {
+  it('正の整数は true', () => {
+    expect(hasValidAmount(200)).toBe(true)
+    expect(hasValidAmount(1)).toBe(true)
+  })
+  it('null は false', () => {
+    expect(hasValidAmount(null)).toBe(false)
+  })
+  it('0 は false', () => {
+    expect(hasValidAmount(0)).toBe(false)
+  })
+  it('負数は false', () => {
+    expect(hasValidAmount(-1)).toBe(false)
+  })
+  it('小数は false', () => {
+    expect(hasValidAmount(1.5)).toBe(false)
   })
 })
 

@@ -1,0 +1,31 @@
+export const MESSAGES = {
+  form: {
+    invalidAmount: '金額は1以上の整数で入力してください',
+    invalidDate: '日付を入力してください',
+    invalidDescription: '内容を入力してください',
+    invalidPaidBy: '支払者を選択してください',
+  },
+  auth: {
+    passwordMismatch: 'パスワードが一致しません',
+  },
+  ocr: {
+    unsupportedImageType: (rawType: string) => `サポートされていない画像形式です: ${rawType}`,
+    edgeCallFailed: 'OCR Edge Function の呼び出しに失敗しました',
+    edgeBadResponse: 'OCR Edge Function のレスポンスが不正です',
+    fileTooLarge: (mb: number) => `画像ファイルは${mb}MB以下にしてください`,
+  },
+  scan: {
+    noItemsSelected: '追加する項目を選択してください',
+    missingItemName: '品目名を入力してください',
+  },
+  receipt: {
+    updateFailed: '更新に失敗しました',
+  },
+  common: {
+    duplicateName: '同じ名前がすでに存在します',
+    genericError: 'エラーが発生しました。もう一度お試しください',
+  },
+  config: {
+    missingSupabaseEnv: 'VITE_SUPABASE_URL と VITE_SUPABASE_ANON_KEY を .env に設定してください',
+  },
+} as const

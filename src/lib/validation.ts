@@ -1,9 +1,6 @@
-export const FORM_ERROR_MESSAGES = {
-  invalidAmount: '金額は1以上の整数で入力してください',
-  invalidDate: '日付を入力してください',
-  invalidDescription: '内容を入力してください',
-  invalidPaidBy: '支払者を選択してください',
-} as const
+import { MESSAGES } from '../config/messages'
+
+export const FORM_ERROR_MESSAGES = MESSAGES.form
 
 /**
  * 文字列を正の整数にパースする。
@@ -21,9 +18,9 @@ export function parsePositiveInt(value: string): { validatedAmount: number } | n
  */
 export function toUserErrorMessage(err: unknown): string {
   if (err instanceof Error && err.message.includes('duplicate key')) {
-    return '同じ名前がすでに存在します'
+    return MESSAGES.common.duplicateName
   }
-  return 'エラーが発生しました。もう一度お試しください'
+  return MESSAGES.common.genericError
 }
 
 const STRICT_DATE_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/

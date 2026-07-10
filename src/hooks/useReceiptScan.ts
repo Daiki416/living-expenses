@@ -1,8 +1,9 @@
 import { useRef, useState, useMemo, useCallback } from 'react'
-import { extractReceiptData, isValidScanItem, applyTax, DEFAULT_SCAN_TAX_RATE, type ScanItem, type ScanResult, type TaxRate } from '../lib/ocr'
+import { extractReceiptData, isValidScanItem, hasValidAmount, applyTax, DEFAULT_SCAN_TAX_RATE, type ScanItem, type ScanResult, type TaxRate } from '../lib/ocr'
 import type { Category } from '../lib/supabase'
 import { sanitizeDate } from '../lib/validation'
 import { applyRulesToItems } from '../lib/categoryRules'
+import { MESSAGES } from '../config/messages'
 
 type OnAddGroupParent = {
   date: string
@@ -100,7 +101,10 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
 
   async function handleAddFromReceipt() {
     if (submitting) return
-    if (validItems.length === 0) { setError('追加する項目を選択してください'); return }
+    const checkedItems = scanResult.items.filter(item => item.selected)
+    if (checkedItems.length === 0) { setError(MESSAGES.scan.noItemsSelected); return }
+    if (checkedItems.some(item => item.description.trim() === '')) { setError(MESSAGES.scan.missingItemName); return }
+    if (checkedItems.some(item => !hasValidAmount(item.amount))) { setError(MESSAGES.form.invalidAmount); return }
     setSubmitting(true)
     setError(null)
     try {
@@ -145,7 +149,7 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
     setError(null)
   }
 
-  const validScanCount = validItems.length
+  const selectedScanCount = useMemo(() => scanResult.items.filter(item => item.selected).length, [scanResult])
 
   return {
     scanning,
@@ -167,7 +171,7 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
     applyCategoryToAll,
     handleAddFromReceipt,
     resetScan,
-    validScanCount,
+    selectedScanCount,
     registeredTotal,
   }
 }

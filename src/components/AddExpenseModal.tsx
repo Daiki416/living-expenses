@@ -43,7 +43,7 @@ export function AddExpenseModal({ kind, members, categories, defaultDate, rulesM
     scanParentCategoryId, scanChildCategoryId, fileInputRef,
     handleScanReceipt, handleScanStoreNameChange, handleScanDateChange,
     handleScanParentCategoryChange, handleScanChildCategoryChange,
-    updateScanItem, setItemCategory, addScanItem, applyCategoryToAll, handleAddFromReceipt, validScanCount, registeredTotal,
+    updateScanItem, setItemCategory, addScanItem, applyCategoryToAll, handleAddFromReceipt, selectedScanCount, registeredTotal,
   } = useReceiptScan({
     defaultDate,
     categories,
@@ -55,7 +55,7 @@ export function AddExpenseModal({ kind, members, categories, defaultDate, rulesM
     onClose,
   })
 
-  const addButtonLabel = submitting ? '追加中…' : `${validScanCount}件を追加`
+  const addButtonLabel = submitting ? '追加中…' : `${selectedScanCount}件を追加`
 
   return (
     <ModalShell onClose={onClose} className="max-h-[90dvh] flex flex-col">
