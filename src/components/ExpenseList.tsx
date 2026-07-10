@@ -3,6 +3,7 @@ import type { Expense, Category, ReceiptKind, ReceiptWithExpenses } from '../lib
 import { resolveCategoryLabel, splitDateChip } from '../lib/format'
 import { resolveCategoryColor } from '../lib/categoryColors'
 import { EXPENSE_KIND } from '../config/classifications'
+import { MESSAGES } from '../config/messages'
 
 type Props = {
   kind: ReceiptKind
@@ -113,7 +114,7 @@ export function ExpenseList({ kind, receipts, categories, onEdit, onDeleteReceip
                     type="button"
                     onClick={async (e) => {
                       e.stopPropagation()
-                      if (!window.confirm(`「${receipt.description || 'このレシート'}」を削除しますか？\nこの${count}件の明細も削除されます。`)) return
+                      if (!window.confirm(MESSAGES.receipt.deleteConfirm(receipt.description, count))) return
                       setDeleteError(null)
                       setDeletingId(receipt.id)
                       try {

@@ -20,6 +20,8 @@ export const MESSAGES = {
   },
   receipt: {
     updateFailed: '更新に失敗しました',
+    deleteConfirm: (name: string, count: number) =>
+      `「${name || 'このレシート'}」を削除しますか？\nこの${count}件の明細も削除されます。`,
   },
   common: {
     duplicateName: '同じ名前がすでに存在します',
