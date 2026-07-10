@@ -5,6 +5,7 @@ import { ModalShell } from './ModalShell'
 import { CategorySelect } from './CategorySelect'
 import { resolveInitialCategoryIds } from '../lib/format'
 import { parsePositiveInt, FORM_ERROR_MESSAGES } from '../lib/validation'
+import { EXPENSE_KIND } from '../config/classifications'
 
 type Props = {
   kind: ReceiptKind
@@ -32,7 +33,7 @@ export function EditExpenseModal({ kind, expense, members, categories, onUpdate,
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (kind === 'advance' && !paidBy) { setError(FORM_ERROR_MESSAGES.invalidPaidBy); return }
+    if (kind === EXPENSE_KIND.ADVANCE && !paidBy) { setError(FORM_ERROR_MESSAGES.invalidPaidBy); return }
     if (!description.trim()) { setError(FORM_ERROR_MESSAGES.invalidDescription); return }
     const result = parsePositiveInt(amount)
     if (!result) { setError(FORM_ERROR_MESSAGES.invalidAmount); return }
@@ -40,7 +41,7 @@ export function EditExpenseModal({ kind, expense, members, categories, onUpdate,
     setSubmitting(true)
     setError(null)
     try {
-      await onUpdate(expense.id, { paid_by: kind === 'advance' ? paidBy : null, description: description.trim(), amount: result.validatedAmount, category_id: effectiveCategoryId, receipt_id: expense.receipt_id })
+      await onUpdate(expense.id, { paid_by: kind === EXPENSE_KIND.ADVANCE ? paidBy : null, description: description.trim(), amount: result.validatedAmount, category_id: effectiveCategoryId, receipt_id: expense.receipt_id })
       // カテゴリーを訂正したら品名→カテゴリーを訂正メモリに反映する。
       if (effectiveCategoryId !== expense.category_id) {
         const desc = description.trim()
@@ -57,10 +58,10 @@ export function EditExpenseModal({ kind, expense, members, categories, onUpdate,
 
   return (
     <ModalShell onClose={onClose} className="overflow-hidden">
-      <h2 className="text-lg font-semibold text-ink mb-5">{kind === 'advance' ? '立替を編集' : 'クレカ明細を編集'}</h2>
+      <h2 className="text-lg font-semibold text-ink mb-5">{kind === EXPENSE_KIND.ADVANCE ? '立替を編集' : 'クレカ明細を編集'}</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {kind === 'advance' && (
+        {kind === EXPENSE_KIND.ADVANCE && (
           <div>
             <label className="block text-sm font-medium text-ink-2 mb-2">支払者</label>
             <div className="flex gap-4">

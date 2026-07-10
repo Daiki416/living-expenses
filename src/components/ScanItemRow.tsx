@@ -1,6 +1,7 @@
 import { memo, useMemo, useState } from 'react'
 import { toTaxRate, applyTax } from '../lib/ocr'
 import type { ScanItem } from '../lib/ocr'
+import { TAX_RATE_OPTIONS } from '../config/classifications'
 import type { Category } from '../lib/supabase'
 import { resolveCategoryColor } from '../lib/categoryColors'
 import { CategorySelect } from './CategorySelect'
@@ -103,9 +104,9 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
           disabled={!item.selected}
           className="appearance-none rounded-full bg-inset text-ink-2 text-xs px-2.5 py-0.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-60 shrink-0"
         >
-          <option value={8}>8%</option>
-          <option value={10}>10%</option>
-          <option value={0}>税込</option>
+          {TAX_RATE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
         </select>
         <button
           type="button"

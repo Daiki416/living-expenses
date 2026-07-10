@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Expense, Category, ReceiptKind, ReceiptWithExpenses } from '../lib/supabase'
 import { resolveCategoryLabel, splitDateChip } from '../lib/format'
 import { resolveCategoryColor } from '../lib/categoryColors'
+import { EXPENSE_KIND } from '../config/classifications'
 
 type Props = {
   kind: ReceiptKind
@@ -23,7 +24,7 @@ export function ExpenseList({ kind, receipts, categories, onEdit, onDeleteReceip
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
   if (receipts.length === 0) {
-    return kind === 'advance' ? (
+    return kind === EXPENSE_KIND.ADVANCE ? (
       <div className="text-center text-ink-4 py-12 text-sm">
         この月の立て替えはありません
       </div>

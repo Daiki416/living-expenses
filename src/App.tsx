@@ -16,6 +16,7 @@ import { MonthlyTrendView } from './components/MonthlyTrendView'
 import { HeaderActions } from './components/HeaderActions'
 import type { Expense } from './lib/supabase'
 import { applyTax } from './lib/ocr'
+import { EXPENSE_KIND, EXPENSE_KIND_LABEL } from './config/classifications'
 
 function todayYYYYMMDD() {
   const d = new Date()
@@ -66,11 +67,11 @@ function AppMain() {
   const { receipts, loading: expensesLoading, error: expensesError, addReceiptGroup, updateExpense, deleteReceipt, updateReceipt } = useReceipts(year, month)
   const { receipts: prevMonthReceipts, loading: prevMonthLoading } = useReceipts(prevYear, prevMonthNum)
 
-  const advanceReceipts = receipts.filter(r => r.kind === 'advance')
-  const cardReceipts = receipts.filter(r => r.kind === 'card')
+  const advanceReceipts = receipts.filter(r => r.kind === EXPENSE_KIND.ADVANCE)
+  const cardReceipts = receipts.filter(r => r.kind === EXPENSE_KIND.CARD)
   const expenses = advanceReceipts.flatMap(r => r.expenses)
   const cardExpenses = cardReceipts.flatMap(r => r.expenses)
-  const prevMonthExpenses = prevMonthReceipts.filter(r => r.kind === 'advance').flatMap(r => r.expenses)
+  const prevMonthExpenses = prevMonthReceipts.filter(r => r.kind === EXPENSE_KIND.ADVANCE).flatMap(r => r.expenses)
 
   const memberNames = members.map((m) => m.name)
 
@@ -163,7 +164,7 @@ function AppMain() {
                           return (
                             <li key={m.id} className="text-xs text-amber-700 dark:text-amber-200">
                               {m.name}: ¥{due.toLocaleString()}
-                              {m.monthly_budget - prev < 0 && <span className="ml-1 text-amber-500 dark:text-amber-300">（立替超過）</span>}
+                              {m.monthly_budget - prev < 0 && <span className="ml-1 text-amber-500 dark:text-amber-300">（{EXPENSE_KIND_LABEL.advance}超過）</span>}
                             </li>
                           )
                         })
@@ -202,7 +203,7 @@ function AppMain() {
         <div className="mt-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-2 uppercase tracking-wide">
-              <span className="w-1 h-4 rounded-full bg-indigo-500"></span>立替
+              <span className="w-1 h-4 rounded-full bg-indigo-500"></span>{EXPENSE_KIND_LABEL.advance}
             </h2>
             <button
               onClick={() => setShowAdd(true)}
@@ -231,7 +232,7 @@ function AppMain() {
               <div className="text-center text-red-400 py-8 text-sm">エラー: {expensesError}</div>
             ) : (
               <ExpenseList
-                kind="advance"
+                kind={EXPENSE_KIND.ADVANCE}
                 receipts={advanceReceipts}
                 categories={categories}
                 onEdit={setEditingExpense}
@@ -252,7 +253,7 @@ function AppMain() {
         <div className="mt-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-2 uppercase tracking-wide">
-              <span className="w-1 h-4 rounded-full bg-indigo-500"></span>クレカ
+              <span className="w-1 h-4 rounded-full bg-indigo-500"></span>{EXPENSE_KIND_LABEL.card}
             </h2>
             <button
               onClick={() => setShowAddCard(true)}
@@ -269,7 +270,7 @@ function AppMain() {
               <div className="text-center text-red-400 py-8 text-sm">エラー: {expensesError}</div>
             ) : (
               <ExpenseList
-                kind="card"
+                kind={EXPENSE_KIND.CARD}
                 receipts={cardReceipts}
                 categories={categories}
                 onEdit={setEditingExpense}
@@ -292,7 +293,7 @@ function AppMain() {
 
       {showAdd && (
         <AddExpenseModal
-          kind="advance"
+          kind={EXPENSE_KIND.ADVANCE}
           members={memberNames}
           categories={categories}
           defaultDate={todayYYYYMMDD()}
@@ -301,7 +302,7 @@ function AppMain() {
           onDeleteRule={deleteRule}
           onAddGroup={(parent, children) =>
             addReceiptGroup(
-              { date: parent.date, description: parent.description, kind: 'advance' },
+              { date: parent.date, description: parent.description, kind: EXPENSE_KIND.ADVANCE },
               children.map(c => ({
                 paid_by: parent.paidBy,
                 description: c.description,
@@ -316,7 +317,7 @@ function AppMain() {
 
       {showAddCard && (
         <AddExpenseModal
-          kind="card"
+          kind={EXPENSE_KIND.CARD}
           members={memberNames}
           categories={categories}
           defaultDate={todayYYYYMMDD()}
@@ -325,7 +326,7 @@ function AppMain() {
           onDeleteRule={deleteRule}
           onAddGroup={(parent, children) =>
             addReceiptGroup(
-              { date: parent.date, description: parent.description, kind: 'card' },
+              { date: parent.date, description: parent.description, kind: EXPENSE_KIND.CARD },
               children.map(c => ({
                 paid_by: parent.paidBy,
                 description: c.description,
@@ -340,7 +341,7 @@ function AppMain() {
 
       {editingExpense && (
         <EditExpenseModal
-          kind={receipts.find(r => r.id === editingExpense.receipt_id)?.kind ?? 'advance'}
+          kind={receipts.find(r => r.id === editingExpense.receipt_id)?.kind ?? EXPENSE_KIND.ADVANCE}
           expense={editingExpense}
           members={memberNames}
           categories={categories}

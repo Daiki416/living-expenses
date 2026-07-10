@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import type { Category } from './supabase'
+import { TAX_RATE, MEDIA_TYPE, MEDIA_TYPE_VALUES } from '../config/classifications'
 
 export type TaxRate = 8 | 10 | 0
 
@@ -51,13 +52,13 @@ export function resolveCategoryIndex(index: unknown, options: { id: string }[]):
   return null
 }
 
-export const DEFAULT_SCAN_TAX_RATE: TaxRate = 0
+export const DEFAULT_SCAN_TAX_RATE: TaxRate = TAX_RATE.INCLUSIVE
 
-const ALLOWED_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const
-type AllowedMediaType = typeof ALLOWED_MEDIA_TYPES[number]
+// 許可 MIME の実値は src/config の MEDIA_TYPE を単一源泉とする。型（union）・throw 挙動は不変。
+type AllowedMediaType = typeof MEDIA_TYPE[keyof typeof MEDIA_TYPE]
 
 export function toMediaType(rawType: string): AllowedMediaType {
-  if ((ALLOWED_MEDIA_TYPES as readonly string[]).includes(rawType)) {
+  if (MEDIA_TYPE_VALUES.includes(rawType)) {
     return rawType as AllowedMediaType
   }
   throw new Error(`サポートされていない画像形式です: ${rawType}`)
@@ -69,13 +70,13 @@ export function applyTax(amount: number, taxRate: TaxRate): number {
 }
 
 export function toTaxRate(rawValue: number): TaxRate {
-  if (rawValue === 8 || rawValue === 10 || rawValue === 0) return rawValue
-  return 8
+  if (rawValue === TAX_RATE.REDUCED || rawValue === TAX_RATE.STANDARD || rawValue === TAX_RATE.INCLUSIVE) return rawValue
+  return TAX_RATE.REDUCED
 }
 
 // OCR経路の unknown な taxRate を検証する。0|8|10 のみ採用し、それ以外は 8。
 export function resolveTaxRate(value: unknown): TaxRate {
-  return value === 8 || value === 10 || value === 0 ? value : 8
+  return value === TAX_RATE.REDUCED || value === TAX_RATE.STANDARD || value === TAX_RATE.INCLUSIVE ? value : TAX_RATE.REDUCED
 }
 
 export function isValidScanItem(item: ScanItem): boolean {
