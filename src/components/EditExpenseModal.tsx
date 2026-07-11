@@ -1,16 +1,13 @@
 import { useState } from 'react'
-import type { Expense, Category, ReceiptKind } from '../lib/supabase'
+import type { Expense, Category } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
 import { CategorySelect } from './CategorySelect'
 import { resolveInitialCategoryIds } from '../lib/format'
 import { parsePositiveInt, FORM_ERROR_MESSAGES } from '../lib/validation'
-import { EXPENSE_KIND } from '../config/classifications'
 
 type Props = {
-  kind: ReceiptKind
   expense: Expense
-  members: string[]
   categories: Category[]
   onUpdate: (id: string, input: Omit<Expense, 'id' | 'created_at'>) => Promise<void>
   onUpsertRule: (keyword: string, categoryId: string) => void
@@ -18,10 +15,9 @@ type Props = {
   onClose: () => void
 }
 
-export function EditExpenseModal({ kind, expense, members, categories, onUpdate, onUpsertRule, onDeleteRule, onClose }: Props) {
+export function EditExpenseModal({ expense, categories, onUpdate, onUpsertRule, onDeleteRule, onClose }: Props) {
   const { parentId, childId } = resolveInitialCategoryIds(categories, expense.category_id)
 
-  const [paidBy, setPaidBy] = useState(expense.paid_by ?? '')
   const [description, setDescription] = useState(expense.description)
   const [amount, setAmount] = useState(String(expense.amount))
   const [parentCategoryId, setParentCategoryId] = useState(parentId)
@@ -33,7 +29,6 @@ export function EditExpenseModal({ kind, expense, members, categories, onUpdate,
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (kind === EXPENSE_KIND.ADVANCE && !paidBy) { setError(FORM_ERROR_MESSAGES.invalidPaidBy); return }
     if (!description.trim()) { setError(FORM_ERROR_MESSAGES.invalidDescription); return }
     const result = parsePositiveInt(amount)
     if (!result) { setError(FORM_ERROR_MESSAGES.invalidAmount); return }
@@ -41,7 +36,7 @@ export function EditExpenseModal({ kind, expense, members, categories, onUpdate,
     setSubmitting(true)
     setError(null)
     try {
-      await onUpdate(expense.id, { paid_by: kind === EXPENSE_KIND.ADVANCE ? paidBy : null, description: description.trim(), amount: result.validatedAmount, category_id: effectiveCategoryId, receipt_id: expense.receipt_id })
+      await onUpdate(expense.id, { paid_by: expense.paid_by, description: description.trim(), amount: result.validatedAmount, category_id: effectiveCategoryId, receipt_id: expense.receipt_id })
       // カテゴリーを訂正したら品名→カテゴリーを訂正メモリに反映する。
       if (effectiveCategoryId !== expense.category_id) {
         const desc = description.trim()
@@ -58,30 +53,9 @@ export function EditExpenseModal({ kind, expense, members, categories, onUpdate,
 
   return (
     <ModalShell onClose={onClose} className="overflow-hidden">
-      <h2 className="text-lg font-semibold text-ink mb-5">{kind === EXPENSE_KIND.ADVANCE ? '立替を編集' : 'クレカ明細を編集'}</h2>
+      <h2 className="text-lg font-semibold text-ink mb-5">明細を編集</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {kind === EXPENSE_KIND.ADVANCE && (
-          <div>
-            <label className="block text-sm font-medium text-ink-2 mb-2">支払者</label>
-            <div className="flex gap-4">
-              {members.map((m) => (
-                <label key={m} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="paidBy"
-                    value={m}
-                    checked={paidBy === m}
-                    onChange={() => setPaidBy(m)}
-                    className="accent-indigo-500"
-                  />
-                  <span className="text-sm text-ink-2">{m}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div>
           <label className="block text-sm font-medium text-ink-2 mb-1">内容</label>
           <input

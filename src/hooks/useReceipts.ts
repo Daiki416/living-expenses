@@ -71,13 +71,28 @@ export function useReceipts(year: number, month: number) {
     setReceipts(prev => prev.filter(r => r.id !== receiptId))
   }
 
-  async function updateReceipt(id: string, input: { description: string; date: string }): Promise<void> {
-    const { error } = await supabase
+  async function updateReceipt(
+    id: string,
+    input: { description: string; date: string; kind: ReceiptKind; paidBy: string | null }
+  ): Promise<void> {
+    const { description, date, kind, paidBy } = input
+    const { error: receiptError } = await supabase
       .from('receipts')
-      .update(input)
+      .update({ description, date, kind })
       .eq('id', id)
-    if (error) throw new Error(error.message)
-    setReceipts(prev => prev.map(r => r.id !== id ? r : { ...r, ...input }))
+    if (receiptError) throw new Error(receiptError.message)
+    const { error: expensesError } = await supabase
+      .from('expenses')
+      .update({ paid_by: paidBy })
+      .eq('receipt_id', id)
+    if (expensesError) throw new Error(expensesError.message)
+    setReceipts(prev => prev.map(r => r.id !== id ? r : {
+      ...r,
+      description,
+      date,
+      kind,
+      expenses: r.expenses.map(e => ({ ...e, paid_by: paidBy })),
+    }))
   }
 
   return { receipts, expenses, loading, error, addReceiptGroup, updateExpense, deleteReceipt, updateReceipt }

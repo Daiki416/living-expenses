@@ -1,12 +1,11 @@
 import { useState } from 'react'
-import type { Expense, Category, ReceiptKind, ReceiptWithExpenses } from '../lib/supabase'
+import type { Expense, Category, ReceiptWithExpenses } from '../lib/supabase'
 import { resolveCategoryLabel, splitDateChip } from '../lib/format'
 import { resolveCategoryColor } from '../lib/categoryColors'
-import { EXPENSE_KIND } from '../config/classifications'
+import { EXPENSE_KIND, EXPENSE_KIND_LABEL } from '../config/classifications'
 import { MESSAGES } from '../config/messages'
 
 type Props = {
-  kind: ReceiptKind
   receipts: ReceiptWithExpenses[]
   categories: Category[]
   onEdit: (expense: Expense) => void
@@ -14,7 +13,7 @@ type Props = {
   onEditReceipt: (receiptId: string) => void
 }
 
-export function ExpenseList({ kind, receipts, categories, onEdit, onDeleteReceipt, onEditReceipt }: Props) {
+export function ExpenseList({ receipts, categories, onEdit, onDeleteReceipt, onEditReceipt }: Props) {
   const categoryName = (id: string | null) => {
     const label = resolveCategoryLabel(id, categories)
     return label ? label.replace(' > ', ' › ') : null
@@ -25,13 +24,9 @@ export function ExpenseList({ kind, receipts, categories, onEdit, onDeleteReceip
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
   if (receipts.length === 0) {
-    return kind === EXPENSE_KIND.ADVANCE ? (
+    return (
       <div className="text-center text-ink-4 py-12 text-sm">
-        この月の立て替えはありません
-      </div>
-    ) : (
-      <div className="text-center text-ink-4 py-8 text-sm">
-        この月のクレカ明細はありません
+        {MESSAGES.list.empty}
       </div>
     )
   }
@@ -91,7 +86,11 @@ export function ExpenseList({ kind, receipts, categories, onEdit, onDeleteReceip
                   >
                     <div className="font-semibold text-ink text-sm truncate">{receipt.description}</div>
                     <div className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-4">
-                      {paidBy && <span className="chip px-1.5 py-0.5 text-[11px] bg-inset">{paidBy}</span>}
+                      {receipt.kind === EXPENSE_KIND.CARD ? (
+                        <span className="chip px-1.5 py-0.5 text-[11px] bg-inset">{EXPENSE_KIND_LABEL.card}</span>
+                      ) : (
+                        paidBy && <span className="chip px-1.5 py-0.5 text-[11px] bg-inset">{paidBy}</span>
+                      )}
                       {metaLabel && <span>{metaLabel}</span>}
                     </div>
                   </button>

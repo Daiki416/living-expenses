@@ -14,8 +14,9 @@ import { ExpenseList } from './components/ExpenseList'
 import { CategorySummary } from './components/CategorySummary'
 import { MonthlyTrendView } from './components/MonthlyTrendView'
 import { HeaderActions } from './components/HeaderActions'
-import type { Expense } from './lib/supabase'
+import type { Expense, ReceiptKind } from './lib/supabase'
 import { applyTax } from './lib/ocr'
+import { deriveReceiptKind } from './lib/payment'
 import { EXPENSE_KIND, EXPENSE_KIND_LABEL } from './config/classifications'
 
 function todayYYYYMMDD() {
@@ -49,10 +50,9 @@ function AppMain() {
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [showTrend, setShowTrend] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
-  const [showAddCard, setShowAddCard] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
-  const [editingReceipt, setEditingReceipt] = useState<{ id: string; description: string; date: string } | null>(null)
+  const [editingReceipt, setEditingReceipt] = useState<{ id: string; description: string; date: string; kind: ReceiptKind; paidBy: string | null } | null>(null)
   const [reminderDismissed, setReminderDismissed] = useState(
     () => localStorage.getItem('reminderDismissedYM') === currentYM
   )
@@ -83,6 +83,7 @@ function AppMain() {
   expenses.forEach(e => { if (e.paid_by && e.paid_by in memberTotals) memberTotals[e.paid_by] += e.amount })
 
   const cardTotal = cardExpenses.reduce((s, e) => s + e.amount, 0)
+  const grandTotal = expenseTotal + cardTotal
 
   function prevMonth() {
     if (month === 1) { setYear(y => y - 1); setMonth(12) }
@@ -195,15 +196,16 @@ function AppMain() {
         <CategorySummary
           expenses={expenses}
           cardExpenses={cardExpenses}
+          memberTotals={memberTotals}
           categories={categories}
           loading={expensesLoading}
         />
 
-        {/* 立替セクション */}
+        {/* 支出セクション */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-2 uppercase tracking-wide">
-              <span className="w-1 h-4 rounded-full bg-indigo-500"></span>{EXPENSE_KIND_LABEL.advance}
+              <span className="w-1 h-4 rounded-full bg-indigo-500"></span>明細
             </h2>
             <button
               onClick={() => setShowAdd(true)}
@@ -213,18 +215,6 @@ function AppMain() {
             </button>
           </div>
 
-          {/* Per-member totals */}
-          {memberNames.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              {memberNames.map(name => (
-                <div key={name} className="bg-gradient-to-br from-indigo-50 to-indigo-100/70 border border-indigo-100 dark:from-indigo-500/10 dark:to-violet-500/10 dark:border-indigo-400/20 rounded-2xl px-4 py-3.5 text-center">
-                  <div className="text-xs text-indigo-500 dark:text-indigo-300 font-medium mb-1">{name}</div>
-                  <div className="text-2xl font-bold text-indigo-700 dark:text-indigo-200 tabular-nums tracking-tight">¥{memberTotals[name].toLocaleString()}</div>
-                </div>
-              ))}
-            </div>
-          )}
-
           <div className="card px-5 py-4">
             {expensesLoading ? (
               <div className="text-center text-ink-4 py-8 text-sm">読み込み中…</div>
@@ -232,58 +222,19 @@ function AppMain() {
               <div className="text-center text-red-400 py-8 text-sm">エラー: {expensesError}</div>
             ) : (
               <ExpenseList
-                kind={EXPENSE_KIND.ADVANCE}
-                receipts={advanceReceipts}
+                receipts={receipts}
                 categories={categories}
                 onEdit={setEditingExpense}
                 onDeleteReceipt={deleteReceipt}
                 onEditReceipt={receiptId => {
-                  const r = advanceReceipts.find(r => r.id === receiptId)
-                  if (r) setEditingReceipt({ id: r.id, description: r.description, date: r.date })
+                  const r = receipts.find(r => r.id === receiptId)
+                  if (r) setEditingReceipt({ id: r.id, description: r.description, date: r.date, kind: r.kind, paidBy: r.expenses[0]?.paid_by ?? null })
                 }}
               />
             )}
           </div>
-          {expensesLoading || expenseTotal === 0 ? null : (
-            <p className="text-xs text-ink-4 text-right mt-1 tabular-nums">合計 ¥{expenseTotal.toLocaleString()}</p>
-          )}
-        </div>
-
-        {/* クレカセクション */}
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-2 uppercase tracking-wide">
-              <span className="w-1 h-4 rounded-full bg-indigo-500"></span>{EXPENSE_KIND_LABEL.card}
-            </h2>
-            <button
-              onClick={() => setShowAddCard(true)}
-              className="btn-primary text-xs px-3 py-1.5 shadow-sm"
-            >
-              ＋ 追加
-            </button>
-          </div>
-
-          <div className="card px-5 py-4">
-            {expensesLoading ? (
-              <div className="text-center text-ink-4 py-8 text-sm">読み込み中…</div>
-            ) : expensesError ? (
-              <div className="text-center text-red-400 py-8 text-sm">エラー: {expensesError}</div>
-            ) : (
-              <ExpenseList
-                kind={EXPENSE_KIND.CARD}
-                receipts={cardReceipts}
-                categories={categories}
-                onEdit={setEditingExpense}
-                onDeleteReceipt={deleteReceipt}
-                onEditReceipt={receiptId => {
-                  const r = cardReceipts.find(r => r.id === receiptId)
-                  if (r) setEditingReceipt({ id: r.id, description: r.description, date: r.date })
-                }}
-              />
-            )}
-          </div>
-          {expensesLoading || cardTotal === 0 ? null : (
-            <p className="text-xs text-ink-4 text-right mt-1 tabular-nums">合計 ¥{cardTotal.toLocaleString()}</p>
+          {expensesLoading || grandTotal === 0 ? null : (
+            <p className="text-xs text-ink-4 text-right mt-1 tabular-nums">合計 ¥{grandTotal.toLocaleString()}</p>
           )}
             </div>
 
@@ -293,7 +244,6 @@ function AppMain() {
 
       {showAdd && (
         <AddExpenseModal
-          kind={EXPENSE_KIND.ADVANCE}
           members={memberNames}
           categories={categories}
           defaultDate={todayYYYYMMDD()}
@@ -302,7 +252,7 @@ function AppMain() {
           onDeleteRule={deleteRule}
           onAddGroup={(parent, children) =>
             addReceiptGroup(
-              { date: parent.date, description: parent.description, kind: EXPENSE_KIND.ADVANCE },
+              { date: parent.date, description: parent.description, kind: deriveReceiptKind(parent.paidBy) },
               children.map(c => ({
                 paid_by: parent.paidBy,
                 description: c.description,
@@ -315,35 +265,9 @@ function AppMain() {
         />
       )}
 
-      {showAddCard && (
-        <AddExpenseModal
-          kind={EXPENSE_KIND.CARD}
-          members={memberNames}
-          categories={categories}
-          defaultDate={todayYYYYMMDD()}
-          rulesMap={rulesMap}
-          onUpsertRule={upsertRule}
-          onDeleteRule={deleteRule}
-          onAddGroup={(parent, children) =>
-            addReceiptGroup(
-              { date: parent.date, description: parent.description, kind: EXPENSE_KIND.CARD },
-              children.map(c => ({
-                paid_by: parent.paidBy,
-                description: c.description,
-                amount: applyTax(c.amount, c.taxRate),
-                category_id: c.categoryId,
-              }))
-            )
-          }
-          onClose={() => setShowAddCard(false)}
-        />
-      )}
-
       {editingExpense && (
         <EditExpenseModal
-          kind={receipts.find(r => r.id === editingExpense.receipt_id)?.kind ?? EXPENSE_KIND.ADVANCE}
           expense={editingExpense}
-          members={memberNames}
           categories={categories}
           onUpdate={updateExpense}
           onUpsertRule={upsertRule}
@@ -357,6 +281,9 @@ function AppMain() {
           receiptId={editingReceipt.id}
           initialDescription={editingReceipt.description}
           initialDate={editingReceipt.date}
+          initialKind={editingReceipt.kind}
+          initialPaidBy={editingReceipt.paidBy}
+          members={memberNames}
           onUpdate={updateReceipt}
           onClose={() => setEditingReceipt(null)}
         />

@@ -18,6 +18,12 @@ export const MESSAGES = {
     noItemsSelected: '追加する項目を選択してください',
     missingItemName: '品目名を入力してください',
   },
+  list: {
+    empty: 'この月の支出はありません',
+  },
+  addExpense: {
+    title: '支出を追加',
+  },
   receipt: {
     updateFailed: '更新に失敗しました',
     deleteConfirm: (name: string, count: number) =>

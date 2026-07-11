@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import type { Expense, Category } from '../lib/supabase'
 import { parentCategoryColor, childCategoryColor, generalCategoryColor } from '../lib/categoryColors'
+import { EXPENSE_KIND_LABEL } from '../config/classifications'
 
 type Props = {
   expenses: Expense[]
   cardExpenses: Expense[]
+  memberTotals: Record<string, number>
   categories: Category[]
   loading?: boolean
 }
@@ -19,7 +21,7 @@ function getEffectiveParentId(categoryId: string | null, categories: Category[])
   return cat.parent_id ?? cat.id
 }
 
-export function CategorySummary({ expenses, cardExpenses, categories, loading }: Props) {
+export function CategorySummary({ expenses, cardExpenses, memberTotals, categories, loading }: Props) {
   const [view, setView] = useState<'table' | 'chart'>('table')
   const [chartMode, setChartMode] = useState<'parent' | 'child'>('parent')
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
@@ -129,9 +131,17 @@ export function CategorySummary({ expenses, cardExpenses, categories, loading }:
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CARD_BAR_COLOR }} />
-                  クレカ ¥{cardTotal.toLocaleString()}
+                  {EXPENSE_KIND_LABEL.card} ¥{cardTotal.toLocaleString()}
                 </span>
               </div>
+              {Object.entries(memberTotals).some(([, v]) => v > 0) && (
+                <div className="mt-1 text-xs text-ink-4 tabular-nums">
+                  {Object.entries(memberTotals)
+                    .filter(([, v]) => v > 0)
+                    .map(([name, v]) => `${name} ${EXPENSE_KIND_LABEL.advance}¥${v.toLocaleString()}`)
+                    .join(' / ')}
+                </div>
+              )}
             </div>
           </div>
           <div className="mt-2">

@@ -1,19 +1,26 @@
 import { useState } from 'react'
+import type { ReceiptKind } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
 import { MESSAGES } from '../config/messages'
+import { EXPENSE_KIND_LABEL } from '../config/classifications'
+import { deriveReceiptKind } from '../lib/payment'
 
 type Props = {
   receiptId: string
   initialDescription: string
   initialDate: string
-  onUpdate: (id: string, input: { description: string; date: string }) => Promise<void>
+  initialKind: ReceiptKind
+  initialPaidBy: string | null
+  members: string[]
+  onUpdate: (id: string, input: { description: string; date: string; kind: ReceiptKind; paidBy: string | null }) => Promise<void>
   onClose: () => void
 }
 
-export function EditReceiptModal({ receiptId, initialDescription, initialDate, onUpdate, onClose }: Props) {
+export function EditReceiptModal({ receiptId, initialDescription, initialDate, initialKind, initialPaidBy, members, onUpdate, onClose }: Props) {
   const [description, setDescription] = useState(initialDescription)
   const [date, setDate] = useState(initialDate)
+  const [paidBy, setPaidBy] = useState<string | null>(initialKind === 'advance' ? initialPaidBy : null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -24,7 +31,7 @@ export function EditReceiptModal({ receiptId, initialDescription, initialDate, o
     setSubmitting(true)
     setError(null)
     try {
-      await onUpdate(receiptId, { description: description.trim(), date })
+      await onUpdate(receiptId, { description: description.trim(), date, kind: deriveReceiptKind(paidBy), paidBy })
       onClose()
     } catch (e) {
       setError(e instanceof Error ? e.message : MESSAGES.receipt.updateFailed)
@@ -56,6 +63,47 @@ export function EditReceiptModal({ receiptId, initialDescription, initialDate, o
             onChange={e => setDescription(e.target.value)}
             className="field-input"
           />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-ink-2 mb-2">支払い手段</label>
+          <div className="flex flex-wrap gap-2">
+            <label
+              className={`px-4 py-1.5 rounded-full text-sm font-medium border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-indigo-400 ${
+                paidBy === null
+                  ? 'bg-indigo-500 border-indigo-500 text-white'
+                  : 'border-line-strong text-ink-2 hover:bg-inset'
+              }`}
+            >
+              <input
+                type="radio"
+                name="editReceiptPaidBy"
+                checked={paidBy === null}
+                onChange={() => setPaidBy(null)}
+                className="sr-only"
+              />
+              {EXPENSE_KIND_LABEL.card}
+            </label>
+            {members.map((m) => (
+              <label
+                key={m}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-indigo-400 ${
+                  paidBy === m
+                    ? 'bg-indigo-500 border-indigo-500 text-white'
+                    : 'border-line-strong text-ink-2 hover:bg-inset'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="editReceiptPaidBy"
+                  value={m}
+                  checked={paidBy === m}
+                  onChange={() => setPaidBy(m)}
+                  className="sr-only"
+                />
+                {m}
+              </label>
+            ))}
+          </div>
         </div>
         {error && <p className="text-red-500 text-sm">{error}</p>}
       </div>

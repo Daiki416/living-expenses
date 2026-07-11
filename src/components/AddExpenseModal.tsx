@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import type { Category, ReceiptKind } from '../lib/supabase'
+import type { Category } from '../lib/supabase'
 import type { TaxRate } from '../lib/ocr'
-import { EXPENSE_KIND } from '../config/classifications'
+import { EXPENSE_KIND_LABEL } from '../config/classifications'
+import { MESSAGES } from '../config/messages'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { useReceiptScan } from '../hooks/useReceiptScan'
 import { ModalShell } from './ModalShell'
@@ -22,7 +23,6 @@ type OnAddGroupChild = {
 }
 
 type Props = {
-  kind: ReceiptKind
   members: string[]
   categories: Category[]
   defaultDate: string
@@ -33,8 +33,8 @@ type Props = {
   onClose: () => void
 }
 
-export function AddExpenseModal({ kind, members, categories, defaultDate, rulesMap, onUpsertRule, onDeleteRule, onAddGroup, onClose }: Props) {
-  const [paidBy, setPaidBy] = useState(members[0] ?? '')
+export function AddExpenseModal({ members, categories, defaultDate, rulesMap, onUpsertRule, onDeleteRule, onAddGroup, onClose }: Props) {
+  const [paidBy, setPaidBy] = useState<string | null>(null)
 
   useEscapeKey(onClose)
 
@@ -51,7 +51,7 @@ export function AddExpenseModal({ kind, members, categories, defaultDate, rulesM
     onUpsertRule,
     onDeleteRule,
     onAddGroup: (parent, children) =>
-      onAddGroup({ ...parent, paidBy: kind === EXPENSE_KIND.ADVANCE ? paidBy : null }, children),
+      onAddGroup({ ...parent, paidBy }, children),
     onClose,
   })
 
@@ -60,7 +60,7 @@ export function AddExpenseModal({ kind, members, categories, defaultDate, rulesM
   return (
     <ModalShell onClose={onClose} className="max-h-[90dvh] flex flex-col">
       <div className="shrink-0">
-        <h2 className="text-lg font-semibold text-ink mb-5">{kind === EXPENSE_KIND.ADVANCE ? '立て替え追加' : 'クレカ明細追加'}</h2>
+        <h2 className="text-lg font-semibold text-ink mb-5">{MESSAGES.addExpense.title}</h2>
 
         <input
           ref={fileInputRef}
@@ -97,33 +97,47 @@ export function AddExpenseModal({ kind, members, categories, defaultDate, rulesM
           </div>
         </div>
 
-        {kind === EXPENSE_KIND.ADVANCE && (
-          <div>
-            <label className="block text-sm font-medium text-ink-2 mb-2">支払者</label>
-            <div className="flex flex-wrap gap-2">
-              {members.map((m) => (
-                <label
-                  key={m}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-indigo-400 ${
-                    paidBy === m
-                      ? 'bg-indigo-500 border-indigo-500 text-white'
-                      : 'border-line-strong text-ink-2 hover:bg-inset'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="paidBy"
-                    value={m}
-                    checked={paidBy === m}
-                    onChange={() => setPaidBy(m)}
-                    className="sr-only"
-                  />
-                  {m}
-                </label>
-              ))}
-            </div>
+        <div>
+          <label className="block text-sm font-medium text-ink-2 mb-2">支払い手段</label>
+          <div className="flex flex-wrap gap-2">
+            <label
+              className={`px-4 py-1.5 rounded-full text-sm font-medium border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-indigo-400 ${
+                paidBy === null
+                  ? 'bg-indigo-500 border-indigo-500 text-white'
+                  : 'border-line-strong text-ink-2 hover:bg-inset'
+              }`}
+            >
+              <input
+                type="radio"
+                name="paidBy"
+                checked={paidBy === null}
+                onChange={() => setPaidBy(null)}
+                className="sr-only"
+              />
+              {EXPENSE_KIND_LABEL.card}
+            </label>
+            {members.map((m) => (
+              <label
+                key={m}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-indigo-400 ${
+                  paidBy === m
+                    ? 'bg-indigo-500 border-indigo-500 text-white'
+                    : 'border-line-strong text-ink-2 hover:bg-inset'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="paidBy"
+                  value={m}
+                  checked={paidBy === m}
+                  onChange={() => setPaidBy(m)}
+                  className="sr-only"
+                />
+                {m}
+              </label>
+            ))}
           </div>
-        )}
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-ink-2 mb-1">カテゴリー（全明細に適用）</label>
