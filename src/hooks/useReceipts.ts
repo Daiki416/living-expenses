@@ -37,22 +37,14 @@ export function useReceipts(year: number, month: number) {
     receipt: { date: string; description: string; kind: ReceiptKind },
     items: Array<Omit<Expense, 'id' | 'created_at' | 'receipt_id'>>
   ): Promise<void> {
-    const { data: receiptData, error: receiptError } = await supabase
-      .from('receipts')
-      .insert(receipt)
-      .select()
-      .single()
-    if (receiptError) throw new Error(receiptError.message)
-    let insertedItems: Expense[] = []
-    if (items.length > 0) {
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('expenses')
-        .insert(items.map(item => ({ ...item, receipt_id: receiptData.id })))
-        .select()
-      if (itemsError) throw new Error(itemsError.message)
-      insertedItems = itemsData ?? []
-    }
-    const newReceipt: ReceiptWithExpenses = { ...receiptData, expenses: insertedItems }
+    const { data, error } = await supabase.rpc('add_receipt_group', {
+      p_date: receipt.date,
+      p_description: receipt.description,
+      p_kind: receipt.kind,
+      p_items: items,
+    })
+    if (error) throw new Error(error.message)
+    const newReceipt = data as ReceiptWithExpenses
     setReceipts(prev => [newReceipt, ...prev])
   }
 
@@ -76,16 +68,14 @@ export function useReceipts(year: number, month: number) {
     input: { description: string; date: string; kind: ReceiptKind; paidBy: string | null }
   ): Promise<void> {
     const { description, date, kind, paidBy } = input
-    const { error: receiptError } = await supabase
-      .from('receipts')
-      .update({ description, date, kind })
-      .eq('id', id)
-    if (receiptError) throw new Error(receiptError.message)
-    const { error: expensesError } = await supabase
-      .from('expenses')
-      .update({ paid_by: paidBy })
-      .eq('receipt_id', id)
-    if (expensesError) throw new Error(expensesError.message)
+    const { error } = await supabase.rpc('update_receipt_with_paid_by', {
+      p_id: id,
+      p_description: description,
+      p_date: date,
+      p_kind: kind,
+      p_paid_by: paidBy,
+    })
+    if (error) throw new Error(error.message)
     setReceipts(prev => prev.map(r => r.id !== id ? r : {
       ...r,
       description,
