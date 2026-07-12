@@ -83,7 +83,7 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
             }}
             placeholder="金額"
             disabled={!item.selected}
-            className={`[field-sizing:content] min-w-[3.5rem] max-w-[9rem] bg-transparent text-right text-base font-bold tabular-nums px-0.5 py-1 border-b focus:outline-none placeholder:font-normal placeholder:text-sm placeholder:text-ink-4 ${
+            className={`[field-sizing:content] min-w-[3.5rem] max-w-[12rem] bg-transparent text-right text-base font-bold tabular-nums px-0.5 py-1 border-b focus:outline-none placeholder:font-normal placeholder:text-sm placeholder:text-ink-4 ${
               amountInvalid
                 ? 'text-red-600 border-red-400 focus:border-red-500'
                 : 'text-ink border-transparent focus:border-indigo-400'

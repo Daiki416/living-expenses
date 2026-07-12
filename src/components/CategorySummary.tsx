@@ -124,15 +124,21 @@ export function CategorySummary({ expenses, cardExpenses, memberTotals, categori
                 <div style={{ width: `${(expenseTotal / grandTotal) * 100}%`, backgroundColor: EXPENSE_BAR_COLOR }} />
                 <div style={{ width: `${(cardTotal / grandTotal) * 100}%`, backgroundColor: CARD_BAR_COLOR }} />
               </div>
-              <div className="mt-1 flex items-center gap-3 text-sm text-ink-2 tabular-nums">
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: EXPENSE_BAR_COLOR }} />
-                  立替 <span className="font-medium">¥{expenseTotal.toLocaleString()}</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CARD_BAR_COLOR }} />
-                  {EXPENSE_KIND_LABEL.card} <span className="font-medium">¥{cardTotal.toLocaleString()}</span>
-                </span>
+              <div className="mt-2 space-y-1 text-sm text-ink-2 tabular-nums">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: EXPENSE_BAR_COLOR }} />
+                    立替
+                  </span>
+                  <span className="font-medium">¥{expenseTotal.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: CARD_BAR_COLOR }} />
+                    {EXPENSE_KIND_LABEL.card}
+                  </span>
+                  <span className="font-medium">¥{cardTotal.toLocaleString()}</span>
+                </div>
               </div>
               {Object.entries(memberTotals).some(([, v]) => v > 0) && (
                 <div className="mt-2 pt-2 border-t border-line space-y-1 text-sm text-ink-3 tabular-nums">
