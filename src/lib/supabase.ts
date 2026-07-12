@@ -12,7 +12,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export type Expense = {
   id: string
-  paid_by: string | null
   description: string
   amount: number
   category_id: string | null
@@ -42,6 +41,7 @@ export type Receipt = {
   date: string
   description: string
   kind: ReceiptKind
+  paid_by_member_id: string | null
   created_at: string
 }
 

@@ -34,13 +34,14 @@ export function useReceipts(year: number, month: number) {
   const expenses = receipts.flatMap(r => r.expenses)
 
   async function addReceiptGroup(
-    receipt: { date: string; description: string; kind: ReceiptKind },
+    receipt: { date: string; description: string; kind: ReceiptKind; paidByMemberId: string | null },
     items: Array<Omit<Expense, 'id' | 'created_at' | 'receipt_id'>>
   ): Promise<void> {
     const { data, error } = await supabase.rpc('add_receipt_group', {
       p_date: receipt.date,
       p_description: receipt.description,
       p_kind: receipt.kind,
+      p_paid_by_member_id: receipt.paidByMemberId,
       p_items: items,
     })
     if (error) throw new Error(error.message)
@@ -65,23 +66,18 @@ export function useReceipts(year: number, month: number) {
 
   async function updateReceipt(
     id: string,
-    input: { description: string; date: string; kind: ReceiptKind; paidBy: string | null }
+    input: { description: string; date: string; kind: ReceiptKind; paidByMemberId: string | null }
   ): Promise<void> {
-    const { description, date, kind, paidBy } = input
-    const { error } = await supabase.rpc('update_receipt_with_paid_by', {
-      p_id: id,
-      p_description: description,
-      p_date: date,
-      p_kind: kind,
-      p_paid_by: paidBy,
-    })
+    const { description, date, kind, paidByMemberId } = input
+    const { error } = await supabase.from('receipts')
+      .update({ description, date, kind, paid_by_member_id: paidByMemberId }).eq('id', id)
     if (error) throw new Error(error.message)
     setReceipts(prev => prev.map(r => r.id !== id ? r : {
       ...r,
       description,
       date,
       kind,
-      expenses: r.expenses.map(e => ({ ...e, paid_by: paidBy })),
+      paid_by_member_id: paidByMemberId,
     }))
   }
 

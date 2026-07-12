@@ -37,8 +37,10 @@ supabase/
 ## 主要な仕様
 
 ### 支出の種類
-- **立替**: メンバーが立て替えた支出。`paid_by` フィールドで誰が払ったかを記録
-- **クレカ**: クレジットカードの支出。`paid_by` なし
+- 支払い手段はレシート単位（`receipts`）で持つ。`kind`（`'advance'` 立替 / `'card'` クレカ）と、立替者を指す `paid_by_member_id`（`members(id)` への FK）で表す。
+- **立替**: メンバーが立て替えた支出。`kind='advance'` かつ `paid_by_member_id` に立替メンバーの ID を記録
+- **クレカ**: クレジットカードの支出。`kind='card'` かつ `paid_by_member_id` は NULL
+- `kind` と `paid_by_member_id` の連動（card⟺NULL / advance⟺非NULL）は DB の CHECK 制約で強制する。立替者は名前でなく ID で保持し、表示時に `members` で ID→名前を解決する（明細 `expenses` は支払い手段を持たない）。
 
 ### カテゴリー
 - 親カテゴリー → 子カテゴリーの2階層構造

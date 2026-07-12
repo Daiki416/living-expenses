@@ -36,7 +36,7 @@ export function EditExpenseModal({ expense, categories, onUpdate, onUpsertRule, 
     setSubmitting(true)
     setError(null)
     try {
-      await onUpdate(expense.id, { paid_by: expense.paid_by, description: description.trim(), amount: result.validatedAmount, category_id: effectiveCategoryId, receipt_id: expense.receipt_id })
+      await onUpdate(expense.id, { description: description.trim(), amount: result.validatedAmount, category_id: effectiveCategoryId, receipt_id: expense.receipt_id })
       // カテゴリーを訂正したら品名→カテゴリーを訂正メモリに反映する。
       if (effectiveCategoryId !== expense.category_id) {
         const desc = description.trim()

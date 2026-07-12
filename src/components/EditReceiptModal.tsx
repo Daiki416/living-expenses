@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { ReceiptKind } from '../lib/supabase'
+import type { Member, ReceiptKind } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
 import { MESSAGES } from '../config/messages'
@@ -11,16 +11,16 @@ type Props = {
   initialDescription: string
   initialDate: string
   initialKind: ReceiptKind
-  initialPaidBy: string | null
-  members: string[]
-  onUpdate: (id: string, input: { description: string; date: string; kind: ReceiptKind; paidBy: string | null }) => Promise<void>
+  initialPaidByMemberId: string | null
+  members: Member[]
+  onUpdate: (id: string, input: { description: string; date: string; kind: ReceiptKind; paidByMemberId: string | null }) => Promise<void>
   onClose: () => void
 }
 
-export function EditReceiptModal({ receiptId, initialDescription, initialDate, initialKind, initialPaidBy, members, onUpdate, onClose }: Props) {
+export function EditReceiptModal({ receiptId, initialDescription, initialDate, initialKind, initialPaidByMemberId, members, onUpdate, onClose }: Props) {
   const [description, setDescription] = useState(initialDescription)
   const [date, setDate] = useState(initialDate)
-  const [paidBy, setPaidBy] = useState<string | null>(initialKind === 'advance' ? initialPaidBy : null)
+  const [paidByMemberId, setPaidByMemberId] = useState<string | null>(initialKind === 'advance' ? initialPaidByMemberId : null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -31,7 +31,7 @@ export function EditReceiptModal({ receiptId, initialDescription, initialDate, i
     setSubmitting(true)
     setError(null)
     try {
-      await onUpdate(receiptId, { description: description.trim(), date, kind: deriveReceiptKind(paidBy), paidBy })
+      await onUpdate(receiptId, { description: description.trim(), date, kind: deriveReceiptKind(paidByMemberId), paidByMemberId })
       onClose()
     } catch (e) {
       setError(e instanceof Error ? e.message : MESSAGES.receipt.updateFailed)
@@ -69,7 +69,7 @@ export function EditReceiptModal({ receiptId, initialDescription, initialDate, i
           <div className="flex flex-wrap gap-2">
             <label
               className={`px-4 py-1.5 rounded-full text-sm font-medium border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-indigo-400 ${
-                paidBy === null
+                paidByMemberId === null
                   ? 'bg-indigo-500 border-indigo-500 text-white'
                   : 'border-line-strong text-ink-2 hover:bg-inset'
               }`}
@@ -77,17 +77,17 @@ export function EditReceiptModal({ receiptId, initialDescription, initialDate, i
               <input
                 type="radio"
                 name="editReceiptPaidBy"
-                checked={paidBy === null}
-                onChange={() => setPaidBy(null)}
+                checked={paidByMemberId === null}
+                onChange={() => setPaidByMemberId(null)}
                 className="sr-only"
               />
               {EXPENSE_KIND_LABEL.card}
             </label>
             {members.map((m) => (
               <label
-                key={m}
+                key={m.id}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-indigo-400 ${
-                  paidBy === m
+                  paidByMemberId === m.id
                     ? 'bg-indigo-500 border-indigo-500 text-white'
                     : 'border-line-strong text-ink-2 hover:bg-inset'
                 }`}
@@ -95,12 +95,12 @@ export function EditReceiptModal({ receiptId, initialDescription, initialDate, i
                 <input
                   type="radio"
                   name="editReceiptPaidBy"
-                  value={m}
-                  checked={paidBy === m}
-                  onChange={() => setPaidBy(m)}
+                  value={m.id}
+                  checked={paidByMemberId === m.id}
+                  onChange={() => setPaidByMemberId(m.id)}
                   className="sr-only"
                 />
-                {m}
+                {m.name}
               </label>
             ))}
           </div>

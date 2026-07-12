@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Category } from '../lib/supabase'
+import type { Category, Member } from '../lib/supabase'
 import type { TaxRate } from '../lib/ocr'
 import { EXPENSE_KIND_LABEL } from '../config/classifications'
 import { MESSAGES } from '../config/messages'
@@ -12,7 +12,7 @@ import { ScanItemRow } from './ScanItemRow'
 type OnAddGroupParent = {
   date: string
   description: string
-  paidBy: string | null
+  paidByMemberId: string | null
 }
 
 type OnAddGroupChild = {
@@ -23,7 +23,7 @@ type OnAddGroupChild = {
 }
 
 type Props = {
-  members: string[]
+  members: Member[]
   categories: Category[]
   defaultDate: string
   rulesMap: ReadonlyMap<string, string>
@@ -34,7 +34,7 @@ type Props = {
 }
 
 export function AddExpenseModal({ members, categories, defaultDate, rulesMap, onUpsertRule, onDeleteRule, onAddGroup, onClose }: Props) {
-  const [paidBy, setPaidBy] = useState<string | null>(null)
+  const [paidByMemberId, setPaidByMemberId] = useState<string | null>(null)
 
   useEscapeKey(onClose)
 
@@ -51,7 +51,7 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
     onUpsertRule,
     onDeleteRule,
     onAddGroup: (parent, children) =>
-      onAddGroup({ ...parent, paidBy }, children),
+      onAddGroup({ ...parent, paidByMemberId }, children),
     onClose,
   })
 
@@ -102,7 +102,7 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
           <div className="flex flex-wrap gap-2">
             <label
               className={`px-4 py-1.5 rounded-full text-sm font-medium border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-indigo-400 ${
-                paidBy === null
+                paidByMemberId === null
                   ? 'bg-indigo-500 border-indigo-500 text-white'
                   : 'border-line-strong text-ink-2 hover:bg-inset'
               }`}
@@ -110,17 +110,17 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
               <input
                 type="radio"
                 name="paidBy"
-                checked={paidBy === null}
-                onChange={() => setPaidBy(null)}
+                checked={paidByMemberId === null}
+                onChange={() => setPaidByMemberId(null)}
                 className="sr-only"
               />
               {EXPENSE_KIND_LABEL.card}
             </label>
             {members.map((m) => (
               <label
-                key={m}
+                key={m.id}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-indigo-400 ${
-                  paidBy === m
+                  paidByMemberId === m.id
                     ? 'bg-indigo-500 border-indigo-500 text-white'
                     : 'border-line-strong text-ink-2 hover:bg-inset'
                 }`}
@@ -128,12 +128,12 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
                 <input
                   type="radio"
                   name="paidBy"
-                  value={m}
-                  checked={paidBy === m}
-                  onChange={() => setPaidBy(m)}
+                  value={m.id}
+                  checked={paidByMemberId === m.id}
+                  onChange={() => setPaidByMemberId(m.id)}
                   className="sr-only"
                 />
-                {m}
+                {m.name}
               </label>
             ))}
           </div>

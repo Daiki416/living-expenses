@@ -8,12 +8,13 @@ import { MESSAGES } from '../config/messages'
 type Props = {
   receipts: ReceiptWithExpenses[]
   categories: Category[]
+  memberNameById: ReadonlyMap<string, string>
   onEdit: (expense: Expense) => void
   onDeleteReceipt: (receiptId: string) => Promise<void>
   onEditReceipt: (receiptId: string) => void
 }
 
-export function ExpenseList({ receipts, categories, onEdit, onDeleteReceipt, onEditReceipt }: Props) {
+export function ExpenseList({ receipts, categories, memberNameById, onEdit, onDeleteReceipt, onEditReceipt }: Props) {
   const categoryName = (id: string | null) => {
     const label = resolveCategoryLabel(id, categories)
     return label ? label.replace(' > ', ' › ') : null
@@ -61,7 +62,7 @@ export function ExpenseList({ receipts, categories, onEdit, onDeleteReceipt, onE
         <div>
           {sorted.map((receipt) => {
             const total = receipt.expenses.reduce((s, e) => s + e.amount, 0)
-            const paidBy = receipt.expenses[0]?.paid_by ?? ''
+            const paidBy = receipt.paid_by_member_id ? memberNameById.get(receipt.paid_by_member_id) ?? '' : ''
             const isExpanded = expandedIds.has(receipt.id)
             const { month, day } = splitDateChip(receipt.date)
             const count = receipt.expenses.length

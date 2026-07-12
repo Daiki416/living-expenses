@@ -52,7 +52,7 @@ function AppMain() {
   const [showAdd, setShowAdd] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
-  const [editingReceipt, setEditingReceipt] = useState<{ id: string; description: string; date: string; kind: ReceiptKind; paidBy: string | null } | null>(null)
+  const [editingReceipt, setEditingReceipt] = useState<{ id: string; description: string; date: string; kind: ReceiptKind; paidByMemberId: string | null } | null>(null)
   const [reminderDismissed, setReminderDismissed] = useState(
     () => localStorage.getItem('reminderDismissedYM') === currentYM
   )
@@ -71,16 +71,26 @@ function AppMain() {
   const cardReceipts = receipts.filter(r => r.kind === EXPENSE_KIND.CARD)
   const expenses = advanceReceipts.flatMap(r => r.expenses)
   const cardExpenses = cardReceipts.flatMap(r => r.expenses)
-  const prevMonthExpenses = prevMonthReceipts.filter(r => r.kind === EXPENSE_KIND.ADVANCE).flatMap(r => r.expenses)
 
   const memberNames = members.map((m) => m.name)
+  const memberNameById = new Map(members.map(m => [m.id, m.name]))
 
   const prevMonthMemberTotals: Record<string, number> = {}
-  prevMonthExpenses.forEach(e => { if (e.paid_by) prevMonthMemberTotals[e.paid_by] = (prevMonthMemberTotals[e.paid_by] ?? 0) + e.amount })
+  prevMonthReceipts.filter(r => r.kind === EXPENSE_KIND.ADVANCE).forEach(r => {
+    const name = r.paid_by_member_id ? memberNameById.get(r.paid_by_member_id) : undefined
+    if (!name) return
+    const sum = r.expenses.reduce((s, e) => s + e.amount, 0)
+    prevMonthMemberTotals[name] = (prevMonthMemberTotals[name] ?? 0) + sum
+  })
 
   const expenseTotal = expenses.reduce((s, e) => s + e.amount, 0)
   const memberTotals: Record<string, number> = Object.fromEntries(memberNames.map(n => [n, 0]))
-  expenses.forEach(e => { if (e.paid_by && e.paid_by in memberTotals) memberTotals[e.paid_by] += e.amount })
+  advanceReceipts.forEach(r => {
+    const name = r.paid_by_member_id ? memberNameById.get(r.paid_by_member_id) : undefined
+    if (name && name in memberTotals) {
+      memberTotals[name] += r.expenses.reduce((s, e) => s + e.amount, 0)
+    }
+  })
 
   const cardTotal = cardExpenses.reduce((s, e) => s + e.amount, 0)
   const grandTotal = expenseTotal + cardTotal
@@ -224,11 +234,12 @@ function AppMain() {
               <ExpenseList
                 receipts={receipts}
                 categories={categories}
+                memberNameById={memberNameById}
                 onEdit={setEditingExpense}
                 onDeleteReceipt={deleteReceipt}
                 onEditReceipt={receiptId => {
                   const r = receipts.find(r => r.id === receiptId)
-                  if (r) setEditingReceipt({ id: r.id, description: r.description, date: r.date, kind: r.kind, paidBy: r.expenses[0]?.paid_by ?? null })
+                  if (r) setEditingReceipt({ id: r.id, description: r.description, date: r.date, kind: r.kind, paidByMemberId: r.paid_by_member_id })
                 }}
               />
             )}
@@ -244,7 +255,7 @@ function AppMain() {
 
       {showAdd && (
         <AddExpenseModal
-          members={memberNames}
+          members={members}
           categories={categories}
           defaultDate={todayYYYYMMDD()}
           rulesMap={rulesMap}
@@ -252,9 +263,8 @@ function AppMain() {
           onDeleteRule={deleteRule}
           onAddGroup={(parent, children) =>
             addReceiptGroup(
-              { date: parent.date, description: parent.description, kind: deriveReceiptKind(parent.paidBy) },
+              { date: parent.date, description: parent.description, kind: deriveReceiptKind(parent.paidByMemberId), paidByMemberId: parent.paidByMemberId },
               children.map(c => ({
-                paid_by: parent.paidBy,
                 description: c.description,
                 amount: applyTax(c.amount, c.taxRate),
                 category_id: c.categoryId,
@@ -282,8 +292,8 @@ function AppMain() {
           initialDescription={editingReceipt.description}
           initialDate={editingReceipt.date}
           initialKind={editingReceipt.kind}
-          initialPaidBy={editingReceipt.paidBy}
-          members={memberNames}
+          initialPaidByMemberId={editingReceipt.paidByMemberId}
+          members={members}
           onUpdate={updateReceipt}
           onClose={() => setEditingReceipt(null)}
         />
