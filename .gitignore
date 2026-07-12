@@ -28,3 +28,7 @@ dist-ssr
 
 # Supabase CLI temp
 supabase/.temp/
+
+# DB backup dumps (全データを含むため絶対にコミットしない。migration とは別物)
+/data_backup_*.sql
+/schema_backup_*.sql
