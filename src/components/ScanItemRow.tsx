@@ -12,6 +12,8 @@ type Props = {
   categories: Category[]
   onUpdate: (index: number, patch: Partial<ScanItem>) => void
   onSetCategory: (index: number, categoryId: string | null) => void
+  categoryLocked?: boolean
+  lockedCategoryId?: string | null
 }
 
 // categoryId から表示ラベル（子名、無ければ親名）を算出する。未分類は null を返す。
@@ -22,9 +24,14 @@ function resolveCategoryLabel(categoryId: string | null, categories: Category[])
   return category.name
 }
 
-export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, onUpdate, onSetCategory }: Props) {
+export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, onUpdate, onSetCategory, categoryLocked = false, lockedCategoryId = null }: Props) {
   const amountInvalid = item.selected && item.amount !== null && item.amount <= 0
   const [pickerOpen, setPickerOpen] = useState(false)
+
+  // 共通モード時は共通カテゴリー値を表示・使用し、個別モードでは明細の個別値を使う。
+  const displayCategoryId = categoryLocked ? lockedCategoryId : item.categoryId
+  // カテゴリー操作をロックするか（disabled かつピッカー非表示）。
+  const categoryDisabled = !item.selected || categoryLocked
 
   // categoryId から CategorySelect 用の parent/child 選択状態を導出する。
   const { parentCategoryId, childCategoryId } = useMemo(() => {
@@ -36,13 +43,13 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
   }, [item.categoryId, categories])
 
   const categoryLabel = useMemo(
-    () => resolveCategoryLabel(item.categoryId, categories),
-    [item.categoryId, categories]
+    () => resolveCategoryLabel(displayCategoryId, categories),
+    [displayCategoryId, categories]
   )
 
   const categoryColor = useMemo(
-    () => resolveCategoryColor(item.categoryId, categories),
-    [item.categoryId, categories]
+    () => resolveCategoryColor(displayCategoryId, categories),
+    [displayCategoryId, categories]
   )
 
   function handleParentChange(parentId: string, firstChildId: string) {
@@ -111,8 +118,10 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
         <button
           type="button"
           onClick={() => setPickerOpen(o => !o)}
-          disabled={!item.selected}
+          disabled={categoryDisabled}
           className={`inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-0.5 text-xs disabled:opacity-60 ${
+            categoryLocked ? 'opacity-50' : ''
+          } ${
             categoryLabel ? 'text-ink-2' : 'text-ink-4'
           }`}
         >
@@ -126,7 +135,7 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
         )}
       </div>
 
-      {pickerOpen && (
+      {pickerOpen && !categoryLocked && (
         <div className={`pl-6 ${item.selected ? '' : 'opacity-50'}`}>
           <div className="space-y-2">
             <CategorySelect

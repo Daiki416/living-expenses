@@ -3,6 +3,7 @@ import { extractReceiptData, isValidScanItem, hasValidAmount, applyTax, DEFAULT_
 import type { Category } from '../lib/supabase'
 import { sanitizeDate } from '../lib/validation'
 import { applyRulesToItems } from '../lib/categoryRules'
+import { resolveCommonCategoryId, resolveScanItemCategoryId } from '../lib/scanCategory'
 import { MESSAGES } from '../config/messages'
 
 type OnAddGroupParent = {
@@ -37,7 +38,11 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
   const [scanStoreName, setScanStoreName] = useState('')
   const [scanParentCategoryId, setScanParentCategoryId] = useState('')
   const [scanChildCategoryId, setScanChildCategoryId] = useState('')
+  const [applyCommonCategory, setApplyCommonCategory] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 共通カテゴリー（子優先）の解決値。共通モードON時に全明細へ適用する。
+  const commonCategoryId = resolveCommonCategoryId(scanParentCategoryId, scanChildCategoryId)
 
   // 削除済みカテゴリーの stale なルールを弾くための有効カテゴリーID集合。
   const validCategoryIds = useMemo(() => new Set(categories.map(c => c.id)), [categories])
@@ -80,15 +85,6 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
     setScanResult(prev => ({ ...prev, items: [...prev.items, { ...EMPTY_SCAN_ITEM }] }))
   }
 
-  // グループのカテゴリー（子優先）を全明細の categoryId に一括上書きする。一括適用は学習しない。
-  const applyCategoryToAll = useCallback(() => {
-    const categoryId = scanChildCategoryId || scanParentCategoryId || null
-    setScanResult(prev => ({
-      ...prev,
-      items: prev.items.map(item => ({ ...item, categoryId, categoryTouched: false })),
-    }))
-  }, [scanChildCategoryId, scanParentCategoryId])
-
   const validItems = useMemo(
     () => scanResult.items.filter(isValidScanItem),
     [scanResult]
@@ -110,13 +106,15 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
     try {
       await onAddGroup(
         { date: scanResult.date, description: scanStoreName || 'レシート' },
-        validItems.map(item => ({ description: item.description, amount: item.amount!, taxRate: item.taxRate, categoryId: item.categoryId }))
+        validItems.map(item => ({ description: item.description, amount: item.amount!, taxRate: item.taxRate, categoryId: resolveScanItemCategoryId(applyCommonCategory, commonCategoryId, item.categoryId) }))
       )
-      // ユーザーが個別に手で選んだ明細のみ、登録確定後に訂正メモリへ学習する（fire-and-forget）。
-      for (const item of validItems) {
-        if (!item.categoryTouched) continue
-        if (item.categoryId) onUpsertRule(item.description, item.categoryId)
-        else onDeleteRule(item.description)
+      // 一括適用（共通モード）は学習しない。OFF時のみ、ユーザーが個別に手で選んだ明細を訂正メモリへ学習する（fire-and-forget）。
+      if (!applyCommonCategory) {
+        for (const item of validItems) {
+          if (!item.categoryTouched) continue
+          if (item.categoryId) onUpsertRule(item.description, item.categoryId)
+          else onDeleteRule(item.description)
+        }
       }
       onClose()
     } catch (err) {
@@ -159,6 +157,9 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
     scanStoreName,
     scanParentCategoryId,
     scanChildCategoryId,
+    applyCommonCategory,
+    setApplyCommonCategory,
+    commonCategoryId,
     fileInputRef,
     handleScanReceipt,
     handleScanStoreNameChange,
@@ -168,7 +169,6 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
     updateScanItem,
     setItemCategory,
     addScanItem,
-    applyCategoryToAll,
     handleAddFromReceipt,
     resetScan,
     selectedScanCount,

@@ -40,10 +40,11 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
 
   const {
     scanning, submitting, error, scanResult, scanStoreName,
-    scanParentCategoryId, scanChildCategoryId, fileInputRef,
+    scanParentCategoryId, scanChildCategoryId,
+    applyCommonCategory, setApplyCommonCategory, commonCategoryId, fileInputRef,
     handleScanReceipt, handleScanStoreNameChange, handleScanDateChange,
     handleScanParentCategoryChange, handleScanChildCategoryChange,
-    updateScanItem, setItemCategory, addScanItem, applyCategoryToAll, handleAddFromReceipt, selectedScanCount, registeredTotal,
+    updateScanItem, setItemCategory, addScanItem, handleAddFromReceipt, selectedScanCount, registeredTotal,
   } = useReceiptScan({
     defaultDate,
     categories,
@@ -140,21 +141,26 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink-2 mb-1">カテゴリー（全明細に適用）</label>
-          <CategorySelect
-            categories={categories}
-            parentCategoryId={scanParentCategoryId}
-            childCategoryId={scanChildCategoryId}
-            onParentChange={handleScanParentCategoryChange}
-            onChildChange={handleScanChildCategoryChange}
-          />
-          <button
-            type="button"
-            onClick={applyCategoryToAll}
-            className="w-full mt-2 border border-dashed border-line-strong text-ink-3 rounded-lg py-1.5 text-sm hover:bg-inset transition-colors"
-          >
-            全明細に適用
-          </button>
+          <label className="flex items-center gap-2 text-sm font-medium text-ink-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={applyCommonCategory}
+              onChange={(e) => setApplyCommonCategory(e.target.checked)}
+              className="accent-indigo-500"
+            />
+            全明細に共通のカテゴリーを適用
+          </label>
+          {applyCommonCategory && (
+            <div className="mt-2">
+              <CategorySelect
+                categories={categories}
+                parentCategoryId={scanParentCategoryId}
+                childCategoryId={scanChildCategoryId}
+                onParentChange={handleScanParentCategoryChange}
+                onChildChange={handleScanChildCategoryChange}
+              />
+            </div>
+          )}
         </div>
 
         <div>
@@ -172,7 +178,7 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
           <label className="block text-sm font-medium text-ink-2 mb-1">明細</label>
           <div className="space-y-2.5">
             {scanResult.items.map((item, i) => (
-              <ScanItemRow key={i} item={item} index={i} categories={categories} onUpdate={updateScanItem} onSetCategory={setItemCategory} />
+              <ScanItemRow key={i} item={item} index={i} categories={categories} onUpdate={updateScanItem} onSetCategory={setItemCategory} categoryLocked={applyCommonCategory} lockedCategoryId={commonCategoryId} />
             ))}
           </div>
           <button
