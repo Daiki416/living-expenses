@@ -124,22 +124,26 @@ export function CategorySummary({ expenses, cardExpenses, memberTotals, categori
                 <div style={{ width: `${(expenseTotal / grandTotal) * 100}%`, backgroundColor: EXPENSE_BAR_COLOR }} />
                 <div style={{ width: `${(cardTotal / grandTotal) * 100}%`, backgroundColor: CARD_BAR_COLOR }} />
               </div>
-              <div className="mt-1 flex items-center gap-3 text-xs text-ink-4 tabular-nums">
+              <div className="mt-1 flex items-center gap-3 text-sm text-ink-2 tabular-nums">
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: EXPENSE_BAR_COLOR }} />
-                  立替 ¥{expenseTotal.toLocaleString()}
+                  立替 <span className="font-medium">¥{expenseTotal.toLocaleString()}</span>
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CARD_BAR_COLOR }} />
-                  {EXPENSE_KIND_LABEL.card} ¥{cardTotal.toLocaleString()}
+                  {EXPENSE_KIND_LABEL.card} <span className="font-medium">¥{cardTotal.toLocaleString()}</span>
                 </span>
               </div>
               {Object.entries(memberTotals).some(([, v]) => v > 0) && (
-                <div className="mt-1 text-xs text-ink-4 tabular-nums">
+                <div className="mt-2 pt-2 border-t border-line space-y-1 text-sm text-ink-3 tabular-nums">
                   {Object.entries(memberTotals)
                     .filter(([, v]) => v > 0)
-                    .map(([name, v]) => `${name} ${EXPENSE_KIND_LABEL.advance}¥${v.toLocaleString()}`)
-                    .join(' / ')}
+                    .map(([name, v]) => (
+                      <div key={name} className="flex items-center justify-between gap-2">
+                        <span>{name} {EXPENSE_KIND_LABEL.advance}</span>
+                        <span className="font-medium text-ink-2">¥{v.toLocaleString()}</span>
+                      </div>
+                    ))}
                 </div>
               )}
             </div>

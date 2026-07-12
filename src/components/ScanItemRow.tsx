@@ -4,7 +4,7 @@ import type { ScanItem } from '../lib/ocr'
 import { TAX_RATE_OPTIONS } from '../config/classifications'
 import type { Category } from '../lib/supabase'
 import { resolveCategoryColor } from '../lib/categoryColors'
-import { CategorySelect } from './CategorySelect'
+import { ModalShell } from './ModalShell'
 
 type Props = {
   item: ScanItem
@@ -33,15 +33,6 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
   // カテゴリー操作をロックするか（disabled かつピッカー非表示）。
   const categoryDisabled = !item.selected || categoryLocked
 
-  // categoryId から CategorySelect 用の parent/child 選択状態を導出する。
-  const { parentCategoryId, childCategoryId } = useMemo(() => {
-    if (!item.categoryId) return { parentCategoryId: '', childCategoryId: '' }
-    const category = categories.find(c => c.id === item.categoryId)
-    if (!category) return { parentCategoryId: '', childCategoryId: '' }
-    if (category.parent_id === null) return { parentCategoryId: category.id, childCategoryId: '' }
-    return { parentCategoryId: category.parent_id, childCategoryId: category.id }
-  }, [item.categoryId, categories])
-
   const categoryLabel = useMemo(
     () => resolveCategoryLabel(displayCategoryId, categories),
     [displayCategoryId, categories]
@@ -52,12 +43,9 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
     [displayCategoryId, categories]
   )
 
-  function handleParentChange(parentId: string, firstChildId: string) {
-    onSetCategory(index, firstChildId || parentId || null)
-  }
-
-  function handleChildChange(childId: string) {
-    onSetCategory(index, childId || parentCategoryId || null)
+  function selectCategory(categoryId: string | null) {
+    onSetCategory(index, categoryId)
+    setPickerOpen(false)
   }
 
   const showTaxedAmount =
@@ -95,7 +83,7 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
             }}
             placeholder="金額"
             disabled={!item.selected}
-            className={`[field-sizing:content] min-w-[2.5rem] max-w-[7rem] bg-transparent text-right text-base font-bold tabular-nums px-0.5 py-1 border-b focus:outline-none placeholder:font-normal placeholder:text-sm placeholder:text-ink-4 ${
+            className={`[field-sizing:content] min-w-[3.5rem] max-w-[9rem] bg-transparent text-right text-base font-bold tabular-nums px-0.5 py-1 border-b focus:outline-none placeholder:font-normal placeholder:text-sm placeholder:text-ink-4 ${
               amountInvalid
                 ? 'text-red-600 border-red-400 focus:border-red-500'
                 : 'text-ink border-transparent focus:border-indigo-400'
@@ -117,7 +105,7 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
         </select>
         <button
           type="button"
-          onClick={() => setPickerOpen(o => !o)}
+          onClick={() => setPickerOpen(true)}
           disabled={categoryDisabled}
           className={`inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-0.5 text-xs disabled:opacity-60 ${
             categoryLocked ? 'opacity-50' : ''
@@ -136,17 +124,58 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
       </div>
 
       {pickerOpen && !categoryLocked && (
-        <div className={`pl-6 ${item.selected ? '' : 'opacity-50'}`}>
-          <div className="space-y-2">
-            <CategorySelect
-              categories={categories}
-              parentCategoryId={parentCategoryId}
-              childCategoryId={childCategoryId}
-              onParentChange={handleParentChange}
-              onChildChange={handleChildChange}
-            />
+        <ModalShell onClose={() => setPickerOpen(false)}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-ink-2">カテゴリーを選択</h3>
+            <button
+              type="button"
+              onClick={() => setPickerOpen(false)}
+              className="text-ink-4 text-lg leading-none px-1"
+              aria-label="閉じる"
+            >
+              ×
+            </button>
           </div>
-        </div>
+          <div className="max-h-[60vh] overflow-y-auto -mx-2 px-2">
+            <button
+              type="button"
+              onClick={() => selectCategory(null)}
+              className={`w-full flex items-center gap-2 rounded-lg px-2 py-2 text-left text-sm ${
+                displayCategoryId ? 'text-ink-2' : 'bg-inset font-medium text-ink'
+              }`}
+            >
+              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: '#d1d5db' }} />
+              未分類
+            </button>
+            {categories.filter(c => c.parent_id === null).map(parent => (
+              <div key={parent.id}>
+                <button
+                  type="button"
+                  onClick={() => selectCategory(parent.id)}
+                  className={`w-full flex items-center gap-2 rounded-lg px-2 py-2 text-left text-sm ${
+                    displayCategoryId === parent.id ? 'bg-inset font-medium text-ink' : 'text-ink-2'
+                  }`}
+                >
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: resolveCategoryColor(parent.id, categories) ?? '#d1d5db' }} />
+                  {parent.name}
+                </button>
+                {categories.filter(c => c.parent_id === parent.id).map(child => (
+                  <button
+                    key={child.id}
+                    type="button"
+                    onClick={() => selectCategory(child.id)}
+                    className={`w-full flex items-center gap-2 rounded-lg pl-7 pr-2 py-2 text-left text-sm ${
+                      displayCategoryId === child.id ? 'bg-inset font-medium text-ink' : 'text-ink-3'
+                    }`}
+                  >
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: resolveCategoryColor(child.id, categories) ?? '#d1d5db' }} />
+                    {child.name}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        </ModalShell>
       )}
     </div>
   )
