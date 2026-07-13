@@ -3,7 +3,8 @@ import { extractReceiptData, isValidScanItem, hasValidAmount, applyTax, DEFAULT_
 import type { Category } from '../lib/supabase'
 import { sanitizeDate } from '../lib/validation'
 import { applyRulesToItems } from '../lib/categoryRules'
-import { resolveCommonCategoryId, resolveScanItemCategoryId } from '../lib/scanCategory'
+import { resolveScanItemCategoryId } from '../lib/scanCategory'
+import { leafCategoryIds } from '../lib/categoryTree'
 import { MESSAGES } from '../config/messages'
 
 type OnAddGroupParent = {
@@ -36,16 +37,12 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
   const [error, setError] = useState<string | null>(null)
   const [scanResult, setScanResult] = useState<ScanResult>({ date: defaultDate, items: [{ ...EMPTY_SCAN_ITEM }] })
   const [scanStoreName, setScanStoreName] = useState('')
-  const [scanParentCategoryId, setScanParentCategoryId] = useState('')
-  const [scanChildCategoryId, setScanChildCategoryId] = useState('')
+  const [commonCategoryId, setCommonCategoryId] = useState<string | null>(null)
   const [applyCommonCategory, setApplyCommonCategory] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // 共通カテゴリー（子優先）の解決値。共通モードON時に全明細へ適用する。
-  const commonCategoryId = resolveCommonCategoryId(scanParentCategoryId, scanChildCategoryId)
-
-  // 削除済みカテゴリーの stale なルールを弾くための有効カテゴリーID集合。
-  const validCategoryIds = useMemo(() => new Set(categories.map(c => c.id)), [categories])
+  // 訂正メモリの上書きは有効な葉IDのみに限定する（削除済み・親どまりルールを弾く）。
+  const validLeafCategoryIds = useMemo(() => leafCategoryIds(categories), [categories])
 
   async function handleScanReceipt(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -59,8 +56,8 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
       const items = data.items.map(item => ({ ...item, selected: true, taxRate: item.taxRate, categoryId: item.categoryId, categoryTouched: false }))
       setScanResult({
         date: sanitizeDate(data.date, defaultDate),
-        // 訂正メモリを Haiku 判定より優先して確定オーバーライドする。
-        items: applyRulesToItems(items, rulesMap, validCategoryIds),
+        // 訂正メモリを Haiku 判定より優先して確定オーバーライドする（有効な葉IDのみ）。
+        items: applyRulesToItems(items, rulesMap, validLeafCategoryIds),
       })
     } catch (err) {
       setError((err as Error).message)
@@ -132,15 +129,6 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
     setScanResult(prev => ({ ...prev, date }))
   }
 
-  function handleScanParentCategoryChange(parentId: string, firstChildId: string) {
-    setScanParentCategoryId(parentId)
-    setScanChildCategoryId(firstChildId)
-  }
-
-  function handleScanChildCategoryChange(childId: string) {
-    setScanChildCategoryId(childId)
-  }
-
   function resetScan() {
     setScanResult({ date: defaultDate, items: [{ ...EMPTY_SCAN_ITEM }] })
     setScanStoreName('')
@@ -155,17 +143,14 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
     error,
     scanResult,
     scanStoreName,
-    scanParentCategoryId,
-    scanChildCategoryId,
     applyCommonCategory,
     setApplyCommonCategory,
     commonCategoryId,
+    setCommonCategoryId,
     fileInputRef,
     handleScanReceipt,
     handleScanStoreNameChange,
     handleScanDateChange,
-    handleScanParentCategoryChange,
-    handleScanChildCategoryChange,
     updateScanItem,
     setItemCategory,
     addScanItem,

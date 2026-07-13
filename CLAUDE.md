@@ -43,9 +43,10 @@ supabase/
 - `kind` と `paid_by_member_id` の連動（card⟺NULL / advance⟺非NULL）は DB の CHECK 制約で強制する。立替者は名前でなく ID で保持し、表示時に `members` で ID→名前を解決する（明細 `expenses` は支払い手段を持たない）。
 
 ### カテゴリー
-- 親カテゴリー → 子カテゴリーの2階層構造
-- `category_id` は子カテゴリーまたは親カテゴリーを直接指定
-- `effectiveCategoryId = childCategoryId || parentCategoryId || null` で解決
+- 大分類（親）→ 小分類（子）の2階層構造。**親は必ず子を持つ**モデル（子ゼロの親を作らない）
+- 選択・保存できるのは**葉（小分類）**または未分類(null)のみ。`category_id` には葉IDか null が入る（親IDを直接は入れない。旧データの childless親は「葉」として救済扱い）
+- 親＋最初の子の作成は RPC `create_category_with_first_child` で原子的に行う。子削除の結果その親が子ゼロになる場合は RPC `delete_category` がサーバ側の現在状態で親も削除する
+- 葉判定は `isLeafCategory` / `leafCategoryIds`（`src/lib/categoryTree.ts`）で行う
 
 ### 税率
 - 軽減税率対応: 8% / 10% / 税込（0%）の3値
@@ -59,7 +60,7 @@ supabase/
 5. 「N件を追加」で一括登録
 
 ### カテゴリー学習（訂正メモリ）
-- 登録確定した明細のうちユーザーが個別に手で選んだカテゴリーのみ、および支出編集での訂正を `category_rules`（品名→カテゴリー）に学習する。次回スキャンで品名一致（正規化後）時に Haiku 判定より優先して上書きする（削除済みカテゴリーIDは無視）。
+- 登録確定した明細のうちユーザーが個別に手で選んだカテゴリーのみ、および支出編集での訂正を `category_rules`（品名→カテゴリー）に学習する。次回スキャンで品名一致（正規化後）時に Haiku 判定より優先して上書きする。学習・上書き・OCR候補はいずれも**葉（小分類）のみ**を対象とし、削除済み・親どまりのIDは無視する。
 
 ---
 

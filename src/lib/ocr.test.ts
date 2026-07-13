@@ -61,7 +61,7 @@ describe('resolveTaxRate', () => {
 })
 
 describe('buildCategoryOptions', () => {
-  it('親のみの場合は label が親名になる', () => {
+  it('childless親（子を持たない親）は葉として親名 label で出力される', () => {
     const categories = [
       makeCategory({ id: 'p1', name: '食費', parent_id: null }),
       makeCategory({ id: 'p2', name: '日用品', parent_id: null }),
@@ -72,7 +72,7 @@ describe('buildCategoryOptions', () => {
     ])
   })
 
-  it('親子混在の場合、子は「親 > 子」で親の直後に並ぶ', () => {
+  it('子を持つ親は落とし、葉（子）のみを「親 > 子」で親グループ順に並べる', () => {
     const categories = [
       makeCategory({ id: 'p1', name: '食費', parent_id: null }),
       makeCategory({ id: 'c1', name: '食料品', parent_id: 'p1' }),
@@ -80,10 +80,9 @@ describe('buildCategoryOptions', () => {
       makeCategory({ id: 'p2', name: '日用品', parent_id: null }),
     ]
     expect(buildCategoryOptions(categories)).toEqual([
-      { index: 0, label: '食費', id: 'p1' },
-      { index: 1, label: '食費 > 食料品', id: 'c1' },
-      { index: 2, label: '食費 > 外食', id: 'c2' },
-      { index: 3, label: '日用品', id: 'p2' },
+      { index: 0, label: '食費 > 食料品', id: 'c1' },
+      { index: 1, label: '食費 > 外食', id: 'c2' },
+      { index: 2, label: '日用品', id: 'p2' },
     ])
   })
 

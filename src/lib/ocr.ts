@@ -31,13 +31,21 @@ type ReceiptData = {
 }
 
 // カテゴリー一覧を親→その子らの自然な順でフラット化し、Haiku 送信用の index 付きリストにする。
-// 親は label=name、子は label=`親名 > 子名`。件数は 50 件で打ち切る。
+// 出力は「葉（子を持たないカテゴリー）」のみ。子は label=`親名 > 子名`、
+// childless親（旧データ・子を持たない親）は葉として label=name で残す。
+// 親グループ順・子順は崩さず、子を持つ親の単体行だけを落とす（Edge Function と同順・同長を保つ）。
+// 件数は 50 件で打ち切る。
 export function buildCategoryOptions(categories: Category[]): { index: number; label: string; id: string }[] {
   const parents = categories.filter(c => c.parent_id === null)
   const options: { label: string; id: string }[] = []
   for (const parent of parents) {
-    options.push({ label: parent.name, id: parent.id })
-    for (const child of categories.filter(c => c.parent_id === parent.id)) {
+    const children = categories.filter(c => c.parent_id === parent.id)
+    if (children.length === 0) {
+      // childless親は葉として救済（親名 label）。
+      options.push({ label: parent.name, id: parent.id })
+      continue
+    }
+    for (const child of children) {
       options.push({ label: `${parent.name} > ${child.name}`, id: child.id })
     }
   }

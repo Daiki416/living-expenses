@@ -2,8 +2,10 @@ import { useState } from 'react'
 import type { Expense, Category } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
-import { CategorySelect } from './CategorySelect'
-import { resolveInitialCategoryIds } from '../lib/format'
+import { CategoryPicker } from './CategoryPicker'
+import { resolveCategoryLabel } from '../lib/format'
+import { resolveCategoryColor } from '../lib/categoryColors'
+import { isLeafCategory } from '../lib/categoryTree'
 import { parsePositiveInt, FORM_ERROR_MESSAGES } from '../lib/validation'
 
 type Props = {
@@ -16,12 +18,13 @@ type Props = {
 }
 
 export function EditExpenseModal({ expense, categories, onUpdate, onUpsertRule, onDeleteRule, onClose }: Props) {
-  const { parentId, childId } = resolveInitialCategoryIds(categories, expense.category_id)
-
   const [description, setDescription] = useState(expense.description)
   const [amount, setAmount] = useState(String(expense.amount))
-  const [parentCategoryId, setParentCategoryId] = useState(parentId)
-  const [childCategoryId, setChildCategoryId] = useState(childId)
+  // 葉（小分類 or childless親）のみ選択可のため、非葉IDで保存された旧データは未分類に寄せる。
+  const [categoryId, setCategoryId] = useState<string | null>(
+    expense.category_id && isLeafCategory(expense.category_id, categories) ? expense.category_id : null
+  )
+  const [pickerOpen, setPickerOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -32,7 +35,7 @@ export function EditExpenseModal({ expense, categories, onUpdate, onUpsertRule, 
     if (!description.trim()) { setError(FORM_ERROR_MESSAGES.invalidDescription); return }
     const result = parsePositiveInt(amount)
     if (!result) { setError(FORM_ERROR_MESSAGES.invalidAmount); return }
-    const effectiveCategoryId = childCategoryId || parentCategoryId || null
+    const effectiveCategoryId = categoryId
     setSubmitting(true)
     setError(null)
     try {
@@ -82,13 +85,24 @@ export function EditExpenseModal({ expense, categories, onUpdate, onUpsertRule, 
 
         <div>
           <label className="block text-sm font-medium text-ink-2 mb-1">カテゴリー</label>
-          <CategorySelect
-            categories={categories}
-            parentCategoryId={parentCategoryId}
-            childCategoryId={childCategoryId}
-            onParentChange={(parentId, firstChildId) => { setParentCategoryId(parentId); setChildCategoryId(firstChildId) }}
-            onChildChange={setChildCategoryId}
-          />
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className={`inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-sm ${
+              resolveCategoryLabel(categoryId, categories) ? 'text-ink-2' : 'text-ink-4'
+            }`}
+          >
+            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: resolveCategoryColor(categoryId, categories) ?? '#d1d5db' }} />
+            {resolveCategoryLabel(categoryId, categories) || '未分類'}
+          </button>
+          {pickerOpen && (
+            <CategoryPicker
+              categories={categories}
+              selectedId={categoryId}
+              onSelect={(id) => { setCategoryId(id); setPickerOpen(false) }}
+              onClose={() => setPickerOpen(false)}
+            />
+          )}
         </div>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}

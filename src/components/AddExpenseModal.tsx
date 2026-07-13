@@ -6,8 +6,10 @@ import { MESSAGES } from '../config/messages'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { useReceiptScan } from '../hooks/useReceiptScan'
 import { ModalShell } from './ModalShell'
-import { CategorySelect } from './CategorySelect'
+import { CategoryPicker } from './CategoryPicker'
 import { ScanItemRow } from './ScanItemRow'
+import { resolveCategoryColor } from '../lib/categoryColors'
+import { resolveCategoryLabel } from '../lib/format'
 
 type OnAddGroupParent = {
   date: string
@@ -35,15 +37,14 @@ type Props = {
 
 export function AddExpenseModal({ members, categories, defaultDate, rulesMap, onUpsertRule, onDeleteRule, onAddGroup, onClose }: Props) {
   const [paidByMemberId, setPaidByMemberId] = useState<string | null>(null)
+  const [commonPickerOpen, setCommonPickerOpen] = useState(false)
 
   useEscapeKey(onClose)
 
   const {
     scanning, submitting, error, scanResult, scanStoreName,
-    scanParentCategoryId, scanChildCategoryId,
-    applyCommonCategory, setApplyCommonCategory, commonCategoryId, fileInputRef,
+    applyCommonCategory, setApplyCommonCategory, commonCategoryId, setCommonCategoryId, fileInputRef,
     handleScanReceipt, handleScanStoreNameChange, handleScanDateChange,
-    handleScanParentCategoryChange, handleScanChildCategoryChange,
     updateScanItem, setItemCategory, addScanItem, handleAddFromReceipt, selectedScanCount, registeredTotal,
   } = useReceiptScan({
     defaultDate,
@@ -152,13 +153,24 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
           </label>
           {applyCommonCategory && (
             <div className="mt-2">
-              <CategorySelect
-                categories={categories}
-                parentCategoryId={scanParentCategoryId}
-                childCategoryId={scanChildCategoryId}
-                onParentChange={handleScanParentCategoryChange}
-                onChildChange={handleScanChildCategoryChange}
-              />
+              <button
+                type="button"
+                onClick={() => setCommonPickerOpen(true)}
+                className={`inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-sm ${
+                  resolveCategoryLabel(commonCategoryId, categories) ? 'text-ink-2' : 'text-ink-4'
+                }`}
+              >
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: resolveCategoryColor(commonCategoryId, categories) ?? '#d1d5db' }} />
+                {resolveCategoryLabel(commonCategoryId, categories) || '未分類'}
+              </button>
+              {commonPickerOpen && (
+                <CategoryPicker
+                  categories={categories}
+                  selectedId={commonCategoryId}
+                  onSelect={(id) => { setCommonCategoryId(id); setCommonPickerOpen(false) }}
+                  onClose={() => setCommonPickerOpen(false)}
+                />
+              )}
             </div>
           )}
         </div>

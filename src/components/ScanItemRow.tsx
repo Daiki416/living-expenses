@@ -4,7 +4,7 @@ import type { ScanItem } from '../lib/ocr'
 import { TAX_RATE_OPTIONS } from '../config/classifications'
 import type { Category } from '../lib/supabase'
 import { resolveCategoryColor } from '../lib/categoryColors'
-import { ModalShell } from './ModalShell'
+import { CategoryPicker } from './CategoryPicker'
 
 type Props = {
   item: ScanItem
@@ -124,58 +124,12 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
       </div>
 
       {pickerOpen && !categoryLocked && (
-        <ModalShell onClose={() => setPickerOpen(false)}>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-ink-2">カテゴリーを選択</h3>
-            <button
-              type="button"
-              onClick={() => setPickerOpen(false)}
-              className="text-ink-4 text-lg leading-none px-1"
-              aria-label="閉じる"
-            >
-              ×
-            </button>
-          </div>
-          <div className="max-h-[60vh] overflow-y-auto -mx-2 px-2">
-            <button
-              type="button"
-              onClick={() => selectCategory(null)}
-              className={`w-full flex items-center gap-2 rounded-lg px-2 py-2 text-left text-sm ${
-                displayCategoryId ? 'text-ink-2' : 'bg-inset font-medium text-ink'
-              }`}
-            >
-              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: '#d1d5db' }} />
-              未分類
-            </button>
-            {categories.filter(c => c.parent_id === null).map(parent => (
-              <div key={parent.id}>
-                <button
-                  type="button"
-                  onClick={() => selectCategory(parent.id)}
-                  className={`w-full flex items-center gap-2 rounded-lg px-2 py-2 text-left text-sm ${
-                    displayCategoryId === parent.id ? 'bg-inset font-medium text-ink' : 'text-ink-2'
-                  }`}
-                >
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: resolveCategoryColor(parent.id, categories) ?? '#d1d5db' }} />
-                  {parent.name}
-                </button>
-                {categories.filter(c => c.parent_id === parent.id).map(child => (
-                  <button
-                    key={child.id}
-                    type="button"
-                    onClick={() => selectCategory(child.id)}
-                    className={`w-full flex items-center gap-2 rounded-lg pl-7 pr-2 py-2 text-left text-sm ${
-                      displayCategoryId === child.id ? 'bg-inset font-medium text-ink' : 'text-ink-3'
-                    }`}
-                  >
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: resolveCategoryColor(child.id, categories) ?? '#d1d5db' }} />
-                    {child.name}
-                  </button>
-                ))}
-              </div>
-            ))}
-          </div>
-        </ModalShell>
+        <CategoryPicker
+          categories={categories}
+          selectedId={displayCategoryId}
+          onSelect={selectCategory}
+          onClose={() => setPickerOpen(false)}
+        />
       )}
     </div>
   )

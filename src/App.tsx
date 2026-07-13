@@ -62,7 +62,7 @@ function AppMain() {
 
   const prevMonthNum = now.getMonth() === 0 ? 12 : now.getMonth()
   const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
-  const { categories, error: categoriesError, addCategory, deleteCategory, renameCategory, reorderCategory } = useCategories()
+  const { categories, error: categoriesError, addCategory, addParentWithChild, deleteCategory, renameCategory, reorderCategory } = useCategories()
   const { rulesMap, upsertRule, deleteRule } = useCategoryRules()
   const { receipts, loading: expensesLoading, error: expensesError, addReceiptGroup, updateExpense, deleteReceipt, updateReceipt } = useReceipts(year, month)
   const { receipts: prevMonthReceipts, loading: prevMonthLoading } = useReceipts(prevYear, prevMonthNum)
@@ -307,6 +307,7 @@ function AppMain() {
           onDeleteMember={deleteMember}
           onUpdateMemberBudget={updateMemberBudget}
           onAddCategory={(name, parentId) => addCategory(name, parentId)}
+          onAddParentWithChild={addParentWithChild}
           onDeleteCategory={deleteCategory}
           onRenameCategory={renameCategory}
           onReorderCategory={reorderCategory}

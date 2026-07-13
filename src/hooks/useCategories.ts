@@ -38,8 +38,20 @@ export function useCategories() {
     setRefetchKey(k => k + 1)
   }
 
+  // 親＋最初の子を原子的に作成する（RPC）。親は必ず子を持つモデルを保つ。
+  async function addParentWithChild(parentName: string, childName: string) {
+    const { error } = await supabase.rpc('create_category_with_first_child', {
+      p_parent_name: parentName,
+      p_child_name: childName,
+    })
+    if (error) throw new Error(error.message)
+    setRefetchKey(k => k + 1)
+  }
+
   async function deleteCategory(id: string) {
-    const { error } = await supabase.from('categories').delete().eq('id', id)
+    // 「子削除→親が子ゼロなら親削除」をサーバ側の現在状態で1トランザクション判定する
+    // （stale なクライアント状態に依存した2リクエストだと、別端末で足された新規子を巻き込み得る）。
+    const { error } = await supabase.rpc('delete_category', { p_category_id: id })
     if (error) throw new Error(error.message)
     setRefetchKey(k => k + 1)
   }
@@ -65,5 +77,5 @@ export function useCategories() {
     setRefetchKey(k => k + 1)
   }
 
-  return { categories, loading, error, addCategory, deleteCategory, renameCategory, reorderCategory }
+  return { categories, loading, error, addCategory, addParentWithChild, deleteCategory, renameCategory, reorderCategory }
 }

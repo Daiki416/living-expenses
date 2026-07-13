@@ -6,7 +6,7 @@ export function normalizeKeyword(s: string): string {
 }
 
 // 訂正メモリ（keyword→categoryId）を品目に適用し、一致した categoryId を確定オーバーライドする。
-// 削除済みカテゴリー等で無効な category_id は無視し、有効なIDのみ上書きする。
+// 有効な葉IDのみ上書きする（削除済み・親どまりの category_id は無視する）。
 // 一致時のみ新オブジェクトを生成し、非一致は同一参照を維持する。
 export function applyRulesToItems(
   items: ScanItem[],

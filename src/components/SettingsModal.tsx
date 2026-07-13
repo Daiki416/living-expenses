@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
 import { toUserErrorMessage } from '../lib/validation'
+import { validateNewParentWithChild, shouldDeleteParentAfterChildRemoval } from '../lib/categoryTree'
 import {
   DndContext,
   PointerSensor,
@@ -56,13 +57,14 @@ type Props = {
   onDeleteMember: (id: string) => Promise<void>
   onUpdateMemberBudget: (id: string, budget: number) => Promise<void>
   onAddCategory: (name: string, parentId?: string | null) => Promise<void>
+  onAddParentWithChild: (parentName: string, childName: string) => Promise<void>
   onDeleteCategory: (id: string) => Promise<void>
   onRenameCategory: (id: string, name: string) => Promise<void>
   onReorderCategory: (orderedIds: string[]) => Promise<void>
   onClose: () => void
 }
 
-export function SettingsModal({ members, categories, onAddMember, onDeleteMember, onUpdateMemberBudget, onAddCategory, onDeleteCategory, onRenameCategory, onReorderCategory, onClose }: Props) {
+export function SettingsModal({ members, categories, onAddMember, onDeleteMember, onUpdateMemberBudget, onAddCategory, onAddParentWithChild, onDeleteCategory, onRenameCategory, onReorderCategory, onClose }: Props) {
   const [tab, setTab] = useState<Tab>('members')
 
   const [newMemberName, setNewMemberName] = useState('')
@@ -83,10 +85,10 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
   }
 
   const [newParentName, setNewParentName] = useState('')
-  const [addingParent, setAddingParent] = useState(false)
-  const [newChildName, setNewChildName] = useState('')
-  const [newChildParentId, setNewChildParentId] = useState('')
-  const [addingChild, setAddingChild] = useState(false)
+  const [newFirstChildName, setNewFirstChildName] = useState('')
+  const [addingParentGroup, setAddingParentGroup] = useState(false)
+  const [childDrafts, setChildDrafts] = useState<Record<string, string>>({})
+  const [addingChildParentId, setAddingChildParentId] = useState<string | null>(null)
   const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null)
   const [categoryError, setCategoryError] = useState<string | null>(null)
 
@@ -257,22 +259,36 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
     }
   }
 
-  async function handleAddCategory(
-    name: string,
-    parentId: string | null,
-    onSuccess: () => void,
-    setAdding: (isAdding: boolean) => void
-  ) {
-    if (!name || name.length > 100) return
-    setAdding(true)
+  // 大分類名＋最初の小分類名を1アクションで作成する（親は必ず子を持つモデル）。
+  async function handleAddParentGroup() {
+    const validation = validateNewParentWithChild(newParentName, newFirstChildName)
+    if (!validation.ok) { setCategoryError(validation.message); return }
+    setAddingParentGroup(true)
     setCategoryError(null)
     try {
-      await onAddCategory(name, parentId)
-      onSuccess()
+      await onAddParentWithChild(newParentName.trim(), newFirstChildName.trim())
+      setNewParentName('')
+      setNewFirstChildName('')
     } catch (err) {
       setCategoryError(toUserErrorMessage(err))
     } finally {
-      setAdding(false)
+      setAddingParentGroup(false)
+    }
+  }
+
+  // 既存の大分類に小分類を追加する（親ごとのインライン入力）。
+  async function handleAddChild(parentId: string) {
+    const name = (childDrafts[parentId] ?? '').trim()
+    if (!name || name.length > 100) return
+    setAddingChildParentId(parentId)
+    setCategoryError(null)
+    try {
+      await onAddCategory(name, parentId)
+      setChildDrafts(prev => ({ ...prev, [parentId]: '' }))
+    } catch (err) {
+      setCategoryError(toUserErrorMessage(err))
+    } finally {
+      setAddingChildParentId(null)
     }
   }
 
@@ -303,7 +319,14 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
   }
 
   async function handleDeleteCategory(id: string, name: string) {
-    if (!window.confirm(`「${name}」を削除しますか？\nこのカテゴリーの支出は「未分類」になります。`)) return
+    const isParent = categoryById.get(id)?.parent_id === null
+    const orphanParentId = shouldDeleteParentAfterChildRemoval(categories, id)
+    const message = isParent
+      ? `「${name}」を削除しますか？\n子カテゴリーも全て削除されます。`
+      : orphanParentId
+        ? `「${name}」を削除しますか？\n最後の小分類のため、大分類も一緒に削除されます。`
+        : `「${name}」を削除しますか？\nこのカテゴリーの支出は「未分類」になります。`
+    if (!window.confirm(message)) return
     setDeletingCategoryId(id)
     setCategoryError(null)
     try {
@@ -509,6 +532,30 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                                 })}
                               </SortableContext>
                             </DndContext>
+                            {/* 既存の大分類へ小分類を追加するインライン入力 */}
+                            <div className="flex items-center gap-2 pl-7 pr-3 py-1.5 bg-inset border-t border-line">
+                              <span className="text-ink-4 text-xs">└</span>
+                              <input
+                                type="text"
+                                value={childDrafts[parent.id] ?? ''}
+                                onChange={(e) => setChildDrafts(prev => ({ ...prev, [parent.id]: e.target.value }))}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && addingChildParentId !== parent.id && (childDrafts[parent.id] ?? '').trim()) {
+                                    handleAddChild(parent.id)
+                                  }
+                                }}
+                                placeholder="＋ 小分類を追加"
+                                className="field-input flex-1 min-w-0 px-2 py-1 text-sm"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleAddChild(parent.id)}
+                                disabled={addingChildParentId === parent.id || !(childDrafts[parent.id] ?? '').trim()}
+                                className="btn-primary text-xs px-3 py-1 shrink-0"
+                              >
+                                {addingChildParentId === parent.id ? '追加中…' : '追加'}
+                              </button>
+                            </div>
                           </>
                         )}
                       </SortableRow>
@@ -518,64 +565,36 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
               </DndContext>
             </div>
           </div>
-          {/* 追加フォーム：常に表示 */}
+          {/* 追加フォーム：大分類名＋最初の小分類名を1アクションで作成（常に表示） */}
           <div className="shrink-0 pt-1 space-y-2">
+            <input
+              type="text"
+              value={newParentName}
+              onChange={(e) => setNewParentName(e.target.value)}
+              placeholder="大分類名（例：食費）"
+              className="field-input"
+            />
             <div className="flex gap-2">
               <input
                 type="text"
-                value={newParentName}
-                onChange={(e) => setNewParentName(e.target.value)}
+                value={newFirstChildName}
+                onChange={(e) => setNewFirstChildName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !addingParent && newParentName.trim()) {
-                    handleAddCategory(newParentName.trim(), null, () => setNewParentName(''), setAddingParent)
+                  if (e.key === 'Enter' && !addingParentGroup && newParentName.trim() && newFirstChildName.trim()) {
+                    handleAddParentGroup()
                   }
                 }}
-                placeholder="大分類名（例：食費）"
+                placeholder="最初の小分類名（例：食料品）"
                 className="field-input flex-1"
               />
               <button
-                onClick={() => handleAddCategory(newParentName.trim(), null, () => setNewParentName(''), setAddingParent)}
-                disabled={addingParent || !newParentName.trim()}
+                onClick={handleAddParentGroup}
+                disabled={addingParentGroup || !newParentName.trim() || !newFirstChildName.trim()}
                 className="btn-primary px-4 py-2 whitespace-nowrap"
               >
-                {addingParent ? '追加中…' : '追加'}
+                {addingParentGroup ? '追加中…' : '追加'}
               </button>
             </div>
-            {parentCategories.length > 0 && (
-              <>
-                <select
-                  value={newChildParentId}
-                  onChange={(e) => setNewChildParentId(e.target.value)}
-                  className="field-input"
-                >
-                  <option value="">大分類を選択</option>
-                  {parentCategories.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newChildName}
-                    onChange={(e) => setNewChildName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !addingChild && newChildName.trim() && newChildParentId) {
-                        handleAddCategory(newChildName.trim(), newChildParentId, () => setNewChildName(''), setAddingChild)
-                      }
-                    }}
-                    placeholder="小分類名"
-                    className="field-input flex-1"
-                  />
-                  <button
-                    onClick={() => handleAddCategory(newChildName.trim(), newChildParentId, () => setNewChildName(''), setAddingChild)}
-                    disabled={addingChild || !newChildName.trim() || !newChildParentId}
-                    className="btn-primary px-4 py-2 whitespace-nowrap"
-                  >
-                    {addingChild ? '追加中…' : '追加'}
-                  </button>
-                </div>
-              </>
-            )}
             {categoryError && <p className="text-red-500 text-xs mt-2">{categoryError}</p>}
           </div>
         </div>
