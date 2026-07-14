@@ -210,6 +210,9 @@ function AppMain() {
           cardExpenses={cardExpenses}
           memberTotals={memberTotals}
           categories={categories}
+          receipts={receipts}
+          memberNameById={memberNameById}
+          onEditExpense={setEditingExpense}
           loading={expensesLoading}
         />
 

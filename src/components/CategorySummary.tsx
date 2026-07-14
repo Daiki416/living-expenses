@@ -1,15 +1,22 @@
 import { useState } from 'react'
-import type { Expense, Category } from '../lib/supabase'
+import type { Expense, Category, ReceiptWithExpenses } from '../lib/supabase'
 import { parentCategoryColor, childCategoryColor, generalCategoryColor } from '../lib/categoryColors'
 import { EXPENSE_KIND_LABEL } from '../config/classifications'
+import { collectExpensesByCategory } from '../lib/expenseFilter'
+import { CategoryDrilldownModal } from './CategoryDrilldownModal'
 
 type Props = {
   expenses: Expense[]
   cardExpenses: Expense[]
   memberTotals: Record<string, number>
   categories: Category[]
+  receipts: ReceiptWithExpenses[]
+  memberNameById: ReadonlyMap<string, string>
+  onEditExpense: (expense: Expense) => void
   loading?: boolean
 }
+
+type DrillTarget = { categoryId: string | null; title: string }
 
 const EXPENSE_BAR_COLOR = '#6366f1' // 立替（インディゴ）
 const CARD_BAR_COLOR = '#a78bfa'    // クレカ（バイオレット・同系色）
@@ -21,10 +28,11 @@ function getEffectiveParentId(categoryId: string | null, categories: Category[])
   return cat.parent_id ?? cat.id
 }
 
-export function CategorySummary({ expenses, cardExpenses, memberTotals, categories, loading }: Props) {
+export function CategorySummary({ expenses, cardExpenses, memberTotals, categories, receipts, memberNameById, onEditExpense, loading }: Props) {
   const [view, setView] = useState<'table' | 'chart'>('table')
   const [chartMode, setChartMode] = useState<'parent' | 'child'>('parent')
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+  const [drill, setDrill] = useState<DrillTarget | null>(null)
 
   function toggleExpand(id: string) {
     setExpandedIds(prev => {
@@ -174,8 +182,17 @@ export function CategorySummary({ expenses, cardExpenses, memberTotals, categori
                 <div key={parentId} className="border-b border-gray-50 dark:border-white/5 last:border-0">
                   <button
                     type="button"
-                    onClick={() => hasChildren && toggleExpand(parentId)}
-                    className="w-full flex items-center gap-3 py-2 text-left"
+                    onClick={() => {
+                      if (hasChildren) {
+                        toggleExpand(parentId)
+                      } else {
+                        setDrill({
+                          categoryId: parentId === '__uncategorized__' ? null : parentId,
+                          title: parentName,
+                        })
+                      }
+                    }}
+                    className={`w-full flex items-center gap-3 py-2 px-1 -mx-1 rounded-lg text-left transition-colors ${hasChildren ? '' : 'hover:bg-inset'}`}
                   >
                     <span className="cat-dot w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
                     <div className="flex-1 min-w-0">
@@ -200,16 +217,25 @@ export function CategorySummary({ expenses, cardExpenses, memberTotals, categori
                   {isExpanded && hasChildren && (
                     <div className="pl-6 pb-1 space-y-0.5">
                       {activeChildren.map(child => (
-                        <div key={child.id} className="flex items-center justify-between text-sm py-0.5">
+                        <button
+                          type="button"
+                          key={child.id}
+                          onClick={() => setDrill({ categoryId: child.id, title: child.name })}
+                          className="w-full flex items-center justify-between text-sm py-0.5 px-1 -mx-1 rounded-lg text-left hover:bg-inset transition-colors"
+                        >
                           <span className="text-ink-3">{child.name}</span>
                           <span className="text-ink-2 tabular-nums">¥{childTotals[child.id].toLocaleString()}</span>
-                        </div>
+                        </button>
                       ))}
                       {directAmount > 0 && (
-                        <div className="flex items-center justify-between text-sm py-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setDrill({ categoryId: parentId, title: `${parentName}（全般）` })}
+                          className="w-full flex items-center justify-between text-sm py-0.5 px-1 -mx-1 rounded-lg text-left hover:bg-inset transition-colors"
+                        >
                           <span className="text-ink-4">{parentName}（全般）</span>
                           <span className="text-ink-3 tabular-nums">¥{directAmount.toLocaleString()}</span>
-                        </div>
+                        </button>
                       )}
                     </div>
                   )}
@@ -320,6 +346,18 @@ export function CategorySummary({ expenses, cardExpenses, memberTotals, categori
             )
           })()}
         </div>
+      )}
+      {drill && (
+        <CategoryDrilldownModal
+          title={drill.title}
+          items={collectExpensesByCategory(receipts, drill.categoryId)}
+          memberNameById={memberNameById}
+          onSelectExpense={(expense) => {
+            setDrill(null)
+            onEditExpense(expense)
+          }}
+          onClose={() => setDrill(null)}
+        />
       )}
     </div>
   )

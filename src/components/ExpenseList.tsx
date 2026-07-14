@@ -4,6 +4,7 @@ import { resolveCategoryLabel, splitDateChip } from '../lib/format'
 import { resolveCategoryColor } from '../lib/categoryColors'
 import { EXPENSE_KIND, EXPENSE_KIND_LABEL } from '../config/classifications'
 import { MESSAGES } from '../config/messages'
+import { filterReceiptsByPayer, type PayerFilter } from '../lib/expenseFilter'
 
 type Props = {
   receipts: ReceiptWithExpenses[]
@@ -23,6 +24,7 @@ export function ExpenseList({ receipts, categories, memberNameById, onEdit, onDe
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [sortAsc, setSortAsc] = useState(false)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+  const [payer, setPayer] = useState<PayerFilter>({ type: 'all' })
 
   if (receipts.length === 0) {
     return (
@@ -32,7 +34,15 @@ export function ExpenseList({ receipts, categories, memberNameById, onEdit, onDe
     )
   }
 
-  const sorted = [...receipts].sort((a, b) =>
+  const chipClass = (active: boolean) =>
+    `chip shrink-0 px-2.5 py-1 text-xs border transition-colors ${
+      active
+        ? 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-400/30'
+        : 'text-ink-3 border-line'
+    }`
+
+  const filtered = filterReceiptsByPayer(receipts, payer)
+  const sorted = [...filtered].sort((a, b) =>
     sortAsc ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date)
   )
 
@@ -51,14 +61,52 @@ export function ExpenseList({ receipts, categories, memberNameById, onEdit, onDe
   return (
     <div>
       <div className="max-h-96 overflow-y-auto">
-        <div className="flex items-center justify-end px-1 pb-2 sticky top-0 bg-surface z-10">
+        <div className="flex items-center gap-2 px-1 pb-2 sticky top-0 bg-surface z-10">
+          <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => setPayer({ type: 'all' })}
+              className={chipClass(payer.type === 'all')}
+            >
+              すべて
+            </button>
+            {[...memberNameById.entries()].map(([id, name]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setPayer({ type: 'member', memberId: id })}
+                className={chipClass(payer.type === 'member' && payer.memberId === id)}
+              >
+                {name}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setPayer({ type: 'card' })}
+              className={chipClass(payer.type === 'card')}
+            >
+              {EXPENSE_KIND_LABEL.card}
+            </button>
+          </div>
           <button
             onClick={() => setSortAsc(v => !v)}
-            className="text-xs text-ink-3 hover:text-indigo-500 transition-colors"
+            className="shrink-0 text-xs text-ink-3 hover:text-indigo-500 transition-colors"
           >
             日付 {sortAsc ? '↑' : '↓'}
           </button>
         </div>
+        {sorted.length === 0 ? (
+          <div className="text-center text-ink-4 py-12 text-sm">
+            <div>{MESSAGES.list.noMatch}</div>
+            <button
+              type="button"
+              onClick={() => setPayer({ type: 'all' })}
+              className="mt-2 text-xs text-indigo-500 hover:text-indigo-600 transition-colors"
+            >
+              {MESSAGES.list.clearFilter}
+            </button>
+          </div>
+        ) : (
         <div>
           {sorted.map((receipt) => {
             const total = receipt.expenses.reduce((s, e) => s + e.amount, 0)
@@ -161,6 +209,7 @@ export function ExpenseList({ receipts, categories, memberNameById, onEdit, onDe
             )
           })}
         </div>
+        )}
       </div>
       {deleteError && <p className="text-red-500 text-sm mt-2">{deleteError}</p>}
     </div>

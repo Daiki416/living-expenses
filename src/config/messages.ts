@@ -20,6 +20,8 @@ export const MESSAGES = {
   },
   list: {
     empty: 'この月の支出はありません',
+    noMatch: '条件に一致する明細がありません',
+    clearFilter: 'フィルター解除',
   },
   addExpense: {
     title: '支出を追加',
