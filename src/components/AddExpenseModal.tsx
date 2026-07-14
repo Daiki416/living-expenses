@@ -160,7 +160,7 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
                   resolveCategoryLabel(commonCategoryId, categories) ? 'text-ink-2' : 'text-ink-4'
                 }`}
               >
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: resolveCategoryColor(commonCategoryId, categories) ?? '#d1d5db' }} />
+                <span className="cat-dot w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: resolveCategoryColor(commonCategoryId, categories) ?? '#d1d5db' }} />
                 {resolveCategoryLabel(commonCategoryId, categories) || '未分類'}
               </button>
               {commonPickerOpen && (

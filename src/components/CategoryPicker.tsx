@@ -35,7 +35,7 @@ export function CategoryPicker({ categories, selectedId, onSelect, onClose }: Pr
             selectedId ? 'text-ink-2' : 'bg-inset font-medium text-ink'
           }`}
         >
-          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: '#d1d5db' }} />
+          <span className="cat-dot w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: '#d1d5db' }} />
           未分類
         </button>
         {categories.filter(c => c.parent_id === null).map(parent => {
@@ -50,12 +50,12 @@ export function CategoryPicker({ categories, selectedId, onSelect, onClose }: Pr
                     selectedId === parent.id ? 'bg-inset font-medium text-ink' : 'text-ink-2'
                   }`}
                 >
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: resolveCategoryColor(parent.id, categories) ?? '#d1d5db' }} />
+                  <span className="cat-dot w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: resolveCategoryColor(parent.id, categories) ?? '#d1d5db' }} />
                   {parent.name}
                 </button>
               ) : (
                 <div className="w-full flex items-center gap-2 px-2 pt-2 pb-1 text-left text-xs font-semibold text-ink-3">
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: resolveCategoryColor(parent.id, categories) ?? '#d1d5db' }} />
+                  <span className="cat-dot w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: resolveCategoryColor(parent.id, categories) ?? '#d1d5db' }} />
                   {parent.name}
                 </div>
               )}
@@ -69,13 +69,13 @@ export function CategoryPicker({ categories, selectedId, onSelect, onClose }: Pr
                       selectedId === child.id ? 'bg-inset font-medium text-ink' : 'text-ink-3'
                     }`}
                   >
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: resolveCategoryColor(child.id, categories) ?? '#d1d5db' }} />
+                    <span className="cat-dot w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: resolveCategoryColor(child.id, categories) ?? '#d1d5db' }} />
                     {child.name}
                   </button>
                 ) : (
                   // 孫階層など壊れデータで非葉の子が来た場合は親と対称に見出し扱い（確定不可）。
                   <div key={child.id} className="w-full flex items-center gap-2 pl-7 pr-2 pt-2 pb-1 text-left text-xs font-semibold text-ink-3">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: resolveCategoryColor(child.id, categories) ?? '#d1d5db' }} />
+                    <span className="cat-dot w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: resolveCategoryColor(child.id, categories) ?? '#d1d5db' }} />
                     {child.name}
                   </div>
                 )

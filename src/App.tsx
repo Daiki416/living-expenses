@@ -14,6 +14,7 @@ import { ExpenseList } from './components/ExpenseList'
 import { CategorySummary } from './components/CategorySummary'
 import { MonthlyTrendView } from './components/MonthlyTrendView'
 import { HeaderActions } from './components/HeaderActions'
+import { FancyDecor } from './components/FancyDecor'
 import type { Expense, ReceiptKind } from './lib/supabase'
 import { applyTax } from './lib/ocr'
 import { deriveReceiptKind } from './lib/payment'
@@ -43,7 +44,7 @@ export default function App() {
 }
 
 function AppMain() {
-  const { theme, toggleTheme } = useTheme()
+  const { theme, cycleTheme } = useTheme()
   const now = new Date()
   const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const [year, setYear] = useState(now.getFullYear())
@@ -107,12 +108,13 @@ function AppMain() {
 
   return (
     <>
+      {theme === 'fancy' && <FancyDecor />}
       {showTrend ? (
         <MonthlyTrendView
           categories={categories}
           onClose={() => setShowTrend(false)}
           theme={theme}
-          onToggleTheme={toggleTheme}
+          onCycleTheme={cycleTheme}
           onOpenSettings={() => setShowSettings(true)}
         />
       ) : (
@@ -127,7 +129,7 @@ function AppMain() {
                 onOpenSettings={() => setShowSettings(true)}
                 settingsDisabled={membersLoading}
                 theme={theme}
-                onToggleTheme={toggleTheme}
+                onCycleTheme={cycleTheme}
               />
             </div>
 

@@ -4,12 +4,13 @@ import { useMonthlyTrend } from '../hooks/useMonthlyTrend'
 import type { Category } from '../lib/supabase'
 import { parentCategoryColor, childCategoryColor } from '../lib/categoryColors'
 import { HeaderActions } from './HeaderActions'
+import type { Theme } from '../hooks/useTheme'
 
 type Props = {
   categories: Category[]
   onClose: () => void
-  theme: 'light' | 'dark'
-  onToggleTheme: () => void
+  theme: Theme
+  onCycleTheme: () => void
   onOpenSettings: () => void
 }
 
@@ -22,7 +23,7 @@ function calcDefaultStartYM(currentYM: string): string {
   return `${y}-${String(prevM).padStart(2, '0')}`
 }
 
-export function MonthlyTrendView({ categories, onClose, theme, onToggleTheme, onOpenSettings }: Props) {
+export function MonthlyTrendView({ categories, onClose, theme, onCycleTheme, onOpenSettings }: Props) {
   const now = new Date()
   const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const defaultStartYM = calcDefaultStartYM(currentYM)
@@ -125,7 +126,7 @@ export function MonthlyTrendView({ categories, onClose, theme, onToggleTheme, on
             onOpenHome={onClose}
             onOpenSettings={onOpenSettings}
             theme={theme}
-            onToggleTheme={onToggleTheme}
+            onCycleTheme={onCycleTheme}
           />
         </div>
 

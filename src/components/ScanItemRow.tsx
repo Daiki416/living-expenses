@@ -113,7 +113,7 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
             categoryLabel ? 'text-ink-2' : 'text-ink-4'
           }`}
         >
-          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: categoryColor ?? '#d1d5db' }} />
+          <span className="cat-dot w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: categoryColor ?? '#d1d5db' }} />
           {categoryLabel ?? '未分類'}
         </button>
         {showTaxedAmount && (

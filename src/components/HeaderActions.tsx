@@ -1,15 +1,28 @@
 import { supabase } from '../lib/supabase'
+import type { Theme } from '../hooks/useTheme'
 
 type Props = {
   onOpenTrend?: () => void
   onOpenHome?: () => void
   onOpenSettings: () => void
   settingsDisabled?: boolean
-  theme: 'light' | 'dark'
-  onToggleTheme: () => void
+  theme: Theme
+  onCycleTheme: () => void
 }
 
-export function HeaderActions({ onOpenTrend, onOpenHome, onOpenSettings, settingsDisabled = false, theme, onToggleTheme }: Props) {
+const NEXT_THEME_LABEL: Record<Theme, string> = {
+  light: 'ダークモードに切り替え',
+  dark: 'ファンシーモードに切り替え',
+  fancy: 'ライトモードに切り替え',
+}
+
+const NEXT_THEME_ICON: Record<Theme, string> = {
+  light: '☾',
+  dark: '🎀',
+  fancy: '☀',
+}
+
+export function HeaderActions({ onOpenTrend, onOpenHome, onOpenSettings, settingsDisabled = false, theme, onCycleTheme }: Props) {
   return (
     <div className="flex items-center gap-2">
       {onOpenHome && (
@@ -39,12 +52,12 @@ export function HeaderActions({ onOpenTrend, onOpenHome, onOpenSettings, setting
         ⚙
       </button>
       <button
-        onClick={onToggleTheme}
+        onClick={onCycleTheme}
         className="icon-btn text-xl"
-        title={theme === 'dark' ? 'ライトモード' : 'ダークモード'}
-        aria-label={theme === 'dark' ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}
+        title={NEXT_THEME_LABEL[theme]}
+        aria-label={NEXT_THEME_LABEL[theme]}
       >
-        {theme === 'dark' ? '☀' : '☾'}
+        {NEXT_THEME_ICON[theme]}
       </button>
       <button
         onClick={() => supabase.auth.signOut()}

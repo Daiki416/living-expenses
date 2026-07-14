@@ -1,10 +1,21 @@
 import { useState, useEffect, useCallback } from 'react'
 
-type Theme = 'light' | 'dark'
+export type Theme = 'light' | 'dark' | 'fancy'
 
-function getInitialTheme(): Theme {
+export function getInitialTheme(): Theme {
   const stored = localStorage.getItem('theme')
-  return stored === 'dark' ? 'dark' : 'light'
+  return stored === 'dark' || stored === 'fancy' ? stored : 'light'
+}
+
+export function nextTheme(current: Theme): Theme {
+  switch (current) {
+    case 'light':
+      return 'dark'
+    case 'dark':
+      return 'fancy'
+    default:
+      return 'light'
+  }
 }
 
 export function useTheme() {
@@ -15,9 +26,9 @@ export function useTheme() {
     localStorage.setItem('theme', theme)
   }, [theme])
 
-  const toggleTheme = useCallback(() => {
-    setTheme(t => (t === 'dark' ? 'light' : 'dark'))
+  const cycleTheme = useCallback(() => {
+    setTheme(nextTheme)
   }, [])
 
-  return { theme, toggleTheme }
+  return { theme, cycleTheme }
 }

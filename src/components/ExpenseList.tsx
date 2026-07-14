@@ -144,7 +144,7 @@ export function ExpenseList({ receipts, categories, memberNameById, onEdit, onDe
                           className="w-full flex items-center gap-2.5 py-1.5 text-left rounded-lg hover:bg-inset transition-colors"
                         >
                           <span
-                            className="w-2 h-2 rounded-full shrink-0 self-start mt-1.5"
+                            className="cat-dot w-2 h-2 rounded-full shrink-0 self-start mt-1.5"
                             style={{ backgroundColor: resolveCategoryColor(expense.category_id, categories) ?? '#d1d5db' }}
                           />
                           <div className="flex-1 min-w-0">

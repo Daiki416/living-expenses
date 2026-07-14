@@ -127,14 +127,14 @@ export function CategorySummary({ expenses, cardExpenses, memberTotals, categori
               <div className="mt-2 space-y-1 text-sm text-ink-2 tabular-nums">
                 <div className="flex items-center justify-between gap-2">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: EXPENSE_BAR_COLOR }} />
+                    <span className="cat-dot w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: EXPENSE_BAR_COLOR }} />
                     立替
                   </span>
                   <span className="font-medium">¥{expenseTotal.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: CARD_BAR_COLOR }} />
+                    <span className="cat-dot w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: CARD_BAR_COLOR }} />
                     {EXPENSE_KIND_LABEL.card}
                   </span>
                   <span className="font-medium">¥{cardTotal.toLocaleString()}</span>
@@ -177,7 +177,7 @@ export function CategorySummary({ expenses, cardExpenses, memberTotals, categori
                     onClick={() => hasChildren && toggleExpand(parentId)}
                     className="w-full flex items-center gap-3 py-2 text-left"
                   >
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                    <span className="cat-dot w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-ink-2 truncate">{parentName}</span>
