@@ -96,7 +96,7 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
           </svg>
           {scanning
             ? (scanProgress && scanProgress.total > 1 ? `読込中 ${scanProgress.done}/${scanProgress.total}枚` : '読み込み中…')
-            : '複数まとめて読み込む'}
+            : 'レシートを読み込む'}
         </button>
       </div>
 

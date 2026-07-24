@@ -44,6 +44,13 @@ export function HeaderActions({ onOpenTrend, onOpenHome, onOpenSettings, setting
         </button>
       )}
       <button
+        onClick={() => window.location.reload()}
+        className="icon-btn text-xl"
+        title="表示を更新"
+      >
+        🔄
+      </button>
+      <button
         onClick={onOpenSettings}
         disabled={settingsDisabled}
         className="icon-btn text-xl"
