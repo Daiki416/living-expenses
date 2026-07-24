@@ -47,7 +47,7 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
     applyCommonCategory, setApplyCommonCategory, commonCategoryId, setCommonCategoryId, fileInputRef,
     pendingReceipts, batchTotal, batchIndex, scanProgress, handleSkip, handleScanInputChange,
     handleScanStoreNameChange, handleScanDateChange,
-    updateScanItem, setItemCategory, addScanItem, handleAddFromReceipt, selectedScanCount, registeredTotal,
+    updateScanItem, setItemCategory, addScanItem, handleAddFromReceipt, selectedScanCount, registeredTotal, reconcile, reconciledByIndex,
   } = useReceiptScan({
     defaultDate,
     categories,
@@ -204,7 +204,7 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
           <label className="block text-sm font-medium text-ink-2 mb-1">明細</label>
           <div className="space-y-2.5">
             {scanResult.items.map((item, i) => (
-              <ScanItemRow key={i} item={item} index={i} categories={categories} onUpdate={updateScanItem} onSetCategory={setItemCategory} categoryLocked={applyCommonCategory} lockedCategoryId={commonCategoryId} />
+              <ScanItemRow key={i} item={item} index={i} categories={categories} onUpdate={updateScanItem} onSetCategory={setItemCategory} categoryLocked={applyCommonCategory} lockedCategoryId={commonCategoryId} savedAmount={reconciledByIndex[i]} />
             ))}
           </div>
           <button
@@ -219,10 +219,25 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
         {error && <p className="text-red-500 text-sm">{error}</p>}
       </div>
 
-      {registeredTotal > 0 && (
-        <div className="shrink-0 flex items-center justify-between px-1 pb-2 pt-1">
-          <span className="text-xs text-ink-3">登録合計</span>
-          <span className="text-sm font-semibold text-ink tabular-nums">¥{registeredTotal.toLocaleString()}</span>
+      {reconcile.amounts.length > 0 && (
+        <div className="shrink-0 space-y-1 px-1 pb-2 pt-1">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-ink-3">レシート合計</span>
+            <span className="text-sm text-ink-2 tabular-nums">
+              {reconcile.total != null ? `¥${reconcile.total.toLocaleString()}` : '—'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-ink-3">登録合計</span>
+            <div className="flex items-center gap-2">
+              {reconcile.status === 'match' && <span className="text-xs text-emerald-600 dark:text-emerald-400">✓ 一致</span>}
+              {reconcile.status === 'adjusted' && <span className="text-xs text-emerald-600 dark:text-emerald-400">✓ 合計に調整</span>}
+              {reconcile.status === 'mismatch' && <span className="text-xs text-red-500">⚠ ¥{Math.abs(reconcile.diff ?? 0).toLocaleString()} ずれ</span>}
+              {reconcile.status === 'noTotal' && <span className="text-xs text-ink-4">合計不明</span>}
+              {reconcile.status === 'excluded' && <span className="text-xs text-ink-4">一部除外</span>}
+              <span className="text-sm font-semibold text-ink tabular-nums">¥{registeredTotal.toLocaleString()}</span>
+            </div>
+          </div>
         </div>
       )}
 

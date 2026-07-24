@@ -228,10 +228,16 @@ Deno.serve(async (req: Request) => {
       return v === 0 || v === 8 || v === 10 ? v : 8
     }
 
+    // total は正の整数のみ採用し、それ以外は null にする。
+    function resolveTotal(v: unknown): number | null {
+      return typeof v === 'number' && Number.isInteger(v) && v > 0 ? v : null
+    }
+
     const receiptItems: ReceiptItem[] = Array.isArray(data.items) ? data.items.filter(isReceiptItem) : []
     const result = {
       storeName: typeof data.storeName === 'string' ? data.storeName : null,
       date: typeof data.date === 'string' ? data.date : null,
+      total: resolveTotal(data.total),
       items: receiptItems.map((item) => ({
         description: item.description,
         amount: Math.round(item.amount),

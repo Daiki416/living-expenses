@@ -14,6 +14,7 @@ type Props = {
   onSetCategory: (index: number, categoryId: string | null) => void
   categoryLocked?: boolean
   lockedCategoryId?: string | null
+  savedAmount?: number | null
 }
 
 // categoryId から表示ラベル（子名、無ければ親名）を算出する。未分類は null を返す。
@@ -24,7 +25,7 @@ function resolveCategoryLabel(categoryId: string | null, categories: Category[])
   return category.name
 }
 
-export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, onUpdate, onSetCategory, categoryLocked = false, lockedCategoryId = null }: Props) {
+export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, onUpdate, onSetCategory, categoryLocked = false, lockedCategoryId = null, savedAmount = null }: Props) {
   const amountInvalid = item.selected && item.amount !== null && item.amount <= 0
   const [pickerOpen, setPickerOpen] = useState(false)
 
@@ -118,7 +119,7 @@ export const ScanItemRow = memo(function ScanItemRow({ item, index, categories, 
         </button>
         {showTaxedAmount && (
           <span className="ml-auto text-xs font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">
-            → ¥{applyTax(item.amount!, item.taxRate).toLocaleString()}
+            → ¥{(savedAmount ?? applyTax(item.amount!, item.taxRate)).toLocaleString()}
           </span>
         )}
       </div>

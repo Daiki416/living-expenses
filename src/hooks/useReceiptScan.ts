@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
-import { extractReceiptData, isValidScanItem, hasValidAmount, applyTax, DEFAULT_SCAN_TAX_RATE, type ScanItem, type ScanResult, type TaxRate } from '../lib/ocr'
+import { extractReceiptData, isValidScanItem, hasValidAmount, DEFAULT_SCAN_TAX_RATE, type ScanItem, type ScanResult, type TaxRate } from '../lib/ocr'
+import { reconcileReceipt } from '../lib/receiptTotal'
 import type { Category } from '../lib/supabase'
 import { sanitizeDate } from '../lib/validation'
 import { applyRulesToItems } from '../lib/categoryRules'
@@ -31,7 +32,7 @@ type UseReceiptScanOptions = {
   initialFiles?: File[]
 }
 
-type PendingReceipt = { date: string; storeName: string; items: ScanItem[] }
+type PendingReceipt = { date: string; storeName: string; items: ScanItem[]; total: number | null }
 
 const EMPTY_SCAN_ITEM: ScanItem = { description: '', amount: null, selected: true, taxRate: DEFAULT_SCAN_TAX_RATE, categoryId: null, categoryTouched: false }
 
@@ -46,6 +47,7 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
   const [pendingReceipts, setPendingReceipts] = useState<PendingReceipt[]>([])
   const [scanProgress, setScanProgress] = useState<{ done: number; total: number } | null>(null)
   const [batchTotal, setBatchTotal] = useState(0)
+  const [scanTotal, setScanTotal] = useState<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const scanningRef = useRef(false)
 
@@ -83,6 +85,7 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
             storeName: data.storeName ?? '',
             // 訂正メモリを Haiku 判定より優先して確定オーバーライドする（有効な葉IDのみ）。
             items: applyRulesToItems(items, rulesMap, validLeafCategoryIds),
+            total: data.total,
           })
         } else if (firstFailure === null) {
           firstFailure = (r.reason as Error)?.message ?? MESSAGES.common.genericError
@@ -97,6 +100,7 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
       const [first, ...rest] = receipts
       setScanResult({ date: first.date, items: first.items })
       setScanStoreName(first.storeName)
+      setScanTotal(first.total)
       setPendingReceipts(rest)
       setBatchTotal(receipts.length)
       setError(failedCount > 0 ? MESSAGES.scan.partialFailure(files.length, failedCount) : null)
@@ -144,10 +148,32 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
     [scanResult]
   )
 
-  const registeredTotal = useMemo(
-    () => validItems.reduce((sum, item) => sum + applyTax(item.amount!, item.taxRate), 0),
-    [validItems]
+  // 選択外だが有効な明細（品名あり・金額有効）が存在するか。存在時は合計突合を諦める。
+  const hasExcluded = useMemo(
+    () => scanResult.items.some(i => !i.selected && i.description.trim() !== '' && hasValidAmount(i.amount)),
+    [scanResult]
   )
+
+  // レシート合計へ寄せた税込整数を確定する（validItems と reconcile.amounts は同順）。
+  const reconcile = useMemo(
+    () => reconcileReceipt(validItems.map(i => ({ amount: i.amount!, taxRate: i.taxRate })), scanTotal, hasExcluded),
+    [validItems, scanTotal, hasExcluded]
+  )
+
+  const registeredTotal = useMemo(
+    () => reconcile.amounts.reduce((sum, a) => sum + a, 0),
+    [reconcile]
+  )
+
+  // 各明細行の実保存税込（scanResult.items と同順）。無効/保存対象外の行は null（従来プレビューにフォールバック）。
+  const reconciledByIndex = useMemo(() => {
+    const out = new Array<number | null>(scanResult.items.length).fill(null)
+    let vi = 0
+    scanResult.items.forEach((it, i) => {
+      if (isValidScanItem(it)) { out[i] = reconcile.amounts[vi]; vi++ }
+    })
+    return out
+  }, [scanResult, reconcile])
 
   // キューの何枚目を確認中か（1始まり）。
   const batchIndex = useMemo(() => batchTotal - pendingReceipts.length, [batchTotal, pendingReceipts.length])
@@ -158,6 +184,7 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
       const [next, ...rest] = pendingReceipts
       setScanResult({ date: next.date, items: next.items })
       setScanStoreName(next.storeName)
+      setScanTotal(next.total)
       setPendingReceipts(rest)
       setError(null)
     } else {
@@ -171,12 +198,17 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
     if (checkedItems.length === 0) { setError(MESSAGES.scan.noItemsSelected); return }
     if (checkedItems.some(item => item.description.trim() === '')) { setError(MESSAGES.scan.missingItemName); return }
     if (checkedItems.some(item => !hasValidAmount(item.amount))) { setError(MESSAGES.form.invalidAmount); return }
+    // レシート合計に寄せられなかった場合のみ、そのまま登録するか確認する。
+    if (reconcile.status === 'mismatch') {
+      const ok = window.confirm(MESSAGES.scan.totalMismatch(Math.abs(reconcile.diff ?? 0)))
+      if (!ok) return
+    }
     setSubmitting(true)
     setError(null)
     try {
       await onAddGroup(
         { date: scanResult.date, description: scanStoreName || 'レシート' },
-        validItems.map(item => ({ description: item.description, amount: item.amount!, taxRate: item.taxRate, categoryId: resolveScanItemCategoryId(applyCommonCategory, commonCategoryId, item.categoryId) }))
+        validItems.map((item, i) => ({ description: item.description, amount: reconcile.amounts[i], taxRate: item.taxRate, categoryId: resolveScanItemCategoryId(applyCommonCategory, commonCategoryId, item.categoryId) }))
       )
       // 一括適用（共通モード）は学習しない。OFF時のみ、ユーザーが個別に手で選んだ明細を訂正メモリへ学習する（fire-and-forget）。
       if (!applyCommonCategory) {
@@ -211,6 +243,7 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
   function resetScan() {
     setScanResult({ date: defaultDate, items: [{ ...EMPTY_SCAN_ITEM }] })
     setScanStoreName('')
+    setScanTotal(null)
     setError(null)
   }
 
@@ -242,5 +275,7 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
     resetScan,
     selectedScanCount,
     registeredTotal,
+    reconcile,
+    reconciledByIndex,
   }
 }

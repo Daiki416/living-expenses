@@ -16,7 +16,6 @@ import { MonthlyTrendView } from './components/MonthlyTrendView'
 import { HeaderActions } from './components/HeaderActions'
 import { FancyDecor } from './components/FancyDecor'
 import type { Expense, ReceiptKind } from './lib/supabase'
-import { applyTax } from './lib/ocr'
 import { deriveReceiptKind } from './lib/payment'
 import { EXPENSE_KIND, EXPENSE_KIND_LABEL } from './config/classifications'
 
@@ -293,7 +292,7 @@ function AppMain() {
               { date: parent.date, description: parent.description, kind: deriveReceiptKind(parent.paidByMemberId), paidByMemberId: parent.paidByMemberId },
               children.map(c => ({
                 description: c.description,
-                amount: applyTax(c.amount, c.taxRate),
+                amount: c.amount,
                 category_id: c.categoryId,
               }))
             )

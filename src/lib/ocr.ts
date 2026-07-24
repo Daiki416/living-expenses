@@ -27,6 +27,7 @@ type ReceiptItem = {
 type ReceiptData = {
   storeName: string | null
   date: string | null
+  total: number | null
   items: ReceiptItem[]
 }
 
@@ -150,6 +151,7 @@ export async function extractReceiptData(imageFile: File, categories: Category[]
   return {
     storeName: typeof data.storeName === 'string' ? data.storeName : null,
     date: typeof data.date === 'string' ? data.date : null,
+    total: typeof data.total === 'number' && Number.isInteger(data.total) && data.total > 0 ? data.total : null,
     items,
   }
 }
