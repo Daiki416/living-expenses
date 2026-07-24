@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTheme } from './hooks/useTheme'
 import { useReceipts } from './hooks/useReceipts'
 import { useMembers } from './hooks/useMembers'
@@ -51,6 +51,8 @@ function AppMain() {
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [showTrend, setShowTrend] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
+  const [initialScanFiles, setInitialScanFiles] = useState<File[]>([])
+  const cameraInputRef = useRef<HTMLInputElement>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const [editingReceipt, setEditingReceipt] = useState<{ id: string; description: string; date: string; kind: ReceiptKind; paidByMemberId: string | null } | null>(null)
@@ -222,12 +224,32 @@ function AppMain() {
             <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-2 uppercase tracking-wide">
               <span className="w-1 h-4 rounded-full bg-indigo-500"></span>明細
             </h2>
-            <button
-              onClick={() => setShowAdd(true)}
-              className="btn-primary text-xs px-3 py-1.5 shadow-sm"
-            >
-              ＋ 追加
-            </button>
+            <div className="flex items-center gap-2">
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (!f) return; setInitialScanFiles([f]); setShowAdd(true) }}
+              />
+              <button
+                onClick={() => cameraInputRef.current?.click()}
+                className="btn-primary text-xs px-3 py-1.5 shadow-sm flex items-center gap-1"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+                </svg>
+                レシート
+              </button>
+              <button
+                onClick={() => setShowAdd(true)}
+                className="btn-secondary text-xs px-3 py-1.5"
+              >
+                ＋追加
+              </button>
+            </div>
           </div>
 
           <div className="card px-5 py-4">
@@ -276,7 +298,8 @@ function AppMain() {
               }))
             )
           }
-          onClose={() => setShowAdd(false)}
+          initialFiles={initialScanFiles}
+          onClose={() => { setShowAdd(false); setInitialScanFiles([]) }}
         />
       )}
 

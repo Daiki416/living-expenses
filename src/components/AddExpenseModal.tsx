@@ -33,9 +33,10 @@ type Props = {
   onDeleteRule: (keyword: string) => void
   onAddGroup: (parent: OnAddGroupParent, children: OnAddGroupChild[]) => Promise<void>
   onClose: () => void
+  initialFiles?: File[]
 }
 
-export function AddExpenseModal({ members, categories, defaultDate, rulesMap, onUpsertRule, onDeleteRule, onAddGroup, onClose }: Props) {
+export function AddExpenseModal({ members, categories, defaultDate, rulesMap, onUpsertRule, onDeleteRule, onAddGroup, onClose, initialFiles }: Props) {
   const [paidByMemberId, setPaidByMemberId] = useState<string | null>(null)
   const [commonPickerOpen, setCommonPickerOpen] = useState(false)
 
@@ -44,7 +45,8 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
   const {
     scanning, submitting, error, scanResult, scanStoreName,
     applyCommonCategory, setApplyCommonCategory, commonCategoryId, setCommonCategoryId, fileInputRef,
-    handleScanReceipt, handleScanStoreNameChange, handleScanDateChange,
+    pendingReceipts, batchTotal, batchIndex, scanProgress, handleSkip, handleScanInputChange,
+    handleScanStoreNameChange, handleScanDateChange,
     updateScanItem, setItemCategory, addScanItem, handleAddFromReceipt, selectedScanCount, registeredTotal,
   } = useReceiptScan({
     defaultDate,
@@ -55,22 +57,32 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
     onAddGroup: (parent, children) =>
       onAddGroup({ ...parent, paidByMemberId }, children),
     onClose,
+    initialFiles,
   })
 
-  const addButtonLabel = submitting ? '追加中…' : `${selectedScanCount}件を追加`
+  const addButtonLabel = submitting
+    ? '追加中…'
+    : batchTotal > 1
+      ? (pendingReceipts.length > 0 ? '追加して次へ' : '追加して完了')
+      : `${selectedScanCount}件を追加`
 
   return (
     <ModalShell onClose={onClose} className="max-h-[90dvh] flex flex-col">
       <div className="shrink-0">
-        <h2 className="text-lg font-semibold text-ink mb-5">{MESSAGES.addExpense.title}</h2>
+        <div className="mb-5 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-ink">{MESSAGES.addExpense.title}</h2>
+          {batchTotal > 1 && (
+            <span className="text-sm text-ink-3 tabular-nums">{batchIndex} / {batchTotal}枚目</span>
+          )}
+        </div>
 
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          capture="environment"
+          multiple
           className="hidden"
-          onChange={handleScanReceipt}
+          onChange={handleScanInputChange}
         />
         <button
           type="button"
@@ -82,7 +94,9 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
             <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
           </svg>
-          {scanning ? '読み込み中…' : 'レシートを読み込む'}
+          {scanning
+            ? (scanProgress && scanProgress.total > 1 ? `読込中 ${scanProgress.done}/${scanProgress.total}枚` : '読み込み中…')
+            : '複数まとめて読み込む'}
         </button>
       </div>
 
@@ -220,6 +234,16 @@ export function AddExpenseModal({ members, categories, defaultDate, rulesMap, on
         >
           キャンセル
         </button>
+        {batchTotal > 1 && (
+          <button
+            type="button"
+            onClick={handleSkip}
+            disabled={submitting}
+            className="btn-secondary flex-1 py-2"
+          >
+            スキップ
+          </button>
+        )}
         <button
           type="button"
           onClick={handleAddFromReceipt}

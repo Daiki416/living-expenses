@@ -17,6 +17,8 @@ export const MESSAGES = {
   scan: {
     noItemsSelected: '追加する項目を選択してください',
     missingItemName: '品目名を入力してください',
+    partialFailure: (total: number, failed: number) => `${total}枚中${failed}枚は読み取れませんでした（残りは反映済み）`,
+    tooManyFiles: (max: number) => `一度に読み込めるのは${max}枚までです`,
   },
   list: {
     empty: 'この月の支出はありません',
