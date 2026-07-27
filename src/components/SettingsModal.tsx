@@ -65,10 +65,11 @@ type Props = {
   accountState: AccountState | null
   onUpdateBalance: (balance: number) => Promise<void>
   onUpdateNextCardDebit: (next: number) => Promise<void>
+  onUpdateDebitDay: (day: number) => Promise<void>
   onClose: () => void
 }
 
-export function SettingsModal({ members, categories, onAddMember, onDeleteMember, onUpdateMemberBudget, onAddCategory, onAddParentWithChild, onDeleteCategory, onRenameCategory, onReorderCategory, accountState, onUpdateBalance, onUpdateNextCardDebit, onClose }: Props) {
+export function SettingsModal({ members, categories, onAddMember, onDeleteMember, onUpdateMemberBudget, onAddCategory, onAddParentWithChild, onDeleteCategory, onRenameCategory, onReorderCategory, accountState, onUpdateBalance, onUpdateNextCardDebit, onUpdateDebitDay, onClose }: Props) {
   const [tab, setTab] = useState<Tab>('members')
 
   const [newMemberName, setNewMemberName] = useState('')
@@ -91,6 +92,7 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
   // 口座残高・翌月クレカ引落のドラフト。accountState 変化で再シードする。
   const [balanceDraft, setBalanceDraft] = useState(() => String(accountState?.balance ?? 0))
   const [nextCardDebitDraft, setNextCardDebitDraft] = useState(() => String(accountState?.next_card_debit ?? 0))
+  const [debitDayDraft, setDebitDayDraft] = useState(() => String(accountState?.debit_day ?? 4))
   const [savingAccount, setSavingAccount] = useState(false)
   const [accountError, setAccountError] = useState<string | null>(null)
   const [prevAccountState, setPrevAccountState] = useState(accountState)
@@ -98,6 +100,7 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
     setPrevAccountState(accountState)
     setBalanceDraft(String(accountState?.balance ?? 0))
     setNextCardDebitDraft(String(accountState?.next_card_debit ?? 0))
+    setDebitDayDraft(String(accountState?.debit_day ?? 4))
   }
 
   const [newParentName, setNewParentName] = useState('')
@@ -298,6 +301,21 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
     setAccountError(null)
     try {
       await onUpdateNextCardDebit(n)
+    } catch {
+      setAccountError(MESSAGES.account.saveFailed)
+    } finally {
+      setSavingAccount(false)
+    }
+  }
+
+  async function handleSaveDebitDay() {
+    const n = Number(debitDayDraft)
+    if (!Number.isInteger(n) || n < 1 || n > 28) return
+    if (n === (accountState?.debit_day ?? 4)) return
+    setSavingAccount(true)
+    setAccountError(null)
+    try {
+      await onUpdateDebitDay(n)
     } catch {
       setAccountError(MESSAGES.account.saveFailed)
     } finally {
@@ -506,6 +524,24 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
                   className="field-input w-28 px-2 py-1 text-sm text-right disabled:opacity-50"
                 />
                 <span className="text-xs text-ink-3 shrink-0">円</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm text-ink-2 shrink-0">引落日</span>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min={1}
+                  max={28}
+                  step={1}
+                  value={debitDayDraft}
+                  onChange={e => setDebitDayDraft(e.target.value)}
+                  onBlur={handleSaveDebitDay}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSaveDebitDay() }}
+                  disabled={savingAccount}
+                  className="field-input w-28 px-2 py-1 text-sm text-right disabled:opacity-50"
+                />
+                <span className="text-xs text-ink-3 shrink-0">日</span>
               </div>
             </div>
             {accountError && <p className="text-red-500 text-xs mt-2">{accountError}</p>}

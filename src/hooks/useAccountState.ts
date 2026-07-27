@@ -45,5 +45,13 @@ export function useAccountState() {
     setRefetchKey(k => k + 1)
   }
 
-  return { accountState, loading, error, updateBalance, updateNextCardDebit }
+  async function updateDebitDay(debit_day: number) {
+    const { error } = await supabase
+      .from('account_state')
+      .upsert({ id: true, debit_day, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+    if (error) throw new Error(error.message)
+    setRefetchKey(k => k + 1)
+  }
+
+  return { accountState, loading, error, updateBalance, updateNextCardDebit, updateDebitDay }
 }

@@ -31,6 +31,7 @@ export type AccountState = {
   balance: number
   balance_as_of: string | null
   next_card_debit: number
+  debit_day: number
   updated_at: string
 }
 

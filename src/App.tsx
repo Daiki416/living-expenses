@@ -19,7 +19,7 @@ import { HeaderActions } from './components/HeaderActions'
 import { FancyDecor } from './components/FancyDecor'
 import type { Expense, ReceiptKind } from './lib/supabase'
 import { deriveReceiptKind } from './lib/payment'
-import { computeExpectedInflow } from './lib/accountProjection'
+import { computeExpectedInflow, resolveUpcomingDebit } from './lib/accountProjection'
 import { EXPENSE_KIND, EXPENSE_KIND_LABEL } from './config/classifications'
 
 function todayYYYYMMDD() {
@@ -64,7 +64,7 @@ function AppMain() {
   const [reminderConfirming, setReminderConfirming] = useState(false)
 
   const { members, loading: membersLoading, error: membersError, addMember, deleteMember, updateMemberBudget } = useMembers()
-  const { accountState, loading: accountLoading, error: accountError, updateBalance, updateNextCardDebit } = useAccountState()
+  const { accountState, loading: accountLoading, error: accountError, updateBalance, updateNextCardDebit, updateDebitDay } = useAccountState()
 
   const prevMonthNum = now.getMonth() === 0 ? 12 : now.getMonth()
   const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
@@ -79,6 +79,10 @@ function AppMain() {
   // 編集する経路がないので stale は問題化せず currentMonthReceipts で足りる。
   const viewingCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
   const inflowSourceReceipts = viewingCurrentMonth ? receipts : currentMonthReceipts
+  // 前月基準サイクルでも同様に、実前月を表示中はライブな receipts を使う（別インスタンスの
+  // prevMonthReceipts は前月立替の編集後に再取得されず C が古くなるため）。
+  const viewingPrevMonth = year === prevYear && month === prevMonthNum
+  const livePrevMonthReceipts = viewingPrevMonth ? receipts : prevMonthReceipts
 
   const advanceReceipts = receipts.filter(r => r.kind === EXPENSE_KIND.ADVANCE)
   const cardReceipts = receipts.filter(r => r.kind === EXPENSE_KIND.CARD)
@@ -108,9 +112,15 @@ function AppMain() {
   const cardTotal = cardExpenses.reduce((s, e) => s + e.amount, 0)
   const grandTotal = expenseTotal + cardTotal
 
-  // 入金見込み(C)算出用: 現在実月の立替を立替者名別に合算する（memberTotalsと同一ロジック）。
+  // 引落日設定から次の実引落日と、その引落を賄う振込の月基準（サイクル）を決める。
+  const debitDay = accountState?.debit_day ?? 4
+  const upcoming = resolveUpcomingDebit(now, debitDay)
+  // 入金見込み(C)算出用: 次の引落を賄う振込は、月初(1〜3日)に着金するかどうかで基準月が変わる。
+  //   引落前（今月引落を控える段階）→ 先月立替を差し引いた振込がすでに着金済み＝先月立替基準。
+  //   引落後（次は来月引落）→ 来月初に今月立替を差し引いた振込が入る＝今月立替基準。
+  const inflowReceipts = upcoming.usePrevMonthAdvances ? livePrevMonthReceipts : inflowSourceReceipts
   const advanceByMemberName: Record<string, number> = {}
-  inflowSourceReceipts.filter(r => r.kind === EXPENSE_KIND.ADVANCE).forEach(r => {
+  inflowReceipts.filter(r => r.kind === EXPENSE_KIND.ADVANCE).forEach(r => {
     const name = r.paid_by_member_id ? memberNameById.get(r.paid_by_member_id) : undefined
     if (!name) return
     const sum = r.expenses.reduce((s, e) => s + e.amount, 0)
@@ -236,6 +246,7 @@ function AppMain() {
             balanceAsOf={accountState?.balance_as_of ?? null}
             expectedInflow={expectedInflow}
             nextCardDebit={accountState?.next_card_debit ?? 0}
+            debitDate={upcoming.debitDate}
             loading={accountLoading}
           />
         )}
@@ -376,6 +387,7 @@ function AppMain() {
           accountState={accountState}
           onUpdateBalance={updateBalance}
           onUpdateNextCardDebit={updateNextCardDebit}
+          onUpdateDebitDay={updateDebitDay}
           onClose={() => setShowSettings(false)}
         />
       )}
