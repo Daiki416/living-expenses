@@ -72,12 +72,13 @@ function AppMain() {
   const { rulesMap, upsertRule, deleteRule } = useCategoryRules()
   const { receipts, loading: expensesLoading, error: expensesError, addReceiptGroup, updateExpense, deleteReceipt, updateReceipt } = useReceipts(year, month)
   const { receipts: prevMonthReceipts, loading: prevMonthLoading } = useReceipts(prevYear, prevMonthNum)
-  // 入金見込み(C)は常に現在実月の立替から算出する（ナビ月移動でCがぶれないようにナビのreceiptsではなくcurrentMonthReceiptsを使う）。
-  const { receipts: currentMonthReceipts } = useReceipts(now.getFullYear(), now.getMonth() + 1)
-  // ナビ月が現在実月と一致するときは、CRUDが即反映されるライブな receipts を使う（別インスタンスの
-  // currentMonthReceipts は立替追加/削除後に再取得されず C が古くなるため）。他月閲覧中は現在実月を
-  // 編集する経路がないので stale は問題化せず currentMonthReceipts で足りる。
+  // ナビ月が現在実月と一致するときは、CRUDが即反映されるライブな receipts を C 算出にも流用する（別
+  // インスタンスの currentMonthReceipts は立替追加/削除後に再取得されず C が古くなるため）。他月閲覧中は
+  // 現在実月を編集する経路がないので stale は問題化しない。
   const viewingCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
+  // 入金見込み(C)用の現在実月インスタンス。当月表示中は上の receipts と同一クエリになるので取得を無効化し、
+  // 明細クエリ(*, expenses(*))の二重実行を避ける。
+  const { receipts: currentMonthReceipts } = useReceipts(now.getFullYear(), now.getMonth() + 1, !viewingCurrentMonth)
   const inflowSourceReceipts = viewingCurrentMonth ? receipts : currentMonthReceipts
   // 前月基準サイクルでも同様に、実前月を表示中はライブな receipts を使う（別インスタンスの
   // prevMonthReceipts は前月立替の編集後に再取得されず C が古くなるため）。

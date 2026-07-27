@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react'
 import { supabase, type Expense, type ReceiptKind, type ReceiptWithExpenses } from '../lib/supabase'
 import { monthDateRange } from '../lib/date'
 
-export function useReceipts(year: number, month: number) {
+// enabled=false のときは取得をスキップする（例: 当月表示中は projection 用の当月インスタンスが
+// ナビ月の receipts と重複するため、そちらを無効化して同一クエリの二重実行を避ける）。
+export function useReceipts(year: number, month: number, enabled: boolean = true) {
   const [receipts, setReceipts] = useState<ReceiptWithExpenses[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(enabled)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // 無効化中は取得しない（結果は消費されないため state はそのまま据え置く）。
+    if (!enabled) return
     const { from, to } = monthDateRange(year, month)
 
     let cancelled = false
@@ -29,7 +33,7 @@ export function useReceipts(year: number, month: number) {
       setLoading(false)
     })()
     return () => { cancelled = true }
-  }, [year, month])
+  }, [year, month, enabled])
 
   const expenses = receipts.flatMap(r => r.expenses)
 
