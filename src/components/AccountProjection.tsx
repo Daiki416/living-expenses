@@ -37,7 +37,7 @@ export function AccountProjection({ balance, balanceAsOf, expectedInflow, nextCa
         onClick={() => setExpanded(e => !e)}
         className="w-full flex items-center justify-between px-4 py-2.5"
       >
-        <span className="text-sm font-medium text-ink-2">{debitDate.getMonth() + 1}月{debitDate.getDate()}日 引落後見込み</span>
+        <span className="text-sm font-medium text-ink-2">{debitDate.getMonth() + 1}月{debitDate.getDate()}日 引落後口座残高（見込み）</span>
         <span className={`text-base font-semibold tabular-nums ${shortfall ? 'text-red-500 dark:text-red-400' : 'text-ink'}`}>
           {shortfall && <span className="mr-1">⚠</span>}¥{afterDebit.toLocaleString()}
         </span>
