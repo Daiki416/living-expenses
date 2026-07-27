@@ -68,21 +68,31 @@ function AppMain() {
 
   const prevMonthNum = now.getMonth() === 0 ? 12 : now.getMonth()
   const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
+  const viewingCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
+  const viewingPrevMonth = year === prevYear && month === prevMonthNum
+  // 引落日設定から次の実引落日と、その引落を賄う振込の月基準（サイクル）を決める。
+  const debitDay = accountState?.debit_day ?? 4
+  const upcoming = resolveUpcomingDebit(now, debitDay)
+  // prevMonthReceipts(先月分)は起動時の同時リクエストを1本増やすので、実際に要るときだけ取得する:
+  //   - 月初リマインダー表示中(1〜3日) → prevMonthMemberTotals に使う
+  //   - 引落前サイクルで前月立替を使い、かつ前月を表示中でない(ライブな receipts で代替不可)とき
+  // それ以外の期間は投げない（無料枠インスタンスのコネクションプール圧を下げる）。
+  // 前月を表示中はナビの receipts がそのまま前月明細なので、両consumer（リマインダー・C算出）とも
+  // ライブな receipts で代替でき、prevMonthReceipts の取得自体が不要（二重取得を避ける）。
+  const needPrevMonthReceipts =
+    ((now.getDate() <= 3 && !reminderDismissed) || upcoming.usePrevMonthAdvances) &&
+    !viewingPrevMonth
+
   const { categories, error: categoriesError, addCategory, addParentWithChild, deleteCategory, renameCategory, reorderCategory } = useCategories()
   const { rulesMap, upsertRule, deleteRule } = useCategoryRules()
   const { receipts, loading: expensesLoading, error: expensesError, addReceiptGroup, updateExpense, deleteReceipt, updateReceipt } = useReceipts(year, month)
-  const { receipts: prevMonthReceipts, loading: prevMonthLoading } = useReceipts(prevYear, prevMonthNum)
-  // ナビ月が現在実月と一致するときは、CRUDが即反映されるライブな receipts を C 算出にも流用する（別
-  // インスタンスの currentMonthReceipts は立替追加/削除後に再取得されず C が古くなるため）。他月閲覧中は
-  // 現在実月を編集する経路がないので stale は問題化しない。
-  const viewingCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
+  const { receipts: prevMonthReceipts, loading: prevMonthLoading } = useReceipts(prevYear, prevMonthNum, needPrevMonthReceipts)
   // 入金見込み(C)用の現在実月インスタンス。当月表示中は上の receipts と同一クエリになるので取得を無効化し、
   // 明細クエリ(*, expenses(*))の二重実行を避ける。
   const { receipts: currentMonthReceipts } = useReceipts(now.getFullYear(), now.getMonth() + 1, !viewingCurrentMonth)
+  // ナビ月が現在実月/前月と一致するときは CRUD 即反映のライブな receipts を C 算出に流用する（別インスタンスは
+  // 編集後に再取得されず C が古くなるため。他月閲覧中は当該月を編集する経路がなく stale は無害）。
   const inflowSourceReceipts = viewingCurrentMonth ? receipts : currentMonthReceipts
-  // 前月基準サイクルでも同様に、実前月を表示中はライブな receipts を使う（別インスタンスの
-  // prevMonthReceipts は前月立替の編集後に再取得されず C が古くなるため）。
-  const viewingPrevMonth = year === prevYear && month === prevMonthNum
   const livePrevMonthReceipts = viewingPrevMonth ? receipts : prevMonthReceipts
 
   const advanceReceipts = receipts.filter(r => r.kind === EXPENSE_KIND.ADVANCE)
@@ -94,7 +104,7 @@ function AppMain() {
   const memberNameById = new Map(members.map(m => [m.id, m.name]))
 
   const prevMonthMemberTotals: Record<string, number> = {}
-  prevMonthReceipts.filter(r => r.kind === EXPENSE_KIND.ADVANCE).forEach(r => {
+  livePrevMonthReceipts.filter(r => r.kind === EXPENSE_KIND.ADVANCE).forEach(r => {
     const name = r.paid_by_member_id ? memberNameById.get(r.paid_by_member_id) : undefined
     if (!name) return
     const sum = r.expenses.reduce((s, e) => s + e.amount, 0)
@@ -113,9 +123,6 @@ function AppMain() {
   const cardTotal = cardExpenses.reduce((s, e) => s + e.amount, 0)
   const grandTotal = expenseTotal + cardTotal
 
-  // 引落日設定から次の実引落日と、その引落を賄う振込の月基準（サイクル）を決める。
-  const debitDay = accountState?.debit_day ?? 4
-  const upcoming = resolveUpcomingDebit(now, debitDay)
   // 入金見込み(C)算出用: 次の引落を賄う振込は、月初(1〜3日)に着金するかどうかで基準月が変わる。
   //   引落前（今月引落を控える段階）→ 先月立替を差し引いた振込がすでに着金済み＝先月立替基準。
   //   引落後（次は来月引落）→ 来月初に今月立替を差し引いた振込が入る＝今月立替基準。
