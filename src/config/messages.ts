@@ -34,6 +34,9 @@ export const MESSAGES = {
     deleteConfirm: (name: string, count: number) =>
       `「${name || 'このレシート'}」を削除しますか？\nこの${count}件の明細も削除されます。`,
   },
+  account: {
+    saveFailed: '口座情報の保存に失敗しました',
+  },
   common: {
     duplicateName: '同じ名前がすでに存在します',
     genericError: 'エラーが発生しました。もう一度お試しください',

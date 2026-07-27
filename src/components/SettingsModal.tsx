@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react'
-import type { Member, Category } from '../lib/supabase'
+import type { Member, Category, AccountState } from '../lib/supabase'
 import { supabase } from '../lib/supabase'
+import { MESSAGES } from '../config/messages'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { ModalShell } from './ModalShell'
 import { toUserErrorMessage } from '../lib/validation'
@@ -61,10 +62,13 @@ type Props = {
   onDeleteCategory: (id: string) => Promise<void>
   onRenameCategory: (id: string, name: string) => Promise<void>
   onReorderCategory: (orderedIds: string[]) => Promise<void>
+  accountState: AccountState | null
+  onUpdateBalance: (balance: number) => Promise<void>
+  onUpdateNextCardDebit: (next: number) => Promise<void>
   onClose: () => void
 }
 
-export function SettingsModal({ members, categories, onAddMember, onDeleteMember, onUpdateMemberBudget, onAddCategory, onAddParentWithChild, onDeleteCategory, onRenameCategory, onReorderCategory, onClose }: Props) {
+export function SettingsModal({ members, categories, onAddMember, onDeleteMember, onUpdateMemberBudget, onAddCategory, onAddParentWithChild, onDeleteCategory, onRenameCategory, onReorderCategory, accountState, onUpdateBalance, onUpdateNextCardDebit, onClose }: Props) {
   const [tab, setTab] = useState<Tab>('members')
 
   const [newMemberName, setNewMemberName] = useState('')
@@ -82,6 +86,18 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
   if (members !== prevMembers) {
     setPrevMembers(members)
     setBudgetDrafts(Object.fromEntries(members.map(m => [m.id, String(m.monthly_budget)])))
+  }
+
+  // 口座残高・翌月クレカ引落のドラフト。accountState 変化で再シードする。
+  const [balanceDraft, setBalanceDraft] = useState(() => String(accountState?.balance ?? 0))
+  const [nextCardDebitDraft, setNextCardDebitDraft] = useState(() => String(accountState?.next_card_debit ?? 0))
+  const [savingAccount, setSavingAccount] = useState(false)
+  const [accountError, setAccountError] = useState<string | null>(null)
+  const [prevAccountState, setPrevAccountState] = useState(accountState)
+  if (accountState !== prevAccountState) {
+    setPrevAccountState(accountState)
+    setBalanceDraft(String(accountState?.balance ?? 0))
+    setNextCardDebitDraft(String(accountState?.next_card_debit ?? 0))
   }
 
   const [newParentName, setNewParentName] = useState('')
@@ -259,6 +275,36 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
     }
   }
 
+  async function handleSaveBalance() {
+    const n = Number(balanceDraft)
+    if (!Number.isInteger(n) || n < 0) return
+    if (n === (accountState?.balance ?? 0)) return
+    setSavingAccount(true)
+    setAccountError(null)
+    try {
+      await onUpdateBalance(n)
+    } catch {
+      setAccountError(MESSAGES.account.saveFailed)
+    } finally {
+      setSavingAccount(false)
+    }
+  }
+
+  async function handleSaveNextCardDebit() {
+    const n = Number(nextCardDebitDraft)
+    if (!Number.isInteger(n) || n < 0) return
+    if (n === (accountState?.next_card_debit ?? 0)) return
+    setSavingAccount(true)
+    setAccountError(null)
+    try {
+      await onUpdateNextCardDebit(n)
+    } catch {
+      setAccountError(MESSAGES.account.saveFailed)
+    } finally {
+      setSavingAccount(false)
+    }
+  }
+
   // 大分類名＋最初の小分類名を1アクションで作成する（親は必ず子を持つモデル）。
   async function handleAddParentGroup() {
     const validation = validateNewParentWithChild(newParentName, newFirstChildName)
@@ -425,6 +471,44 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
               </button>
             </div>
             {memberError && <p className="text-red-500 text-xs mt-2">{memberError}</p>}
+          </div>
+          {/* 口座残高シミュレーション用の手入力欄 */}
+          <div className="shrink-0 pt-3 mt-3 border-t border-line space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm text-ink-2 shrink-0">口座残高</span>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={balanceDraft}
+                  onChange={e => setBalanceDraft(e.target.value)}
+                  onBlur={handleSaveBalance}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSaveBalance() }}
+                  disabled={savingAccount}
+                  className="field-input w-28 px-2 py-1 text-sm text-right disabled:opacity-50"
+                />
+                <span className="text-xs text-ink-3 shrink-0">円</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm text-ink-2 shrink-0">翌月クレカ引落</span>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={nextCardDebitDraft}
+                  onChange={e => setNextCardDebitDraft(e.target.value)}
+                  onBlur={handleSaveNextCardDebit}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSaveNextCardDebit() }}
+                  disabled={savingAccount}
+                  className="field-input w-28 px-2 py-1 text-sm text-right disabled:opacity-50"
+                />
+                <span className="text-xs text-ink-3 shrink-0">円</span>
+              </div>
+            </div>
+            {accountError && <p className="text-red-500 text-xs mt-2">{accountError}</p>}
           </div>
         </div>
       )}

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useTheme } from './hooks/useTheme'
 import { useReceipts } from './hooks/useReceipts'
 import { useMembers } from './hooks/useMembers'
+import { useAccountState } from './hooks/useAccountState'
 import { useCategories } from './hooks/useCategories'
 import { useCategoryRules } from './hooks/useCategoryRules'
 import { useAuth } from './hooks/useAuth'
@@ -12,11 +13,13 @@ import { SettingsModal } from './components/SettingsModal'
 import { LoginScreen } from './components/LoginScreen'
 import { ExpenseList } from './components/ExpenseList'
 import { CategorySummary } from './components/CategorySummary'
+import { AccountProjection } from './components/AccountProjection'
 import { MonthlyTrendView } from './components/MonthlyTrendView'
 import { HeaderActions } from './components/HeaderActions'
 import { FancyDecor } from './components/FancyDecor'
 import type { Expense, ReceiptKind } from './lib/supabase'
 import { deriveReceiptKind } from './lib/payment'
+import { computeExpectedInflow } from './lib/accountProjection'
 import { EXPENSE_KIND, EXPENSE_KIND_LABEL } from './config/classifications'
 
 function todayYYYYMMDD() {
@@ -61,6 +64,7 @@ function AppMain() {
   const [reminderConfirming, setReminderConfirming] = useState(false)
 
   const { members, loading: membersLoading, error: membersError, addMember, deleteMember, updateMemberBudget } = useMembers()
+  const { accountState, loading: accountLoading, error: accountError, updateBalance, updateNextCardDebit } = useAccountState()
 
   const prevMonthNum = now.getMonth() === 0 ? 12 : now.getMonth()
   const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
@@ -68,6 +72,13 @@ function AppMain() {
   const { rulesMap, upsertRule, deleteRule } = useCategoryRules()
   const { receipts, loading: expensesLoading, error: expensesError, addReceiptGroup, updateExpense, deleteReceipt, updateReceipt } = useReceipts(year, month)
   const { receipts: prevMonthReceipts, loading: prevMonthLoading } = useReceipts(prevYear, prevMonthNum)
+  // 入金見込み(C)は常に現在実月の立替から算出する（ナビ月移動でCがぶれないようにナビのreceiptsではなくcurrentMonthReceiptsを使う）。
+  const { receipts: currentMonthReceipts } = useReceipts(now.getFullYear(), now.getMonth() + 1)
+  // ナビ月が現在実月と一致するときは、CRUDが即反映されるライブな receipts を使う（別インスタンスの
+  // currentMonthReceipts は立替追加/削除後に再取得されず C が古くなるため）。他月閲覧中は現在実月を
+  // 編集する経路がないので stale は問題化せず currentMonthReceipts で足りる。
+  const viewingCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
+  const inflowSourceReceipts = viewingCurrentMonth ? receipts : currentMonthReceipts
 
   const advanceReceipts = receipts.filter(r => r.kind === EXPENSE_KIND.ADVANCE)
   const cardReceipts = receipts.filter(r => r.kind === EXPENSE_KIND.CARD)
@@ -96,6 +107,16 @@ function AppMain() {
 
   const cardTotal = cardExpenses.reduce((s, e) => s + e.amount, 0)
   const grandTotal = expenseTotal + cardTotal
+
+  // 入金見込み(C)算出用: 現在実月の立替を立替者名別に合算する（memberTotalsと同一ロジック）。
+  const advanceByMemberName: Record<string, number> = {}
+  inflowSourceReceipts.filter(r => r.kind === EXPENSE_KIND.ADVANCE).forEach(r => {
+    const name = r.paid_by_member_id ? memberNameById.get(r.paid_by_member_id) : undefined
+    if (!name) return
+    const sum = r.expenses.reduce((s, e) => s + e.amount, 0)
+    advanceByMemberName[name] = (advanceByMemberName[name] ?? 0) + sum
+  })
+  const expectedInflow = computeExpectedInflow(members, advanceByMemberName)
 
   function prevMonth() {
     if (month === 1) { setYear(y => y - 1); setMonth(12) }
@@ -139,6 +160,9 @@ function AppMain() {
         )}
         {categoriesError && (
           <p className="text-red-400 text-xs text-center mb-2">{categoriesError}</p>
+        )}
+        {accountError && (
+          <p className="text-red-400 text-xs text-center mb-2">口座情報の取得に失敗しました: {accountError}</p>
         )}
 
         {/* 月初清算リマインダー */}
@@ -204,6 +228,17 @@ function AppMain() {
           <span className="text-base font-semibold text-ink tabular-nums">{year}年{month}月</span>
           <button onClick={nextMonth} className="w-9 h-9 flex items-center justify-center rounded-lg text-ink-4 hover:text-indigo-500 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/15 transition-colors text-xl leading-none">›</button>
         </div>
+
+        {/* Account projection（取得失敗時は誤った¥0を出さず、上のエラー表示に委ねてカードを隠す） */}
+        {!accountError && (
+          <AccountProjection
+            balance={accountState?.balance ?? 0}
+            balanceAsOf={accountState?.balance_as_of ?? null}
+            expectedInflow={expectedInflow}
+            nextCardDebit={accountState?.next_card_debit ?? 0}
+            loading={accountLoading}
+          />
+        )}
 
         {/* Category summary */}
         <CategorySummary
@@ -338,6 +373,9 @@ function AppMain() {
           onDeleteCategory={deleteCategory}
           onRenameCategory={renameCategory}
           onReorderCategory={reorderCategory}
+          accountState={accountState}
+          onUpdateBalance={updateBalance}
+          onUpdateNextCardDebit={updateNextCardDebit}
           onClose={() => setShowSettings(false)}
         />
       )}

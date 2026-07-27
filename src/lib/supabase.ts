@@ -26,6 +26,14 @@ export type Member = {
   created_at: string
 }
 
+export type AccountState = {
+  id: boolean
+  balance: number
+  balance_as_of: string | null
+  next_card_debit: number
+  updated_at: string
+}
+
 export type Category = {
   id: string
   name: string
