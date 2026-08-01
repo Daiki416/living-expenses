@@ -15,7 +15,7 @@
 | フロントエンド | React 19 + TypeScript + Vite |
 | スタイリング | Tailwind CSS v4 |
 | バックエンド/DB | Supabase (PostgreSQL + RLS) |
-| OCR | Anthropic API (claude-haiku) — Supabase Edge Function (`supabase/functions/ocr`) 経由で呼び出し |
+| OCR | Anthropic API (claude-sonnet) — Supabase Edge Function (`supabase/functions/ocr`) 経由で呼び出し |
 | テスト | Vitest |
 
 ---
@@ -55,12 +55,12 @@ supabase/
 ### OCRフロー
 1. ユーザーがレシート画像を選択
 2. `extractReceiptData` で Anthropic API に送信。このときユーザーのカテゴリー一覧（番号+ラベル）も Edge Function に渡す
-3. レシートの品目リストを返却（日付・説明・金額・税率）。品目ごとのカテゴリーも同時に Haiku が判定して返す（OCRと同一の1回で判定・非学習）
+3. レシートの品目リストを返却（日付・説明・金額・税率）。品目ごとのカテゴリーも同時に Sonnet が判定して返す（OCRと同一の1回で判定・非学習）
 4. ユーザーがレビュー画面で各品目の税率・選択状態・カテゴリーを確認（明細ごとにカテゴリー指定可）
 5. 「N件を追加」で一括登録
 
 ### カテゴリー学習（訂正メモリ）
-- 登録確定した明細のうちユーザーが個別に手で選んだカテゴリーのみ、および支出編集での訂正を `category_rules`（品名→カテゴリー）に学習する。次回スキャンで品名一致（正規化後）時に Haiku 判定より優先して上書きする。学習・上書き・OCR候補はいずれも**葉（小分類）のみ**を対象とし、削除済み・親どまりのIDは無視する。
+- 登録確定した明細のうちユーザーが個別に手で選んだカテゴリーのみ、および支出編集での訂正を `category_rules`（品名→カテゴリー）に学習する。次回スキャンで品名一致（正規化後）時に Sonnet 判定より優先して上書きする。学習・上書き・OCR候補はいずれも**葉（小分類）のみ**を対象とし、削除済み・親どまりのIDは無視する。
 
 ---
 

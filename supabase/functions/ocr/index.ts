@@ -7,7 +7,8 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-const OCR_MODEL = 'claude-haiku-4-5-20251001'
+// 再スキャンで毎回違う誤読が出る＝視覚のブレが原因のため、視覚の強い Sonnet 5 に上げる
+const OCR_MODEL = 'claude-sonnet-5'
 // カテゴリー判定の相乗りにより items 1件あたりの出力が増えるため 1024→1536 に引き上げ
 const OCR_MAX_TOKENS = 1536
 const ANTHROPIC_API_VERSION = '2023-06-01'
@@ -169,6 +170,9 @@ Deno.serve(async (req: Request) => {
     body: JSON.stringify({
       model: OCR_MODEL,
       max_tokens: OCR_MAX_TOKENS,
+      // Sonnet 5 は thinking 省略時に adaptive thinking が ON になり、max_tokens は思考＋出力の
+      // 合算上限のため思考にトークンを食われ最終 JSON が途中で切れうる。OCR は構造化抽出なので無効化する。
+      thinking: { type: 'disabled' },
       messages: [
         {
           role: 'user',

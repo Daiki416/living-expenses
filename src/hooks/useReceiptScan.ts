@@ -83,7 +83,7 @@ export function useReceiptScan({ defaultDate, categories, rulesMap, onUpsertRule
           receipts.push({
             date: sanitizeDate(data.date, defaultDate),
             storeName: data.storeName ?? '',
-            // 訂正メモリを Haiku 判定より優先して確定オーバーライドする（有効な葉IDのみ）。
+            // 訂正メモリを Sonnet 判定より優先して確定オーバーライドする（有効な葉IDのみ）。
             items: applyRulesToItems(items, rulesMap, validLeafCategoryIds),
             total: data.total,
           })

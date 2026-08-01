@@ -31,7 +31,7 @@ type ReceiptData = {
   items: ReceiptItem[]
 }
 
-// カテゴリー一覧を親→その子らの自然な順でフラット化し、Haiku 送信用の index 付きリストにする。
+// カテゴリー一覧を親→その子らの自然な順でフラット化し、Sonnet 送信用の index 付きリストにする。
 // 出力は「葉（子を持たないカテゴリー）」のみ。子は label=`親名 > 子名`、
 // childless親（旧データ・子を持たない親）は葉として label=name で残す。
 // 親グループ順・子順は崩さず、子を持つ親の単体行だけを落とす（Edge Function と同順・同長を保つ）。
@@ -53,7 +53,7 @@ export function buildCategoryOptions(categories: Category[]): { index: number; l
   return options.slice(0, SETTINGS.maxCategoryOptions).map((o, index) => ({ index, label: o.label, id: o.id }))
 }
 
-// Haiku が返した index を options 上の id に解決する。整数かつ範囲内のときのみ id、それ以外は null。
+// Sonnet が返した index を options 上の id に解決する。整数かつ範囲内のときのみ id、それ以外は null。
 export function resolveCategoryIndex(index: unknown, options: { id: string }[]): string | null {
   if (typeof index === 'number' && Number.isInteger(index) && index >= 0 && index < options.length) {
     return options[index].id
