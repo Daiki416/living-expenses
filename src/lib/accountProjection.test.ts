@@ -79,10 +79,18 @@ describe('resolveUpcomingDebit', () => {
     expect(r.debitDate).toEqual(new Date(2026, 0, 8))
   })
 
-  it('today == 補正後引落日（境界）→ 今月引落・先月立替基準', () => {
-    const r = resolveUpcomingDebit(new Date(2026, 0, 8), 8)
+  it('引落日の前日は今月引落（当日境界の直前）', () => {
+    // 2026-01-07水（引落日8=2026-01-08木の前日）→ まだ引き落とされていない＝今月引落
+    const r = resolveUpcomingDebit(new Date(2026, 0, 7), 8)
     expect(r.usePrevMonthAdvances).toBe(true)
     expect(r.debitDate).toEqual(new Date(2026, 0, 8))
+  })
+
+  it('today == 補正後引落日（境界）→ 来月引落・今月立替基準', () => {
+    // 引落日当日はもう引き落とされたとみなし来月扱い。2026-02-08は日曜→翌営業日 02-09月
+    const r = resolveUpcomingDebit(new Date(2026, 0, 8), 8)
+    expect(r.usePrevMonthAdvances).toBe(false)
+    expect(r.debitDate).toEqual(new Date(2026, 1, 9))
   })
 
   it('today > 引落日 → 来月引落・今月立替基準', () => {
