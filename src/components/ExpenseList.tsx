@@ -4,7 +4,7 @@ import { resolveCategoryLabel, splitDateChip } from '../lib/format'
 import { resolveCategoryColor } from '../lib/categoryColors'
 import { EXPENSE_KIND, EXPENSE_KIND_LABEL } from '../config/classifications'
 import { MESSAGES } from '../config/messages'
-import { filterReceiptsByPayer, type PayerFilter } from '../lib/expenseFilter'
+import { filterReceiptsByPayer, filterReceiptsByQuery, type PayerFilter } from '../lib/expenseFilter'
 
 type Props = {
   receipts: ReceiptWithExpenses[]
@@ -25,6 +25,7 @@ export function ExpenseList({ receipts, categories, memberNameById, onEdit, onDe
   const [sortAsc, setSortAsc] = useState(false)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [payer, setPayer] = useState<PayerFilter>({ type: 'all' })
+  const [query, setQuery] = useState<string>('')
 
   if (receipts.length === 0) {
     return (
@@ -41,10 +42,12 @@ export function ExpenseList({ receipts, categories, memberNameById, onEdit, onDe
         : 'text-ink-3 border-line'
     }`
 
-  const filtered = filterReceiptsByPayer(receipts, payer)
-  const sorted = [...filtered].sort((a, b) =>
-    sortAsc ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date)
-  )
+  const filtered = filterReceiptsByQuery(filterReceiptsByPayer(receipts, payer), query)
+  const sorted = [...filtered].sort((a, b) => {
+    const d = sortAsc ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date)
+    if (d !== 0) return d
+    return b.created_at.localeCompare(a.created_at)
+  })
 
   function toggleExpand(id: string) {
     setExpandedIds(prev => {
@@ -61,46 +64,67 @@ export function ExpenseList({ receipts, categories, memberNameById, onEdit, onDe
   return (
     <div>
       <div className="max-h-96 overflow-y-auto">
-        <div className="flex items-center gap-2 px-1 pb-2 sticky top-0 bg-surface z-10">
-          <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto">
-            <button
-              type="button"
-              onClick={() => setPayer({ type: 'all' })}
-              className={chipClass(payer.type === 'all')}
-            >
-              すべて
-            </button>
-            {[...memberNameById.entries()].map(([id, name]) => (
+        <div className="px-1 pb-2 sticky top-0 bg-surface z-10">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto">
               <button
-                key={id}
                 type="button"
-                onClick={() => setPayer({ type: 'member', memberId: id })}
-                className={chipClass(payer.type === 'member' && payer.memberId === id)}
+                onClick={() => setPayer({ type: 'all' })}
+                className={chipClass(payer.type === 'all')}
               >
-                {name}
+                すべて
               </button>
-            ))}
+              {[...memberNameById.entries()].map(([id, name]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setPayer({ type: 'member', memberId: id })}
+                  className={chipClass(payer.type === 'member' && payer.memberId === id)}
+                >
+                  {name}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setPayer({ type: 'card' })}
+                className={chipClass(payer.type === 'card')}
+              >
+                {EXPENSE_KIND_LABEL.card}
+              </button>
+            </div>
             <button
-              type="button"
-              onClick={() => setPayer({ type: 'card' })}
-              className={chipClass(payer.type === 'card')}
+              onClick={() => setSortAsc(v => !v)}
+              className="shrink-0 text-xs text-ink-3 hover:text-indigo-500 transition-colors"
             >
-              {EXPENSE_KIND_LABEL.card}
+              日付 {sortAsc ? '↑' : '↓'}
             </button>
           </div>
-          <button
-            onClick={() => setSortAsc(v => !v)}
-            className="shrink-0 text-xs text-ink-3 hover:text-indigo-500 transition-colors"
-          >
-            日付 {sortAsc ? '↑' : '↓'}
-          </button>
+          <div className="mt-1.5 relative">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="レシート・明細を検索"
+              className="field-input py-1.5 text-xs pr-7"
+            />
+            {query !== '' && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                title="検索をクリア"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-4 hover:text-ink-2 transition-colors text-base leading-none"
+              >
+                ×
+              </button>
+            )}
+          </div>
         </div>
         {sorted.length === 0 ? (
           <div className="text-center text-ink-4 py-12 text-sm">
             <div>{MESSAGES.list.noMatch}</div>
             <button
               type="button"
-              onClick={() => setPayer({ type: 'all' })}
+              onClick={() => { setPayer({ type: 'all' }); setQuery('') }}
               className="mt-2 text-xs text-indigo-500 hover:text-indigo-600 transition-colors"
             >
               {MESSAGES.list.clearFilter}

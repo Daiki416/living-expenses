@@ -24,6 +24,7 @@ export function useReceipts(year: number, month: number, enabled: boolean = true
         .gte('date', from)
         .lt('date', to)
         .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
       if (cancelled) return
       if (error) {
         setError(error.message)

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { filterReceiptsByPayer, collectExpensesByCategory } from './expenseFilter'
+import { filterReceiptsByPayer, collectExpensesByCategory, filterReceiptsByQuery } from './expenseFilter'
 import type { ReceiptWithExpenses, Expense } from './supabase'
 
 function makeExpense(over: Partial<Expense> & { id: string; category_id: string | null; receipt_id: string }): Expense {
@@ -42,6 +42,53 @@ describe('filterReceiptsByPayer', () => {
 
   it('空配列は空配列', () => {
     expect(filterReceiptsByPayer([], { type: 'all' })).toEqual([])
+  })
+})
+
+describe('filterReceiptsByQuery', () => {
+  const eMilk = makeExpense({ id: 'e1', category_id: null, receipt_id: 'r1', description: '牛乳' })
+  const eBread = makeExpense({ id: 'e2', category_id: null, receipt_id: 'r1', description: 'Bread' })
+  const rSuper = makeReceipt({ id: 'r1', description: 'スーパー', expenses: [eMilk, eBread] })
+  const eGas = makeExpense({ id: 'e3', category_id: null, receipt_id: 'r2', description: 'ガソリン' })
+  const rStand = makeReceipt({ id: 'r2', description: 'GS Station', expenses: [eGas] })
+  const receipts = [rSuper, rStand]
+
+  it('空クエリは全件そのまま返す', () => {
+    expect(filterReceiptsByQuery(receipts, '')).toEqual(receipts)
+  })
+
+  it('空白のみクエリは全件そのまま返す', () => {
+    expect(filterReceiptsByQuery(receipts, '   ')).toEqual(receipts)
+  })
+
+  it('レシート名一致で残る', () => {
+    expect(filterReceiptsByQuery(receipts, 'スーパー')).toEqual([rSuper])
+  })
+
+  it('明細名一致で残る（レシート名は不一致でも明細が一致）', () => {
+    expect(filterReceiptsByQuery(receipts, '牛乳')).toEqual([rSuper])
+  })
+
+  it('マッチしたレシートは全明細を保持する', () => {
+    const result = filterReceiptsByQuery(receipts, '牛乳')
+    expect(result[0].expenses).toEqual([eMilk, eBread])
+  })
+
+  it('不一致は除外される', () => {
+    expect(filterReceiptsByQuery(receipts, 'ないもの')).toEqual([])
+  })
+
+  it('大文字小文字を無視する（クエリ大文字/データ小文字）', () => {
+    expect(filterReceiptsByQuery(receipts, 'BREAD')).toEqual([rSuper])
+  })
+
+  it('大文字小文字を無視する（クエリ小文字/データ大文字）', () => {
+    expect(filterReceiptsByQuery(receipts, 'station')).toEqual([rStand])
+  })
+
+  it('元配列を破壊しない', () => {
+    filterReceiptsByQuery(receipts, 'スーパー')
+    expect(receipts).toEqual([rSuper, rStand])
   })
 })
 
