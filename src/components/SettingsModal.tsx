@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react'
-import type { Member, Category, AccountState } from '../lib/supabase'
+import type { Member, Category, AccountState, RecurringTemplateWithItems } from '../lib/supabase'
+import type { RecurringTemplateInput } from '../lib/recurring'
+import { RecurringTemplatesTab } from './RecurringTemplatesTab'
 import { supabase } from '../lib/supabase'
 import { MESSAGES } from '../config/messages'
 import { useEscapeKey } from '../hooks/useEscapeKey'
@@ -49,7 +51,7 @@ function SortableRow({ id, className, children }: { id: string; className?: stri
   )
 }
 
-type Tab = 'members' | 'categories' | 'password'
+type Tab = 'members' | 'categories' | 'recurring' | 'password'
 
 type Props = {
   members: Member[]
@@ -66,10 +68,17 @@ type Props = {
   onUpdateBalance: (balance: number) => Promise<void>
   onUpdateNextCardDebit: (next: number) => Promise<void>
   onUpdateDebitDay: (day: number) => Promise<void>
+  recurringTemplates: RecurringTemplateWithItems[]
+  recurringLoading: boolean
+  recurringError: string | null
+  onAddRecurringTemplate: (input: RecurringTemplateInput) => Promise<void>
+  onUpdateRecurringTemplate: (id: string, input: RecurringTemplateInput) => Promise<void>
+  onDeleteRecurringTemplate: (id: string) => Promise<void>
+  onToggleRecurringTemplate: (id: string, active: boolean) => Promise<void>
   onClose: () => void
 }
 
-export function SettingsModal({ members, categories, onAddMember, onDeleteMember, onUpdateMemberBudget, onAddCategory, onAddParentWithChild, onDeleteCategory, onRenameCategory, onReorderCategory, accountState, onUpdateBalance, onUpdateNextCardDebit, onUpdateDebitDay, onClose }: Props) {
+export function SettingsModal({ members, categories, onAddMember, onDeleteMember, onUpdateMemberBudget, onAddCategory, onAddParentWithChild, onDeleteCategory, onRenameCategory, onReorderCategory, accountState, onUpdateBalance, onUpdateNextCardDebit, onUpdateDebitDay, recurringTemplates, recurringLoading, recurringError, onAddRecurringTemplate, onUpdateRecurringTemplate, onDeleteRecurringTemplate, onToggleRecurringTemplate, onClose }: Props) {
   const [tab, setTab] = useState<Tab>('members')
 
   const [newMemberName, setNewMemberName] = useState('')
@@ -424,6 +433,12 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
             カテゴリー
           </button>
           <button
+            onClick={() => setTab('recurring')}
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === 'recurring' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-300' : 'text-ink-3 hover:text-ink-2'}`}
+          >
+            自動明細
+          </button>
+          <button
             onClick={() => setTab('password')}
             className={`flex-1 py-2 text-sm font-medium transition-colors ${tab === 'password' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-300' : 'text-ink-3 hover:text-ink-2'}`}
           >
@@ -718,6 +733,20 @@ export function SettingsModal({ members, categories, onAddMember, onDeleteMember
             {categoryError && <p className="text-red-500 text-xs mt-2">{categoryError}</p>}
           </div>
         </div>
+      )}
+
+      {tab === 'recurring' && (
+        <RecurringTemplatesTab
+          members={members}
+          categories={categories}
+          templates={recurringTemplates}
+          loading={recurringLoading}
+          loadError={recurringError}
+          onAdd={onAddRecurringTemplate}
+          onUpdate={onUpdateRecurringTemplate}
+          onDelete={onDeleteRecurringTemplate}
+          onToggle={onToggleRecurringTemplate}
+        />
       )}
 
       {tab === 'password' && (

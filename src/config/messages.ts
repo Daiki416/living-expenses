@@ -37,6 +37,21 @@ export const MESSAGES = {
   account: {
     saveFailed: '口座情報の保存に失敗しました',
   },
+  recurring: {
+    saveFailed: '定期テンプレートの保存に失敗しました',
+    loadFailed: '定期テンプレートの取得に失敗しました',
+    loading: '読み込み中…',
+    empty: '定期テンプレートがありません',
+    registrationNote: '自動登録は毎日0:10頃に実行されます',
+    invalidDescription: '内容を入力してください',
+    invalidDayOfMonth: '登録日は1〜31の整数で入力してください',
+    noItems: '明細を1件以上入力してください',
+    invalidItemDescription: '明細の内容を入力してください',
+    invalidAmount: '金額は1以上の整数で入力してください',
+    invalidPaidBy: '立替の場合は立替者を選択してください',
+    cardWithMember: 'クレカの場合は立替者を選択できません',
+    invalidCategory: 'カテゴリーは小分類を選択してください',
+  },
   common: {
     duplicateName: '同じ名前がすでに存在します',
     genericError: 'エラーが発生しました。もう一度お試しください',

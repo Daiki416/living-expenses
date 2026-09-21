@@ -5,6 +5,7 @@ import { useMembers } from './hooks/useMembers'
 import { useAccountState } from './hooks/useAccountState'
 import { useCategories } from './hooks/useCategories'
 import { useCategoryRules } from './hooks/useCategoryRules'
+import { useRecurringTemplates } from './hooks/useRecurringTemplates'
 import { useAuth } from './hooks/useAuth'
 import { AddExpenseModal } from './components/AddExpenseModal'
 import { EditExpenseModal } from './components/EditExpenseModal'
@@ -85,6 +86,15 @@ function AppMain() {
 
   const { categories, error: categoriesError, addCategory, addParentWithChild, deleteCategory, renameCategory, reorderCategory } = useCategories()
   const { rulesMap, upsertRule, deleteRule } = useCategoryRules()
+  const {
+    templates: recurringTemplates,
+    loading: recurringLoading,
+    error: recurringError,
+    addTemplate: addRecurringTemplate,
+    updateTemplate: updateRecurringTemplate,
+    deleteTemplate: deleteRecurringTemplate,
+    toggleTemplate: toggleRecurringTemplate,
+  } = useRecurringTemplates()
   const { receipts, loading: expensesLoading, error: expensesError, addReceiptGroup, updateExpense, deleteReceipt, updateReceipt } = useReceipts(year, month)
   const { receipts: prevMonthReceipts, loading: prevMonthLoading } = useReceipts(prevYear, prevMonthNum, needPrevMonthReceipts)
   // 入金見込み(C)用の現在実月インスタンス。当月表示中は上の receipts と同一クエリになるので取得を無効化し、
@@ -396,6 +406,13 @@ function AppMain() {
           onUpdateBalance={updateBalance}
           onUpdateNextCardDebit={updateNextCardDebit}
           onUpdateDebitDay={updateDebitDay}
+          recurringTemplates={recurringTemplates}
+          recurringLoading={recurringLoading}
+          recurringError={recurringError}
+          onAddRecurringTemplate={addRecurringTemplate}
+          onUpdateRecurringTemplate={updateRecurringTemplate}
+          onDeleteRecurringTemplate={deleteRecurringTemplate}
+          onToggleRecurringTemplate={toggleRecurringTemplate}
           onClose={() => setShowSettings(false)}
         />
       )}

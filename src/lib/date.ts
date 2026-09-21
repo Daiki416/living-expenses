@@ -9,3 +9,13 @@ export function monthDateRange(year: number, month: number): { from: string; to:
   const to = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`
   return { from, to }
 }
+
+/**
+ * 指定時刻（既定は現在）を JST(UTC+9) に換算し、年・月(1-12)・日を返す。
+ * 日本はサマータイムがないため固定オフセットで足りる。ブラウザのタイムゾーンに依存せず
+ * 「日本の今日」を求めたいとき（例: 定期登録の次回日プレビュー）に使う。
+ */
+export function jstDateParts(date: Date = new Date()): { year: number; month: number; day: number } {
+  const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000)
+  return { year: jst.getUTCFullYear(), month: jst.getUTCMonth() + 1, day: jst.getUTCDate() }
+}

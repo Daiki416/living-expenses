@@ -62,3 +62,27 @@ export type CategoryRule = {
 }
 
 export type ReceiptWithExpenses = Receipt & { expenses: Expense[] }
+
+export type RecurringTemplate = {
+  id: string
+  description: string
+  kind: ReceiptKind
+  paid_by_member_id: string | null
+  day_of_month: number
+  active: boolean
+  created_at: string
+}
+
+export type RecurringTemplateItem = {
+  id: string
+  template_id: string
+  description: string
+  amount: number
+  category_id: string | null
+  sort_order: number
+  created_at: string
+}
+
+export type RecurringTemplateWithItems = RecurringTemplate & {
+  recurring_template_items: RecurringTemplateItem[]
+}
